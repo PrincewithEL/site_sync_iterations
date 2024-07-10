@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <!-- basic -->
+      <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <!-- mobile metas -->
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="viewport" content="initial-scale=1, maximum-scale=1">
+      <!-- site metas -->
+      <title>Site Sync - Verify OTP</title>
+      <meta name="keywords" content="">
+      <meta name="description" content="">
+      <meta name="author" content="">
+      {% load static %}
+      <!-- bootstrap css -->
+      <link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.min.css' %}">
+      <!-- style css -->
+      <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+      <!-- Responsive-->
+      <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
+      <!-- fevicon -->
+      <link rel="icon" href="{% static 'images/fevicon.png' %}" type="image/gif" />
+      <!-- Scrollbar Custom CSS -->
+      <link rel="stylesheet" href="{% static 'css/jquery.mCustomScrollbar.min.css' %}">
+      <!-- owl stylesheets --> 
+      <link rel="stylesheet" href="{% static 'css/owl.carousel.min.css' %}">
+      <link rel="stylesheet" href="{% static 'css/owl.theme.default.min.css' %}">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.5/jquery.fancybox.min.css" media="screen">
+   </head>
+   <style type="text/css">
+.google-sign-in-button {
+    cursor: pointer;
+    transition: background-color .3s, box-shadow .3s;
+        
+    padding: 12px 16px 12px 42px;
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 -1px 0 rgba(0, 0, 0, .04), 0 1px 1px rgba(0, 0, 0, .25);
+    
+    position: relative;
+    left: 10px;
+
+    color: #757575;
+    font-size: 16px;
+    font-weight: 500;
+    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Fira Sans","Droid Sans","Helvetica Neue",sans-serif;
+    
+    background-image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj48cGF0aCBkPSJNMTcuNiA5LjJsLS4xLTEuOEg5djMuNGg0LjhDMTMuNiAxMiAxMyAxMyAxMiAxMy42djIuMmgzYTguOCA4LjggMCAwIDAgMi42LTYuNnoiIGZpbGw9IiM0Mjg1RjQiIGZpbGwtcnVsZT0ibm9uemVybyIvPjxwYXRoIGQ9Ik05IDE4YzIuNCAwIDQuNS0uOCA2LTIuMmwtMy0yLjJhNS40IDUuNCAwIDAgMS04LTIuOUgxVjEzYTkgOSAwIDAgMCA4IDV6IiBmaWxsPSIjMzRBODUzIiBmaWxsLXJ1bGU9Im5vbnplcm8iLz48cGF0aCBkPSJNNCAxMC43YTUuNCA1LjQgMCAwIDEgMC0zLjRWNUgxYTkgOSAwIDAgMCAwIDhsMy0yLjN6IiBmaWxsPSIjRkJCQzA1IiBmaWxsLXJ1bGU9Im5vbnplcm8iLz48cGF0aCBkPSJNOSAzLjZjMS4zIDAgMi41LjQgMy40IDEuM0wxNSAyLjNBOSA5IDAgMCAwIDEgNWwzIDIuNGE1LjQgNS40IDAgMCAxIDUtMy43eiIgZmlsbD0iI0VBNDMzNSIgZmlsbC1ydWxlPSJub256ZXJvIi8+PHBhdGggZD0iTTAgMGgxOHYxOEgweiIvPjwvZz48L3N2Zz4=);
+    background-color: white;
+    background-repeat: no-repeat;
+    background-position: 10px 11px;
+}
+
+.google-sign-in-button:hover {
+    box-shadow: 0 -1px 0 rgba(0, 0, 0, .04), 0 2px 4px rgba(0, 0, 0, .25);
+}
+
+.google-sign-in-button:active {
+    background-color: #eeeeee;
+}
+
+.google-sign-in-button:active {
+    outline: none;
+        box-shadow: 
+        0 -1px 0 rgba(0, 0, 0, .04),
+        0 2px 4px rgba(0, 0, 0, .25),
+        0 0 0 3px #c8dafc;
+}
+
+.google-sign-in-button:disabled {
+    filter: grayscale(100%);
+    background-color: #ebebeb;
+    box-shadow: 0 -1px 0 rgba(0, 0, 0, .04), 0 1px 1px rgba(0, 0, 0, .25);
+    cursor: not-allowed;
+}
+
+@media (max-width: 986px){
+
+.google-sign-in-button{
+   width: 10px;
+}
+
+}
+
+   </style>
+   <body>
+      <!-- section header start -->
+      <div class="header_section">
+         <div class="container">
+            <div class="row">
+               <div class="col-md-3">
+                  <div class="logo"><a href="index.html"><img src="{% static 'images/site_sync_logo.png' %}"></a></div>
+               </div>
+               <div class="col-md-9">
+                  <div class="menu_text">
+                    <ul>
+                        <li><a href="{% url 'home' %}">HOME</a></li>
+                        <li><a href="{% url 'signin' %}">SIGN IN</a></li>
+                        <li><a href="{% url 'signup' %}">SIGN UP</a></li>
+                        <li><a href="#about">ABOUT</a></li>
+                        <li><a href="{% url 'prototype' %}">PROTOTYPE</a></li>
+                        <li><a href="#contact">CONTACT US</a></li>
+                        <div id="myNav" class="overlay">
+                           <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+                           <div class="overlay-content">
+                       <a href="{% url 'home' %}">HOME</a>
+                       <a href="{% url 'signin' %}">SIGN IN</a>
+                       <a href="{% url 'signup' %}">SIGN UP</a>
+                       <a href="{% url 'home' %}">ABOUT</a>
+                       <a href="{% url 'home' %}">SERVICES</a>
+                       <a href="{% url 'prototype' %}">PROTOTYPE</a>
+                       <a href="#contact">CONTACT US</a>
+                           </div>
+                        </div>
+                        <span  style="font-size:33px;cursor:pointer; color: black;" onclick="openNav()"><img src="{% static 'images/menu.png' %}" class="toggle_menu"></span>
+                  </div>
+                  </li>
+                  </ul>
+               </div>
+            </div>
+         </div>
+      </div>
+      <!-- section header end -->
+      <!-- contact section start -->
+      <div class="contact_section contact_main">
+         <div class="container-fluid">
+            <div class="row">
+               <div class="col-md-6 padding_0">
+                  <div class="contact_bg">
+                     <div class="input_main">
+                        <div class="container">
+                           <h2 class="request_text">VERIFY OTP</h2>
+             {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <p style="font-weight: bold; color: white;" class="{{ message.tags }}">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+                           <form action="" method="POST">
+                           {% csrf_token %}
+                              <div class="form-group">
+                                 <input type="password" class="email-bt" placeholder="OTP" id="exampleInputPassword1" name="otp_code">
+                              </div>
+                                                  <div class="checkbox">
+                      <label>
+                        <input type="checkbox" onclick="showPass();"> Show Password
+                      </label>
+                    </div>
+
+                              <br>
+                              <div class="send_bt"><input type="submit" name="login" value="LOGIN"></div>
+                              <br>
+                              <br>
+                           </form>
+                                                      <br>
+                           <button type="button" style="width: 90%;" class="google-sign-in-button" >
+  Sign in with Google
+</button>
+<br>
+<br>
+                        </div>
+                     </div>
+                    
+                  </div>
+               </div>
+               <div class="col-md-6 padding_0">
+                  <div class="map-responsive">
+                     <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3988.7731897920494!2d36.81279137366759!3d-1.3114623356514286!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182f11aebb1cab0b%3A0x25083c9bb85d3b2d!2sQuestworks%20Place%2C%20Madaraka!5e0!3m2!1sen!2ske!4v1688488688630!5m2!1sen!2ske" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      <!-- contact section end -->
+       <!-- footer section start -->
+      <div class="footer_section layout_padding" id="contact">
+         <div class="container">
+         </div>
+         <div class="footer_section_2">
+            <div class="container">
+               <h2 class="addres_text">Contact Us</h2>
+               <div class="row map_addres">
+                  <div class="col-sm-12 col-lg-4">
+                     <div class="map_text"><img src="{% static 'images/map-icon.png' %}"><span class="map_icon">Nairobi, KENYA.</span></div>
+                  </div>
+                  <div class="col-sm-12 col-lg-4">
+                     <div class="map_text"><img src="{% static 'images/phone-icon.png' %}"><span class="map_icon">+254 xxx xxxxxx</span></div>
+                  </div>
+                  <div class="col-sm-12 col-lg-4">
+                     <div class="map_text"><img src="{% static 'images/email-icon.png' %}"><span class="map_icon"><a href="">sitesync@gmail.com</a></span></div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      <!-- footer section end -->
+      <!-- copyright section start -->
+      <div class="copyright_section">
+         <p class="copyright_text">Copyright 2023. <a href="">The Bengal Tigers 🐅</a> .</p>
+      </div>
+      <!-- copyright section end -->
+      <!-- Javascript files-->
+      <script src="{% static 'js/jquery.min.js' %}"></script>
+      <script src="{% static 'js/popper.min.js' %}"></script>
+      <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+      <script src="{% static 'js/jquery-3.0.0.min.js' %}"></script>
+      <script src="{% static 'js/plugin.js' %}"></script>
+      <!-- sidebar -->
+      <script src="{% static 'js/jquery.mCustomScrollbar.concat.min.js' %}"></script>
+      <script src="{% static 'js/custom.js' %}"></script>
+      <!-- javascript --> 
+      <script src="{% static 'js/owl.carousel.js' %}"></script>
+      <script src="https:cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.5/jquery.fancybox.min.js"></script>
+      <script>
+         $(document).ready(function(){
+         $(".fancybox").fancybox({
+            openEffect: "none",
+            closeEffect: "none"
+            });
+            
+            $(".zoom").hover(function(){
+            
+            $(this).addClass('transition');
+            }, function(){
+            
+            $(this).removeClass('transition');
+            });
+            });
+            
+      </script> 
+      <script>
+         function openNav() {
+         document.getElementById("myNav").style.width = "100%";
+         }
+         
+         function closeNav() {
+         document.getElementById("myNav").style.width = "0%";
+         }
+         function showPass() {
+  var x = document.getElementById("exampleInputPassword1");
+  if (x.type === "password") {
+    x.type = "text";
+  } else {
+    x.type = "password";
+  }
+}
+
+function showPass1() {
+  var x = document.getElementById("exampleInputPassword2");
+  if (x.type === "password") {
+    x.type = "text";
+  } else {
+    x.type = "password";
+  }
+}
+      </script>
+   </body>
+</html>

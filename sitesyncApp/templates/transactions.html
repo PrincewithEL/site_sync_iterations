@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Site Sync - {{ type }} Module - Transactions Page</title>
+    <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
+       {% load static %}
+       {% load custom_filters %}
+    <!-- Bootstrap 3.3.2 -->
+    <link href="{% static 'dashboard/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css" />
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    <!-- FontAwesome -->
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
+    <!-- jQuery -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- Emojionearea -->
+    <link rel="stylesheet" href="{% static 'dashboard/dist/css/emojionearea.min.css' %}">
+    <script src="{% static 'dashboard/dist/js/emojionearea.min.js' %}"></script>
+    <!-- Theme style -->
+    <link href="{% static 'dashboard/dist/css/sitesync.css' %}" rel="stylesheet" type="text/css" />
+    <!-- Skins -->
+    <link href="{% static 'dashboard/dist/css/skins/skin-black.min.css' %}" rel="stylesheet" type="text/css" />
+    <!-- Bootstrap WYSIHTML5 -->
+    <link href="{% static 'dashboard/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.min.css' %}" rel="stylesheet" type="text/css" />
+  </head>
+      <style>
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+        }
+        
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        
+        .dropdown:hover .dropbtn {
+            background-color: orange;
+        }
+        
+        .dropbtn {
+            background-color: white;
+            color: black;
+            padding: 5px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            width: 200px;
+            text-align: left;
+        }
+        .custom-checkbox {
+    display: block !important;
+    margin: auto;
+    width: 16px;
+    height: 16px;
+}
+    </style>
+  <body class="skin-black">
+    <div class="wrapper">
+      
+      <header class="main-header">
+        <!-- Logo -->
+        <a href="{% url 'client' %}" class="logo" style="color: orange;"><img src="{% static 'dashboard/dist/img/site_sync_logo.png' %}" style="width: 120px; position: relative; top: -8px;"></a>
+        <!-- Header Navbar: style can be found in header.less -->
+        <nav class="navbar navbar-static-top" role="navigation">
+          <!-- Sidebar toggle button-->
+          <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button">
+            <span class="sr-only">Toggle navigation</span>
+          </a>
+          <div class="navbar-custom-menu">
+                        <ul class="nav navbar-nav">
+              <!-- Messages: style can be found in dropdown.less-->
+              <li class="dropdown messages-menu">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                  <i class="fa fa-envelope-o"></i>
+                  <span class="label label-success">1</span>
+                </a>
+                <ul class="dropdown-menu">
+                  <li class="header">You have 1 messages</li>
+                  <li>
+                    <!-- inner menu: contains the actual data -->
+                    <ul class="menu">
+                      <li><!-- start message -->
+                        <a href="#">
+                          <div class="pull-left">
+                            <img src="{% static 'dashboard/dist/img/site.jpg' %}" class="img-circle" alt="User Image"/>
+                          </div>
+                          <h4>
+                            Madaraka
+                            <small><i class="fa fa-clock-o"></i> 5 mins</small>
+                          </h4>
+                          <p>Hey! What's up?</p>
+                        </a>
+                      </li><!-- end message -->
+                    </ul>
+                  </li>
+                  <li class="footer"><a href="#">See All Messages</a></li>
+                </ul>
+              </li>
+            <ul class="nav navbar-nav">
+              <!-- Notifications: style can be found in dropdown.less -->
+              <li class="dropdown notifications-menu">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                  <i class="fa fa-bell-o"></i>
+                  <span class="label label-waring">2</span>
+                </a>
+                <ul class="dropdown-menu">
+                  <li class="header">You have 2 notifications</li>
+                  <li>
+                    <!-- inner menu: contains the actual data -->
+                    <ul class="menu">
+                      <li>
+                        <a href="#">
+                          <i class="fa fa-users text-aqua"></i> 5 new members joined today
+                        </a>
+                      </li>
+                      <li>
+                        <a href="#">
+                          <i class="fa fa-warning text-yellow"></i> A task is pending...
+                        </a>
+                      </li>
+                    </ul>
+                  </li>
+                  <!-- <li class="footer"><a href="pro.html">View all</a></li> -->
+                </ul>
+              </li>
+              <!-- Tasks: style can be found in dropdown.less -->
+              <li class="dropdown tasks-menu">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                  <i class="fa fa-flag-o"></i>
+                  <span class="label label-danger">1</span>
+                </a>
+                <ul class="dropdown-menu">
+                  <li class="header">You have 1 pending task(s)</li>
+                  <li>
+                    <!-- inner menu: contains the actual data -->
+                      <ul class="menu">
+                      <li> Madaraka
+                        <a href="#">
+                          <h3>
+                            Buy some timber.
+                            <small class="pull-right">20%</small>
+                          </h3>
+                        </a>
+                      </li>
+                      <!-- end task item -->
+                     </ul>
+                  </li>
+                  <li class="footer">
+                    <a href="#">View all tasks</a>
+                  </li>
+                </ul>
+              </li> 
+              <!-- Settings -->
+              <li class="dropdown tasks-menu">
+                <a href="#" class="dropdown-toggle">
+                  <i class="fa fa-gear"></i>
+                </a>
+              </li>
+              <!-- User Account: style can be found in dropdown.less -->
+              <li class="dropdown user user-menu">
+                <a href="{% url 'profile' %}" class="dropdown-toggle">
+                  <img src="{{ MEDIA_URL }}{{ auth_user.profile.profile_picture }}" class="user-image" alt="User Image"/>
+                  <span class="hidden-xs">{{ fname }}</span>
+                </a>
+              </li>
+              <!-- Sign Out  -->
+              <li class="dropdown tasks-menu">
+                <a href="{% url 'logout' %}" class="dropdown-toggle">
+                  <i class="fa fa-mail-forward"></i>
+                </a>
+              </li> 
+            </ul>
+          </div>
+        </nav>
+      </header>
+      <!-- Left side column. contains the logo and sidebar -->
+      <aside class="main-sidebar">
+        <!-- sidebar: style can be found in sidebar.less -->
+        <section class="sidebar">
+          <!-- Sidebar user panel -->
+          <div class="user-panel">
+            <div class="pull-left image">
+              <img src="{% static 'dashboard/dist/img/support.png' %}" style="border-radius: 10px;" class="img-circle" alt="User Image" />
+            </div>
+            <div class="pull-left info">
+              <p>SiteSync Assistant</p>
+              <a href=""><i class="fa fa-circle text-success"></i> </a>
+              <a href="#">Active</a>
+            </div>
+          </div>
+          <!-- search form -->
+<!--           <form action="#" method="get" class="sidebar-form">
+            <div class="input-group">
+              <input type="text" name="q" class="form-control" placeholder="Search..."/>
+              <span class="input-group-btn">
+                <button type='submit' name='search' id='search-btn' class="btn btn-flat"><i class="fa fa-search"></i></button>
+              </span>
+            </div>
+          </form> -->
+          <!-- /.search form -->
+          <!-- sidebar menu: : style can be found in sidebar.less -->
+          <ul class="sidebar-menu">
+            <li class="header">NEED HELP ? </li>
+          </ul>
+                              <div class="form-group">
+                      <label>No conversations yet...</label>
+                      <input type="text" class="form-control" placeholder="Enter Prompt..."/>
+                    </div>
+        </section>
+        <!-- /.sidebar -->
+      </aside>
+
+      <!-- Right side column. Contains the navbar and content of the page -->
+      <div class="content-wrapper">
+        <!-- Content Header (Page header) -->
+        <section class="content-header">
+          <h1>
+            <small></small>
+          </h1>
+          <ol class="breadcrumb">
+            <li><a href="{% url 'client' %}"><i class="fa fa-dashboard"></i> Home</a></li>
+            <li><a href="{% url 'client' %}">My Projects</a></li>
+            <li class="active">{{ project.project_name }}</li>
+          </ol>
+        </section>
+
+        <!-- Main content -->
+        <section class="content">
+          <div class="row">
+            <div class="col-md-3">
+              <a href="{% url 'client' %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Home</a>
+              <a href="#" onclick="openForm();" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Add A Transaction</a>              
+              <div class="box box-solid">
+                <div class="box-header with-border">
+                  <h3 class="box-title">List of Transactions</h3>
+                </div>
+                <div class="box-body no-padding">
+                  <ul class="nav nav-pills nav-stacked">
+                    <li class="active"><a href="#"><i class="fa fa-inbox"></i> All Transactions <span class="label label-primary pull-right">{{ transaction_count }}</span></a></li>
+                    <li><a href="#" onclick="cool();"><i class="fa fa-money"></i> Pending</a></li>
+                    <li><a href="#" onclick="cool();"><i class="fa fa-credit-card"></i> Completed</a></li>
+                    <!-- <li><a href="#"><i class="fa fa-folder-o"></i> Archived <span class="label label-waring pull-right">0</span></a></li> -->
+                    <li><a href="#" onclick="cool();"><i class="fa fa-trash-o"></i> Trash</a></li>
+                    <li><a href="#" onclick="cool();"><i class="fa fa-star"></i> Bookmarked Transactions</a></li>
+                    <li><a href="{% url 'project_detail' project.pk %}"><i class="fa fa-mail-reply"></i> Back</a></li>
+                  </ul>
+                </div>
+                <div class="box-body no-padding">
+                  <ul class="nav nav-pills nav-stacked">
+                    <li style="text-align: center;"><b><a href="#">Project Budget - {{ project.estimated_budget }} kshs.</a></b></li>
+                    <li style="text-align: center;"><b><a href="#">Project Expenses - {{ project.actual_expenditure }} kshs.</a></b></li>
+                    <li style="text-align: center;"><b><a href="#">Project Balance - {{ project.balance }} kshs.</a></b></li>
+                  </ul>
+                </div><!-- /.box-body -->
+              </div><!-- /. box -->
+<!--               <div class="box box-solid">
+                <div class="box-header with-border">
+                  <h3 class="box-title">Labels</h3>
+                </div>
+                <div class="box-body no-padding">
+                  <ul class="nav nav-pills nav-stacked">
+                    <li><a href="#"><i class="fa fa-circle-o text-red"></i> Important</a></li>
+                    <li><a href="#"><i class="fa fa-circle-o text-yellow"></i> Promotions</a></li>
+                    <li><a href="#"><i class="fa fa-circle-o text-light-blue"></i> Social</a></li>
+                  </ul>
+                </div> -->
+                <!-- /.box-body -->
+              <!-- </div> -->
+              <!-- /.box -->
+            </div><!-- /.col -->
+            <div class="col-md-9">
+              <div class="box box-primary" id="myTable">
+                <div class="box-header with-border">
+                  <h3 class="box-title">My Project Transactions</h3>
+                  <div class="box-tools pull-right">
+                    <div class="has-feedback">
+                      <input type="text" class="form-control input-sm" onkeyup="searchTable();" id="myInput" placeholder="Search Transaction(s) Name..."/>
+                      <span class="glyphicon glyphicon-search form-control-feedback"></span>
+                    </div>
+                  </div><!-- /.box-tools -->
+                </div><!-- /.box-header -->
+                <div class="box-body no-padding">
+                  <div class="mailbox-controls">
+                    <!-- Check all button -->
+                    <button class="btn btn-default btn-sm checkbox-toggle"><i class="fa fa-square-o"></i></button>
+                    <div class="btn-group">
+                      <button class="btn btn-default btn-sm"><i class="fa fa-trash-o"></i></button>
+                      <button class="btn btn-default btn-sm"><i class="fa fa-reply"></i></button>
+                      <button class="btn btn-default btn-sm"><i class="fa fa-share"></i></button>
+                    </div><!-- /.btn-group -->
+                    <button class="btn btn-default btn-sm"><i class="fa fa-refresh"></i></button>
+                    <div class="pull-right">
+                      1-50/999
+                      <div class="btn-group">
+                        <button class="btn btn-default btn-sm"><i class="fa fa-chevron-left"></i></button>
+                        <button class="btn btn-default btn-sm"><i class="fa fa-chevron-right"></i></button>
+                      </div><!-- /.btn-group -->
+                    </div><!-- /.pull-right -->
+                  </div>
+                  <div class="table-responsive mailbox-messages">
+                    <table class="table table-hover table-striped" id="transactions">
+                      <thead>
+<!--                         <th></th>
+                        <th></th> -->
+                        <th>Transaction</th>
+                        <th>Details</th>
+                        <th>Quantity</th>
+                        <th>Singular Price (in kshs.)</th>
+                        <th>Total Price (in kshs.)</th>
+                        <th>Status</th>
+                        <th>Votes (For/Against)</th>
+                        <th></th> 
+                        <th></th>                    
+                      </thead>
+                      <tbody>
+                        {% for transaction in transactions %}
+                        <tr>
+<!--                           <td><input type="checkbox" /></td>
+                          <td class="mailbox-star"><a href="#"><i class="fa fa-star text-yellow"></i></a></td> -->
+                          <td class="mailbox-name" title="{{ transaction.created_at }}">{{ transaction.transaction_name }}</td>
+                          <td class="mailbox-name"><b>{{ transaction.transaction_details }}</b></td>
+                          <td class="mailbox-name"><b>{{ transaction.transaction_quantity }}</b></td>                          
+                          <td class="mailbox-attachment">{{ transaction.transaction_price }}</td>
+                          <td class="mailbox-attachment">{{ transaction.total_transaction_price }}</td>
+                          <td class="mailbox-attachment">{{ transaction.transaction_status }}</td>
+                          <td class="mailbox-attachment">{{ transaction.transaction_votes_for }} / {{ transaction.transaction_votes_against }}</td>
+                                  {% if not user_votes|get_item:transaction.transaction_id %}
+            <form method="POST" action="{% url 'vote_transaction' project.pk transaction.transaction_id %}">
+                {% csrf_token %}
+                <td class="mailbox-name"><button class="btn btn-default pull-right" style="background-color: #ff3300; color: black; font-weight: bold;" type="submit" name="vote" value="for" title="Vote For"><i class="fa fa-check"></i></button></td>
+                <td class="mailbox-name"><button class="btn btn-default pull-right" style="background-color: #ff3300; color: black; font-weight: bold;" type="submit" name="vote" value="against" title="Vote Against"><i class="fa fa-times"></i></button></td>
+            </form>
+        {% endif %}
+                      {% if project.leader_id == auth_user.id %}
+                          <td class="mailbox-name"><button class="btn btn-default pull-right" style="background-color: #ff3300; color: black; font-weight: bold;"><a href="{% url 'delete_task' pk=task.project_id task_id=task.task_id %}" onclick="return confirm('Are You Sure You Want To Remove This Transaction ?')" class="btn btn-primary btn-xs pull-right"><i class="fa fa-trash-o"></i></a></button></td> 
+                      {% endif %}  
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table><!-- /.table -->
+                  </div><!-- /.mail-box-messages -->
+                </div><!-- /.box-body -->
+              </div><!-- /. box -->
+              {% if project.leader_id == auth_user.id %}
+                                        <div class="box box-primary" id="myForm">
+                              <div class="box-header">
+                                <h3 class="box-title">Add A Transaction</h3>
+                                <button type="button" style="position: relative;" onclick="closeForm();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
+                              </div><!-- /.box-header -->
+                              <!-- form start -->
+<form action="{% url 'add_transaction' project.pk %}" method="POST">
+    {% csrf_token %}
+    <div class="box-body">
+        <div class="form-group">
+            <label for="task_name">Transaction Name</label>
+            <input type="text" class="form-control" id="task_name" name="transaction_name" placeholder="Transaction Name" required>
+        </div>
+        <div class="form-group">
+            <label for="task_details">Transaction Details</label>
+            <textarea class="form-control" id="task_details" name="transaction_details" placeholder="Transaction Details" required></textarea>
+        </div>
+        <div class="form-group">
+            <label for="task_name">Transaction Price (in kshs.)</label>
+            <input type="number" class="form-control" id="task_name" name="transaction_price" min="0" placeholder="Transaction Price" required>
+        </div>
+        <div class="form-group">
+            <label for="task_name">Transaction Quantity</label>
+            <input type="number" class="form-control" id="task_name" name="transaction_quantity" min="0" placeholder="Transaction Quantity" required>
+        </div>
+    </div>
+    <div class="box-footer">
+        <button type="submit" class="btn btn-primary">Add Transaction</button>
+        <button type="reset" class="btn btn-primary">Reset</button>
+    </div>
+</form>
+                            </div><!-- /.box -->
+                            {% endif %}
+            </div><!-- /.col -->
+          </div><!-- /.row -->
+
+        </section><!-- /.content -->
+      </div><!-- /.content-wrapper -->
+      <footer class="main-footer">
+        <strong>Copyright <span id="year"></span>. <a href="">The Bengal Tigers 🐅</a>.</strong>
+      </footer>
+    </div><!-- ./wrapper -->
+
+<script>
+  document.getElementById("myForm").style.display = "none";
+  document.getElementById("myForm1").style.display = "none";  
+function openForm() {
+  document.getElementById("myForm").style.display = "block";
+  document.getElementById("myTable").style.display = "none";
+  document.getElementById("btnmyForm").style.display = "none";
+}
+
+function closeForm() {
+  document.getElementById("myForm").style.display = "none";
+  document.getElementById("myTable").style.display = "block";
+  document.getElementById("btnmyForm").style.display = "block";
+}
+
+function openPendingProj() {
+  document.getElementById("myForm1").style.display = "block";
+  document.getElementById("myTable").style.display = "none";
+  document.getElementById('allProjNavItem').classList.remove('active');
+  document.getElementById('pendingProjNavItem').classList.add('active');
+}
+
+function closePendingProj() {
+  document.getElementById("myForm1").style.display = "none";
+  document.getElementById("myTable").style.display = "block";
+  document.getElementById('allProjNavItem').classList.add('active');
+  document.getElementById('pendingProjNavItem').classList.remove('active');
+}
+
+function allProj() {
+  document.getElementById("myForm1").style.display = "none";
+  document.getElementById("myForm").style.display = "none";
+  document.getElementById("myTable").style.display = "block";
+  document.getElementById('allProjNavItem').classList.add('active');
+  document.getElementById('pendingProjNavItem').classList.remove('active');
+}
+
+function searchTable() {
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("myInput");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("transactions");
+  tr = table.getElementsByTagName("tr");
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[0];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }       
+  }
+}
+
+</script>
+
+      <script type="text/javascript">
+        function cool() {
+          alert("Hold on, we are making something cool! Kindly visit later ;)")
+        }
+      </script>
+
+
+
+    <!-- jQuery 2.1.3 -->
+    <script src="{% static 'dashboard/plugins/jQuery/jQuery-2.1.3.min.js' %}"></script>
+    <!-- jQuery UI 1.11.2 -->
+    <script src="http://code.jquery.com/ui/1.11.2/jquery-ui.min.js" type="text/javascript"></script>
+    <!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
+    <script>
+      $.widget.bridge('uibutton', $.ui.button);
+    </script>
+    <!-- Bootstrap 3.3.2 JS -->
+    <script src="{% static 'dashboard/bootstrap/js/bootstrap.min.js' %}" type="text/javascript"></script> 
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>   
+    <!-- Morris.js charts -->
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js"></script>
+    <script src="{% static 'dashboard/plugins/morris/morris.min.js' %}" type="text/javascript"></script>
+    <!-- Sparkline -->
+    <script src="{% static 'dashboard/plugins/sparkline/jquery.sparkline.min.js' %}" type="text/javascript"></script>
+    <!-- jvectormap -->
+    <script src="{% static 'dashboard/plugins/jvectormap/jquery-jvectormap-1.2.2.min.js' %}" type="text/javascript"></script>
+    <script src="{% static 'dashboard/plugins/jvectormap/jquery-jvectormap-world-mill-en.js' %}" type="text/javascript"></script>
+    <!-- jQuery Knob Chart -->
+    <script src="{% static 'dashboard/plugins/knob/jquery.knob.js' %}" type="text/javascript"></script>
+    <!-- daterangepicker -->
+    <script src="{% static 'dashboard/plugins/daterangepicker/daterangepicker.js' %}" type="text/javascript"></script>
+    <!-- datepicker -->
+    <script src="{% static 'dashboard/plugins/datepicker/bootstrap-datepicker.js' %}" type="text/javascript"></script>
+    <!-- Bootstrap WYSIHTML5 -->
+    <script src="{% static 'dashboard/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.all.min.js' %}" type="text/javascript"></script>
+    <!-- iCheck -->
+    <script src="{% static 'dashboard/plugins/iCheck/icheck.min.js' %}" type="text/javascript"></script>
+    <!-- Slimscroll -->
+    <script src="{% static 'dashboard/plugins/slimScroll/jquery.slimscroll.min.js' %}" type="text/javascript"></script>
+    <!-- FastClick -->
+    <script src="{% static 'dashboard/plugins/fastclick/fastclick.min.js' %}"></script>
+    <!-- Site Sync App -->
+    <script src="{% static 'dashboard/dist/js/app.min.js' %}" type="text/javascript"></script>
+
+    <!-- Site Sync dashboard demo (This is only for demo purposes) -->
+    <script src="{% static 'dashboard/dist/js/pages/dashboard.js' %}" type="text/javascript"></script>
+
+    <!-- Site Sync for demo purposes -->
+    <script src="{% static 'dashboard/dist/js/demo.js' %}" type="text/javascript"></script>
+
+      <script type="text/javascript">
+         new Date().getFullYear()
+document.getElementById("year").innerHTML = new Date().getFullYear();
+      </script>
+
+  </body>
+</html>

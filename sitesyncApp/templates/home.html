@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homepage</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}"> <!-- Assuming you have a static CSS file -->
+</head>
+<body>
+    <header>
+        <h1>Welcome to the Homepage</h1>
+        <nav>
+            <ul>
+            </ul>
+        </nav>
+    </header>
+    <main>
+            <h2>Welcome, {{ user.fullname }}!</h2>
+            <p>You are now logged in. Here is your personalized content.</p>
+</main>
+    <footer>
+        <p>&copy; 2024 Your Website</p>
+    </footer>
+</body>
+</html>
