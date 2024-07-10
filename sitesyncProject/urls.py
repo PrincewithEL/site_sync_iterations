@@ -53,7 +53,6 @@ urlpatterns = [
     path('projects/<int:pk>/transactions', views.transactions, name='transactions'),
     path('projects/<int:pk>/addtransaction/', views.add_transaction, name='add_transaction'),
     path('projects/<int:pk>/deletetransaction/<int:task_id>/', views.delete_transaction, name='delete_transaction'),
-    path('projects/<int:pk>/votefortransaction/<int:task_id>/', views.vote_transaction, name='vote_transaction'),
     path('projects/<int:pk>/edit_message/', views.edit_message, name='edit_message'),
     path('profile/', views.profile, name='profile'),
     path('deleteuser/', views.delete_user, name='delete_user'),

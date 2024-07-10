@@ -19,27 +19,6 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
         Profile.objects.create(user=instance)
     instance.profile.save()
 
-class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    phone_number = models.CharField(max_length=15, null=True, blank=True)
-    gender = models.CharField(max_length=10, null=True, blank=True)
-    user_type = models.CharField(max_length=50, choices=[('client', 'Client'), ('contractor', 'Contractor'), ('admin', 'Administrator')])
-    profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
-    created_at = models.DateTimeField(null=True, blank=True)
-    updated_at = models.DateTimeField(null=True, blank=True)
-
-class OTP(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    otp_code = models.CharField(max_length=6, unique=True)
-    created_at = models.DateTimeField(auto_now=True)
-    used = models.BooleanField(default=False)
-
-    def generate_otp(self):
-        import random
-        self.otp_code = str(random.randint(100000, 999999))
-        self.used = False  # Reset the used flag
-        self.save()
-
 class AuthGroup(models.Model):
     name = models.CharField(unique=True, max_length=150)
 
@@ -73,13 +52,13 @@ class AuthPermission(models.Model):
 class AuthUser(models.Model):
     password = models.CharField(max_length=128)
     last_login = models.DateTimeField(blank=True, null=True)
-    is_superuser = models.IntegerField()
+    is_superuser = models.BooleanField()
     username = models.CharField(unique=True, max_length=150)
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
     email = models.CharField(max_length=254)
-    is_staff = models.IntegerField()
-    is_active = models.IntegerField()
+    is_staff = models.BooleanField()
+    is_active = models.BooleanField()
     date_joined = models.DateTimeField()
 
     class Meta:
@@ -110,11 +89,11 @@ class AuthUserUserPermissions(models.Model):
 
 
 class BookmarkChat(models.Model):
-    bookmark_id = models.AutoField(db_column='Bookmark_ID', primary_key=True)  # Field name made lowercase.
-    group = models.ForeignKey('GroupChat', models.DO_NOTHING, db_column='Group_ID')  # Field name made lowercase.
-    chat = models.ForeignKey('Chat', models.DO_NOTHING, db_column='Chat_ID')  # Field name made lowercase.
-    user = models.ForeignKey('Users', models.DO_NOTHING, db_column='User_ID')  # Field name made lowercase.
-    timestamp = models.DateTimeField(db_column='Timestamp')  # Field name made lowercase.
+    bookmark_id = models.AutoField(primary_key=True)
+    group = models.ForeignKey('GroupChat', models.DO_NOTHING)
+    chat = models.ForeignKey('Chat', models.DO_NOTHING)
+    user = models.ForeignKey('Users', models.DO_NOTHING)
+    timestamp = models.DateTimeField()
     is_deleted = models.IntegerField()
 
     class Meta:
@@ -124,39 +103,36 @@ class BookmarkChat(models.Model):
 
 
 class Chat(models.Model):
-    chat_id = models.AutoField(db_column='Chat_ID', primary_key=True)  # Field name made lowercase.
-    group = models.ForeignKey('GroupChat', models.DO_NOTHING, db_column='Group_ID')  # Field name made lowercase.
-    sender_user = models.ForeignKey(User, models.DO_NOTHING, db_column='Sender_User_ID')  # Field name made lowercase.
-    message = models.TextField(db_column='Message')  # Field name made lowercase.
-    timestamp = models.DateTimeField(db_column='Timestamp', default=timezone.now)  # Field name made lowercase.
+    chat_id = models.AutoField(primary_key=True)
+    group = models.ForeignKey('GroupChat', models.DO_NOTHING)
+    sender_user = models.ForeignKey('Users', models.DO_NOTHING)
+    message = models.TextField()
+    timestamp = models.DateTimeField()
     is_deleted = models.IntegerField()
-    file = models.TextField(db_column='File',null=True, blank=True)
 
     class Meta:
         managed = False
         db_table = 'chat'
-        db_table_comment = 'This Table Is Used To Store The Chat Details On the System'
 
 
 class ChatStatus(models.Model):
-    status_id = models.AutoField(db_column='Status_ID', primary_key=True)  # Field name made lowercase.
-    chat = models.ForeignKey(Chat, models.DO_NOTHING, db_column='Chat_ID')  # Field name made lowercase.
-    group = models.ForeignKey('GroupChat', models.DO_NOTHING, db_column='Group_ID')  # Field name made lowercase.
-    user_id = models.IntegerField(db_column='User_ID')  # Field name made lowercase.
-    status = models.IntegerField(db_column='Status')  # Field name made lowercase.
+    status_id = models.AutoField(primary_key=True)
+    chat = models.ForeignKey(Chat, models.DO_NOTHING)
+    group = models.ForeignKey('GroupChat', models.DO_NOTHING)
+    user_id = models.IntegerField()
+    status = models.IntegerField()
     is_deleted = models.IntegerField()
 
     class Meta:
         managed = False
         db_table = 'chat_status'
-        db_table_comment = 'This Table Is Used To Store The Chat Status Details On the System'
 
 
 class DjangoAdminLog(models.Model):
     action_time = models.DateTimeField()
     object_id = models.TextField(blank=True, null=True)
     object_repr = models.CharField(max_length=200)
-    action_flag = models.PositiveSmallIntegerField()
+    action_flag = models.SmallIntegerField()
     change_message = models.TextField()
     content_type = models.ForeignKey('DjangoContentType', models.DO_NOTHING, blank=True, null=True)
     user = models.ForeignKey(AuthUser, models.DO_NOTHING)
@@ -196,171 +172,179 @@ class DjangoSession(models.Model):
         managed = False
         db_table = 'django_session'
 
+
 class Events(models.Model):
-    event_id = models.AutoField(db_column='Event_ID', primary_key=True)  # Field name made lowercase.
-    user = models.ForeignKey(User, models.DO_NOTHING, db_column='User_ID')  # Field name made lowercase.
-    project = models.ForeignKey('Projects', models.DO_NOTHING, db_column='Project_ID')  # Field name made lowercase.
-    event_name = models.CharField(db_column='Event_Name', max_length=75)  # Field name made lowercase.
-    event_details = models.CharField(db_column='Event_Details', max_length=80)  # Field name made lowercase.
-    event_date = models.DateField(db_column='Event_Date')  # Field name made lowercase.
-    event_start_time = models.TimeField(db_column='Event_Start_Time')  # Field name made lowercase.
-    event_end_time = models.TimeField(db_column='Event_End_Time')  # Field name made lowercase.
-    event_location = models.CharField(db_column='Event_Location', max_length=75, blank=True, null=True)  # Field name made lowercase.
-    event_link = models.CharField(db_column='Event_Link', max_length=80, blank=True, null=True)  # Field name made lowercase.
-    event_status = models.CharField(db_column='Event_Status', max_length=9)  # Field name made lowercase.
-    created_at = models.DateTimeField(db_column='Created_At')  # Field name made lowercase.
-    updated_at = models.DateTimeField(db_column='Updated_At', blank=True, null=True)  # Field name made lowercase.
+    event_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey('Users', models.DO_NOTHING)
+    project = models.ForeignKey('Projects', models.DO_NOTHING)
+    event_name = models.CharField(max_length=75)
+    event_details = models.CharField(max_length=80)
+    event_date = models.DateField()
+    event_start_time = models.TimeField()
+    event_end_time = models.TimeField()
+    event_location = models.CharField(max_length=75, blank=True, null=True)
+    event_link = models.CharField(max_length=80, blank=True, null=True)
+    event_status = models.CharField(max_length=9)
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField(blank=True, null=True)
     is_deleted = models.IntegerField()
 
     class Meta:
         managed = False
         db_table = 'events'
-        db_table_comment = 'This Table Is Used To Store Event Details On the System'
+
 
 class GroupChat(models.Model):
-    group_id = models.AutoField(db_column='Group_ID', primary_key=True)  # Field name made lowercase.
-    leader_id = models.IntegerField(db_column='Leader_ID')  # Field name made lowercase.
-    # project = models.ForeignKey('Projects', models.DO_NOTHING, db_column='Project_ID')  # Field name made lowercase.
-    project = models.OneToOneField('Projects', on_delete=models.CASCADE, related_name='groupchat')
-    group_name = models.CharField(db_column='Group_Name', max_length=75)  # Field name made lowercase.
-    group_image = models.CharField(db_column='Group_Image', max_length=75, blank=True, null=True)  # Field name made lowercase.
+    group_id = models.AutoField(primary_key=True)
+    leader_id = models.IntegerField()
+    project = models.ForeignKey('Projects', models.DO_NOTHING)
+    group_name = models.CharField(max_length=75)
+    group_image = models.CharField(max_length=75, blank=True, null=True)
     is_deleted = models.IntegerField()
 
     class Meta:
         managed = False
         db_table = 'group_chat'
-        db_table_comment = 'This Table Is Used To Store Groups for the Chat On the System'
+
+
+class Otp(models.Model):
+    user = models.OneToOneField(AuthUser, models.DO_NOTHING)
+    otp_code = models.CharField(unique=True, max_length=6)
+    created_at = models.DateTimeField(blank=True, null=True)
+    used = models.BooleanField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'otp'
+
+
+class Profile(models.Model):
+    user = models.OneToOneField(AuthUser, models.DO_NOTHING)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    gender = models.CharField(max_length=10, blank=True, null=True)
+    user_type = models.CharField(max_length=50)
+    profile_picture = models.CharField(max_length=255, blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'profile'
 
 
 class ProjectMembers(models.Model):
-    member_id = models.AutoField(db_column='Member_ID', primary_key=True)  # Field name made lowercase.
-    project = models.ForeignKey('Projects', models.DO_NOTHING, db_column='Project_ID')  # Field name made lowercase.
-    leader = models.ForeignKey('Users', models.DO_NOTHING, db_column='Leader_ID')  # Field name made lowercase.
-    user_name = models.CharField(db_column='User_Name', max_length=75)  # Field name made lowercase.
-    status = models.CharField(db_column='status', max_length=75) 
-    user = models.ForeignKey(User, models.DO_NOTHING, db_column='User_ID', related_name='projectmembers_user_set')  # Field name made lowercase.
-    created_at = models.DateTimeField(db_column='Created_At')  # Field name made lowercase.
+    member_id = models.AutoField(primary_key=True)
+    project = models.ForeignKey('Projects', models.DO_NOTHING)
+    leader = models.ForeignKey('Users', models.DO_NOTHING)
+    user_name = models.CharField(max_length=75)
+    user = models.ForeignKey('Users', models.DO_NOTHING, related_name='projectmembers_user_set')
+    created_at = models.DateTimeField()
     is_deleted = models.IntegerField()
 
     class Meta:
         managed = False
         db_table = 'project_members'
-        db_table_comment = 'This Table Is Used To Store Project Member Details On the System'
 
 
 class Projects(models.Model):
-    project_id = models.AutoField(db_column='Project_ID', primary_key=True)  # Field name made lowercase.
-    leader = models.ForeignKey('Users', models.DO_NOTHING, db_column='Leader_ID')  # Field name made lowercase.
-    project_name = models.CharField(db_column='Project_Name', max_length=75)  # Field name made lowercase.
-    project_details = models.CharField(db_column='Project_Details', max_length=255)  # Field name made lowercase.
-    project_image = models.CharField(db_column='Project_Image', max_length=75)  # Field name made lowercase.
-    created_at = models.DateTimeField(db_column='Created_At')  # Field name made lowercase.
-    updated_at = models.DateTimeField(db_column='Updated_At', blank=True, null=True)  # Field name made lowercase.
-    start_date = models.DateField(db_column='Start_Date')  # Field name made lowercase.
-    end_date = models.DateField(db_column='End_Date')  # Field name made lowercase.
-    total_days = models.IntegerField(db_column='Total_Days')  # Field name made lowercase.
-    estimated_budget = models.FloatField(db_column='Estimated_Budget')  # Field name made lowercase.
-    actual_expenditure = models.FloatField(db_column='Actual_Expenditure')  # Field name made lowercase.
-    balance = models.FloatField(db_column='Balance')  # Field name made lowercase.
-    project_status = models.CharField(db_column='Project_Status', max_length=9)  # Field name made lowercase.
+    project_id = models.AutoField(primary_key=True)
+    leader = models.ForeignKey('Users', models.DO_NOTHING)
+    project_name = models.CharField(max_length=75)
+    project_details = models.CharField(max_length=255)
+    project_image = models.CharField(max_length=75)
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField(blank=True, null=True)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    total_days = models.IntegerField()
+    estimated_budget = models.FloatField()
+    actual_expenditure = models.FloatField()
+    balance = models.FloatField()
+    project_status = models.CharField(max_length=9)
     is_deleted = models.IntegerField()
 
     class Meta:
         managed = False
         db_table = 'projects'
-        db_table_comment = 'This Table Is Used To Store Project Details For the System'
 
 
 class Resources(models.Model):
-    resource_id = models.AutoField(db_column='Resource_ID', primary_key=True)  # Field name made lowercase.
-    user = models.ForeignKey(User, models.DO_NOTHING, db_column='User_ID')  # Field name made lowercase.
-    project = models.ForeignKey(Projects, models.DO_NOTHING, db_column='Project_ID')  # Field name made lowercase.
-    resource_name = models.CharField(db_column='Resource_Name', max_length=75)  # Field name made lowercase.
-    resource_details = models.CharField(db_column='Resource_Details', max_length=80)  # Field name made lowercase.
-    resource_directory = models.CharField(db_column='Resource_Directory', max_length=75)  # Field name made lowercase.
-    created_at = models.DateTimeField(db_column='Created_At')  # Field name made lowercase.
-    updated_at = models.DateTimeField(db_column='Updated_At', blank=True, null=True)  # Field name made lowercase.
-    resource_status = models.CharField(db_column='Resource_Status', max_length=10)  # Field name made lowercase.
-    resource_type = models.CharField(db_column='Resource_Type', max_length=8)  # Field name made lowercase.
+    resource_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey('Users', models.DO_NOTHING)
+    project = models.ForeignKey(Projects, models.DO_NOTHING)
+    resource_name = models.CharField(max_length=75)
+    resource_details = models.CharField(max_length=80)
+    resource_directory = models.CharField(max_length=75)
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField(blank=True, null=True)
+    resource_status = models.CharField(max_length=10)
+    resource_type = models.CharField(max_length=8)
     is_deleted = models.IntegerField()
 
     class Meta:
         managed = False
         db_table = 'resources'
-        db_table_comment = 'This Table Is Used To Store Resource Details On the System'
 
 
 class Tasks(models.Model):
-    task_id = models.AutoField(db_column='Task_ID', primary_key=True)  # Field name made lowercase.
-    leader = models.ForeignKey(User, models.DO_NOTHING, db_column='Leader_ID')  # Field name made lowercase.
-    member = models.ForeignKey(User, models.DO_NOTHING, db_column='Member_ID', related_name='tasks_member_set')  # Field name made lowercase.
-    project = models.ForeignKey(Projects, models.DO_NOTHING, db_column='Project_ID')  # Field name made lowercase.
-    dependant_task_id = models.IntegerField(db_column='Dependant_Task_ID', blank=True, null=True)  # Field name made lowercase.
-    task_name = models.CharField(db_column='Task_Name', max_length=75)  # Field name made lowercase.
-    task_details = models.CharField(db_column='Task_Details', max_length=80)  # Field name made lowercase.
-    task_given_date = models.DateField(db_column='Task_Given_Date')  # Field name made lowercase.
-    task_due_date = models.DateField(db_column='Task_Due_Date')  # Field name made lowercase.
-    task_completed_date = models.DateField(db_column='Task_Completed_Date', blank=True, null=True)  # Field name made lowercase.
-    task_days_left = models.IntegerField(db_column='Task_Days_Left')  # Field name made lowercase.
-    task_days_overdue = models.IntegerField(db_column='Task_Days_Overdue')  # Field name made lowercase.
-    task_percentage_complete = models.FloatField(db_column='Task_Percentage_Complete')  # Field name made lowercase.
-    task_status = models.CharField(db_column='Task_Status', max_length=15)  # Field name made lowercase.
-    created_at = models.DateTimeField(db_column='Created_At')  # Field name made lowercase.
-    updated_at = models.DateTimeField(db_column='Updated_At', blank=True, null=True)  # Field name made lowercase.
+    task_id = models.AutoField(primary_key=True)
+    leader = models.ForeignKey('Users', models.DO_NOTHING)
+    member = models.ForeignKey('Users', models.DO_NOTHING, related_name='tasks_member_set')
+    project = models.ForeignKey(Projects, models.DO_NOTHING)
+    dependant_task_id = models.IntegerField(blank=True, null=True)
+    task_name = models.CharField(max_length=75)
+    task_details = models.CharField(max_length=80)
+    task_given_date = models.DateField()
+    task_due_date = models.DateField()
+    task_completed_date = models.DateField(blank=True, null=True)
+    task_days_left = models.IntegerField()
+    task_days_overdue = models.IntegerField()
+    task_percentage_complete = models.FloatField()
+    task_status = models.CharField(max_length=15)
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField(blank=True, null=True)
     is_deleted = models.IntegerField()
 
     class Meta:
         managed = False
         db_table = 'tasks'
-        db_table_comment = 'This Table Is Used To Store Task Details On the System'
 
 
 class Transactions(models.Model):
-    transaction_id = models.AutoField(db_column='Transaction_ID', primary_key=True)  # Field name made lowercase.
-    user = models.ForeignKey(User, models.DO_NOTHING, db_column='User_ID')  # Field name made lowercase.
-    project = models.ForeignKey(Projects, models.DO_NOTHING, db_column='Project_ID')  # Field name made lowercase.
-    transaction_name = models.CharField(db_column='Transaction_Name', max_length=75)  # Field name made lowercase.
-    transaction_details = models.CharField(db_column='Transaction_Details', max_length=80)  # Field name made lowercase.
-    transaction_price = models.FloatField(db_column='Transaction_Price')  # Field name made lowercase.
-    transaction_quantity = models.IntegerField(db_column='Transaction_Quantity')  # Field name made lowercase.
-    transaction_votes_for = models.IntegerField(db_column='Transaction_Votes_For')  # Field name made lowercase.
-    transaction_votes_against = models.IntegerField(db_column='Transaction_Votes_Against')  # Field name made lowercase.
-    total_transaction_price = models.FloatField(db_column='Total_Transaction_Price')  # Field name made lowercase.
-    created_at = models.DateTimeField(db_column='Created_At')  # Field name made lowercase.
-    updated_at = models.DateTimeField(db_column='Updated_At', blank=True, null=True)  # Field name made lowercase.
-    transaction_status = models.CharField(db_column='Transaction_Status', max_length=9)  # Field name made lowercase.
+    transaction_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey('Users', models.DO_NOTHING)
+    project = models.ForeignKey(Projects, models.DO_NOTHING)
+    transaction_name = models.CharField(max_length=75)
+    transaction_details = models.CharField(max_length=80)
+    transaction_price = models.FloatField()
+    transaction_quantity = models.IntegerField()
+    transaction_votes_for = models.IntegerField()
+    transaction_votes_against = models.IntegerField()
+    total_transaction_price = models.FloatField()
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField(blank=True, null=True)
+    transaction_status = models.CharField(max_length=9)
     is_deleted = models.IntegerField()
 
     class Meta:
         managed = False
         db_table = 'transactions'
-        db_table_comment = 'This Table Is Used To Store Transaction Details On the System'
 
-
-class TransactionVote(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    transaction = models.ForeignKey(Transactions, on_delete=models.CASCADE)
-    vote = models.BooleanField()  # True for 'for', False for 'against'
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ('user', 'transaction')
 
 class Users(models.Model):
-    user_id = models.AutoField(db_column='User_ID', primary_key=True)  # Field name made lowercase.
-    fullname = models.CharField(db_column='Fullname', max_length=75)  # Field name made lowercase.
-    gender = models.CharField(db_column='Gender', max_length=6)  # Field name made lowercase.
-    phone_number = models.JSONField(db_column='Phone_Number')  # Field name made lowercase.
-    email_address = models.CharField(db_column='Email_Address', unique=True, max_length=75)  # Field name made lowercase.
-    profile_picture = models.CharField(db_column='Profile_Picture', max_length=75)  # Field name made lowercase.
-    user_type = models.CharField(db_column='User_Type', max_length=13)  # Field name made lowercase.
-    created_at = models.DateTimeField(db_column='Created_At')  # Field name made lowercase.
-    updated_at = models.DateTimeField(db_column='Updated_At', blank=True, null=True)  # Field name made lowercase.
+    user_id = models.AutoField(primary_key=True)
+    fullname = models.CharField(max_length=75)
+    gender = models.CharField(max_length=6)
+    phone_number = models.CharField(max_length=15)
+    email_address = models.CharField(unique=True, max_length=75)
+    profile_picture = models.CharField(max_length=75)
+    user_type = models.CharField(max_length=13)
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField(blank=True, null=True)
     is_deleted = models.IntegerField()
     online = models.IntegerField()
-    password = models.CharField(db_column='Password', max_length=80)  # Field name made lowercase.
+    password = models.CharField(max_length=80)
 
     class Meta:
         managed = False
         db_table = 'users'
-        db_table_comment = 'This Table Is Used To Store User Details For the System'

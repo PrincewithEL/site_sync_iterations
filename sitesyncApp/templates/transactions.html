@@ -328,8 +328,8 @@
                         <th>Singular Price (in kshs.)</th>
                         <th>Total Price (in kshs.)</th>
                         <th>Status</th>
-                        <th>Votes (For/Against)</th>
-                        <th></th> 
+                        <!-- <th>Votes (For/Against)</th>
+                        <th></th>  -->
                         <th></th>                    
                       </thead>
                       <tbody>
@@ -344,13 +344,6 @@
                           <td class="mailbox-attachment">{{ transaction.total_transaction_price }}</td>
                           <td class="mailbox-attachment">{{ transaction.transaction_status }}</td>
                           <td class="mailbox-attachment">{{ transaction.transaction_votes_for }} / {{ transaction.transaction_votes_against }}</td>
-                                  {% if not user_votes|get_item:transaction.transaction_id %}
-            <form method="POST" action="{% url 'vote_transaction' project.pk transaction.transaction_id %}">
-                {% csrf_token %}
-                <td class="mailbox-name"><button class="btn btn-default pull-right" style="background-color: #ff3300; color: black; font-weight: bold;" type="submit" name="vote" value="for" title="Vote For"><i class="fa fa-check"></i></button></td>
-                <td class="mailbox-name"><button class="btn btn-default pull-right" style="background-color: #ff3300; color: black; font-weight: bold;" type="submit" name="vote" value="against" title="Vote Against"><i class="fa fa-times"></i></button></td>
-            </form>
-        {% endif %}
                       {% if project.leader_id == auth_user.id %}
                           <td class="mailbox-name"><button class="btn btn-default pull-right" style="background-color: #ff3300; color: black; font-weight: bold;"><a href="{% url 'delete_task' pk=task.project_id task_id=task.task_id %}" onclick="return confirm('Are You Sure You Want To Remove This Transaction ?')" class="btn btn-primary btn-xs pull-right"><i class="fa fa-trash-o"></i></a></button></td> 
                       {% endif %}  

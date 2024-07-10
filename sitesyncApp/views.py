@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.core.files.storage import default_storage
 from django.conf import settings
-from .models import OTP, Profile, Projects, User, ProjectMembers, Chat, GroupChat, ChatStatus, Resources, Events, Tasks, Transactions, TransactionVote
+from .models import Users, Otp, Profile, Projects, User, ProjectMembers, Chat, GroupChat, ChatStatus, Resources, Events, Tasks, Transactions
 from django.core.mail import send_mail
 import re
 import hashlib
@@ -36,12 +36,12 @@ def home(request):
         
         if user_id:
             try:
-                # Get the OTP entry for the user
-                otp = OTP.objects.get(user_id=user_id, otp_code=otp_code, used=False)
+                # Get the Otp entry for the user
+                otp = Otp.objects.get(user_id=user_id, otp_code=otp_code, used=False)
 
-                # Check if OTP is within the last 15 minutes
+                # Check if Otp is within the last 15 minutes
                 if otp.created_at >= timezone.now() - timedelta(minutes=15):
-                    otp.used = True  # Mark the OTP as used
+                    otp.used = True  # Mark the Otp as used
                     otp.save()
 
                     # Redirect based on user type
@@ -57,14 +57,14 @@ def home(request):
                         return redirect('home')  # Ensure 'home' matches your URL name
 
                 else:
-                    messages.error(request, 'OTP has expired. Please request a new one.')
+                    messages.error(request, 'Otp has expired. Please request a new one.')
                     return render(request, 'otp.html')
 
-            except OTP.DoesNotExist:
-                messages.error(request, 'Invalid OTP.')
+            except Otp.DoesNotExist:
+                messages.error(request, 'Invalid Otp.')
                 return render(request, 'otp.html')
 
-    # If it's not a POST request or OTP verification failed, render index.html
+    # If it's not a POST request or Otp verification failed, render index.html
     return render(request, 'index.html')
 
 def home1(request):
@@ -173,29 +173,6 @@ def delete_transaction(request, pk, transaction_id):
     transactions = get_object_or_404(Transactions, pk=task_id, project__pk=pk)
     transactions.is_deleted = 1
     transactions.save()
-    return redirect('transactions', pk=pk)
-
-@login_required
-def vote_transaction(request, pk, transaction_id):
-    transaction = get_object_or_404(Transactions, pk=transaction_id, project__pk=pk)
-    
-    # Check if user has already voted
-    existing_vote = TransactionVote.objects.filter(user=request.user, transaction=transaction).first()
-    
-    if existing_vote:
-        messages.error(request, 'You have already voted on this transaction.')
-    else:
-        vote = request.POST.get('vote')
-        if vote == 'for':
-            transaction.transaction_votes_for += 1
-            TransactionVote.objects.create(user=request.user, transaction=transaction, vote=True)
-        elif vote == 'against':
-            transaction.transaction_votes_against += 1
-            TransactionVote.objects.create(user=request.user, transaction=transaction, vote=False)
-        
-        transaction.save()
-        messages.success(request, 'Your vote has been recorded.')
-    
     return redirect('transactions', pk=pk)
 
 @login_required
@@ -1372,15 +1349,15 @@ def verify_otp(request):
         
         if user_id:
             try:
-                # Get the OTP entry for the user
-                otp = OTP.objects.get(user_id=user_id, otp_code=otp_code, used=False)
+                # Get the Otp entry for the user
+                otp = Otp.objects.get(user_id=user_id, otp_code=otp_code, used=False)
 
-                # Check if OTP is valid (you can add additional checks here if needed)
+                # Check if Otp is valid (you can add additional checks here if needed)
                 if otp.created_at >= timezone.now() - timedelta(minutes=15):
-                    otp.used = True  # Mark the OTP as used
+                    otp.used = True  # Mark the Otp as used
                     otp.save()
 
-                    # Get the user associated with the OTP
+                    # Get the user associated with the Otp
                     user = otp.user
 
                     # Perform login with specified backend
@@ -1398,11 +1375,11 @@ def verify_otp(request):
                         return redirect('home')
 
                 else:
-                    messages.error(request, 'OTP has expired. Please request a new one.')
+                    messages.error(request, 'Otp has expired. Please request a new one.')
                     return redirect('verify_otp')
 
-            except OTP.DoesNotExist:
-                messages.error(request, 'Invalid OTP.')
+            except Otp.DoesNotExist:
+                messages.error(request, 'Invalid Otp.')
                 return redirect('verify_otp')
 
     return render(request, 'otp.html')
@@ -1415,19 +1392,19 @@ def signin(request):
         user = authenticate(request, username=identifier, password=password)
         
         if user is not None:
-            otp, created = OTP.objects.get_or_create(user=user)
-            otp.generate_otp()  # Regenerate OTP for existing or new entry
+            otp, created = Otp.objects.get_or_create(user=user)
+            otp.generate_otp()  # Regenerate Otp for existing or new entry
 
             send_mail(
-                'Your OTP Code',
-                f'Your OTP code is {otp.otp_code}',
+                'Your Otp Code',
+                f'Your Otp code is {otp.otp_code}',
                 'sitesync2024@gmail.com',  # Replace with your email
                 [user.email],
                 fail_silently=False,
             )
 
             request.session['user_id'] = user.id
-            messages.success(request, 'OTP has been sent to your email.')
+            messages.success(request, 'Otp has been sent to your email.')
             return redirect('verify_otp')
 
         else:
@@ -1458,18 +1435,18 @@ def forgot_password(request):
 
         if user:
             otp = generate_otp()
-            otp_entry, created = OTP.objects.get_or_create(user=user)
+            otp_entry, created = Otp.objects.get_or_create(user=user)
             otp_entry.otp_code = otp
             otp_entry.save()
             send_mail(
-                'Your Password Reset OTP',
-                f'Your OTP code is {otp}',
+                'Your Password Reset Otp',
+                f'Your Otp code is {otp}',
                 'sitesync2024@gmail.com',  # Replace with your email
                 [user.email],
                 fail_silently=False,
             )
             request.session['user_id'] = user.id
-            messages.success(request, 'OTP has been sent to your email.')
+            messages.success(request, 'Otp has been sent to your email.')
             return redirect('verify_otp1')
         else:
             messages.error(request, 'No account found with this email address.')
@@ -1481,13 +1458,13 @@ def verify_otp1(request):
         otp_code = request.POST.get('otp_code')
         user_id = request.session.get('user_id')
         user = get_object_or_404(User, pk=user_id)
-        otp = OTP.objects.filter(user=user, otp_code=otp_code).first()
+        otp = Otp.objects.filter(user=user, otp_code=otp_code).first()
 
         if otp:
-            # OTP is valid, proceed to password reset
+            # Otp is valid, proceed to password reset
             return redirect('reset_password', uidb64=urlsafe_base64_encode(force_bytes(user.pk)), token=default_token_generator.make_token(user))
         else:
-            messages.error(request, 'Invalid OTP. Please try again.')
+            messages.error(request, 'Invalid Otp. Please try again.')
 
     return render(request, 'verify_otp.html')
 
