@@ -1207,7 +1207,7 @@ def signup(request):
         email = request.POST.get('email')
         
         # Check if user with this email already exists
-        if User.objects.filter(email=email).exists():
+        if AuthUser.objects.filter(email=email).exists():
             messages.error(request, "Email address already in use. Please choose a different one.")
             return render(request, 'register.html')
 
@@ -1216,16 +1216,18 @@ def signup(request):
             messages.error(request, "Password must be at least 8 characters long, contain uppercase and lowercase letters, numbers, and symbols.")
             return render(request, 'register.html')
 
-        # Create new user
-        user = User.objects.create_user(username=email, email=email, first_name=request.POST.get('fname'), password=password)
+        # Create new AuthUser
+        auth_user = AuthUser.objects.create_user(username=email, email=email, first_name=request.POST.get('fname'), password=password)
 
-        # Additional profile information
-        profile = Profile.objects.get(user=user)
-        profile.phone_number = request.POST.get('phone')
-        profile.gender = request.POST.get('gen')
-        profile.user_type = request.POST.get('type')
-        profile.created_at = timezone.now()
-        profile.updated_at = None
+        # Create the Profile for the AuthUser
+        profile = Profile.objects.create(
+            user=auth_user,
+            phone_number=request.POST.get('phone'),
+            gender=request.POST.get('gen'),
+            user_type=request.POST.get('type'),
+            created_at=timezone.now(),
+            updated_at=None
+        )
 
         if 'image' in request.FILES:
             profile_picture = request.FILES['image']
