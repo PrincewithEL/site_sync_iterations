@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.core.files.storage import default_storage
 from django.conf import settings
-from .models import Users, OTP, Profile, Projects, User, ProjectMembers, Chat, GroupChat, ChatStatus, Resources, Events, Tasks, Transactions, TransactionVote
+from .models import OTP, Profile, Projects, User, ProjectMembers, Chat, GroupChat, ChatStatus, Resources, Events, Tasks, Transactions, TransactionVote
 from django.core.mail import send_mail
 import re
 import hashlib

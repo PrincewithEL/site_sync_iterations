@@ -120,7 +120,7 @@ class BookmarkChat(models.Model):
     class Meta:
         managed = False
         db_table = 'bookmark_chat'
-        # db_table_comment = 'This Table Is Used To Store The Bookmarked Chats On the System'
+        db_table_comment = 'This Table Is Used To Store The Bookmarked Chats On the System'
 
 
 class Chat(models.Model):
@@ -135,7 +135,7 @@ class Chat(models.Model):
     class Meta:
         managed = False
         db_table = 'chat'
-        # db_table_comment = 'This Table Is Used To Store The Chat Details On the System'
+        db_table_comment = 'This Table Is Used To Store The Chat Details On the System'
 
 
 class ChatStatus(models.Model):
@@ -149,7 +149,7 @@ class ChatStatus(models.Model):
     class Meta:
         managed = False
         db_table = 'chat_status'
-        # db_table_comment = 'This Table Is Used To Store The Chat Status Details On the System'
+        db_table_comment = 'This Table Is Used To Store The Chat Status Details On the System'
 
 
 class DjangoAdminLog(models.Model):
@@ -215,7 +215,7 @@ class Events(models.Model):
     class Meta:
         managed = False
         db_table = 'events'
-        # db_table_comment = 'This Table Is Used To Store Event Details On the System'
+        db_table_comment = 'This Table Is Used To Store Event Details On the System'
 
 class GroupChat(models.Model):
     group_id = models.AutoField(db_column='Group_ID', primary_key=True)  # Field name made lowercase.
@@ -229,7 +229,7 @@ class GroupChat(models.Model):
     class Meta:
         managed = False
         db_table = 'group_chat'
-        # db_table_comment = 'This Table Is Used To Store Groups for the Chat On the System'
+        db_table_comment = 'This Table Is Used To Store Groups for the Chat On the System'
 
 
 class ProjectMembers(models.Model):
@@ -245,7 +245,7 @@ class ProjectMembers(models.Model):
     class Meta:
         managed = False
         db_table = 'project_members'
-        # db_table_comment = 'This Table Is Used To Store Project Member Details On the System'
+        db_table_comment = 'This Table Is Used To Store Project Member Details On the System'
 
 
 class Projects(models.Model):
@@ -268,7 +268,7 @@ class Projects(models.Model):
     class Meta:
         managed = False
         db_table = 'projects'
-        # db_table_comment = 'This Table Is Used To Store Project Details For the System'
+        db_table_comment = 'This Table Is Used To Store Project Details For the System'
 
 
 class Resources(models.Model):
@@ -287,7 +287,7 @@ class Resources(models.Model):
     class Meta:
         managed = False
         db_table = 'resources'
-        # db_table_comment = 'This Table Is Used To Store Resource Details On the System'
+        db_table_comment = 'This Table Is Used To Store Resource Details On the System'
 
 
 class Tasks(models.Model):
@@ -312,7 +312,7 @@ class Tasks(models.Model):
     class Meta:
         managed = False
         db_table = 'tasks'
-        # db_table_comment = 'This Table Is Used To Store Task Details On the System'
+        db_table_comment = 'This Table Is Used To Store Task Details On the System'
 
 
 class Transactions(models.Model):
@@ -334,7 +334,7 @@ class Transactions(models.Model):
     class Meta:
         managed = False
         db_table = 'transactions'
-        # db_table_comment = 'This Table Is Used To Store Transaction Details On the System'
+        db_table_comment = 'This Table Is Used To Store Transaction Details On the System'
 
 
 class TransactionVote(models.Model):
@@ -363,4 +363,4 @@ class Users(models.Model):
     class Meta:
         managed = False
         db_table = 'users'
-        # db_table_comment = 'This Table Is Used To Store User Details For the System'
+        db_table_comment = 'This Table Is Used To Store User Details For the System'
