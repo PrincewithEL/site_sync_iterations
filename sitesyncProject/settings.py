@@ -133,7 +133,7 @@ WSGI_APPLICATION = 'sitesyncProject.wsgi.application'
 #     }
 # }
 
-pymysql.install_as_MySQLdb()
+#pymysql.install_as_MySQLdb()
 
 # DATABASES = {
 #     'default': {
