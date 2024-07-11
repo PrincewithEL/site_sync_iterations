@@ -424,18 +424,18 @@
                 <div class="box-body">
                   <ul class="todo-list">
                     {% if project.leader_id == auth_user.id %}
-                    {% for task1 in c1tasks %}
+                    {% for task in c1tasks %}
                     <li>
                       <!-- drag handle -->
                       <!-- checkbox -->
                       <input type="checkbox" value="" name=""/>
                       <!-- todo text -->
-                      <span class="text">{{ task1.task_name }} - {{ task1.task_details }}</span>
+                      <span class="text">{{ task.task_name }} - {{ task.task_details }}</span>
                       <!-- Emphasis label -->
                       {% if task.task_days_overdue != 0 %}
-                      <small class="label label-danger"><i class="fa fa-clock-o"></i> {{ task1.task_days_overdue }}</small>
+                      <small class="label label-danger"><i class="fa fa-clock-o"></i> {{ task.task_days_overdue }}</small>
                       {% elif task.task_days_overdue == 0 %}
-                      <small class="label label-danger"><i class="fa fa-clock-o"></i> {{ task1.task_days_overdue }}</small>
+                      <small class="label label-danger"><i class="fa fa-clock-o"></i> {{ task.task_days_overdue }}</small>
                       {% endif %}
                     </li>
                     {% endfor %}

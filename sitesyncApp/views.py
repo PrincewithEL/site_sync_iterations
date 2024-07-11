@@ -255,7 +255,6 @@ def edit_message(request, pk):
 
 @login_required
 def tasks_events(request, pk):
-
     user = request.user
     profile = user.profile
     now = date.today()
@@ -265,24 +264,27 @@ def tasks_events(request, pk):
 
     # All tasks for the user in this project
     tasks = Tasks.objects.filter(project_id=pk, member_id=user.id, is_deleted=0)
+    print(f"Total tasks for user {user.id}: {tasks.count()}")
 
     # Pending tasks (not completed)
     ptasks = Tasks.objects.filter(
         project_id=pk,
-        member_id=user.id,
+        member_id=profile.user_id,
         is_deleted=0
     ).exclude(
         task_status__in=['Completed Early', 'Completed Today', 'Completed Late']
     )
+    print(f"Pending tasks for user {user.id}: {ptasks.count()}")
 
     # Completed tasks
     ctasks = Tasks.objects.filter(
         project_id=pk,
-        member_id=user.id,
+        member_id=profile.user_id,
         is_deleted=0
     ).filter(
         task_status__in=['Completed Early', 'Completed Today', 'Completed Late']
     )
+    print(f"Completed tasks for user {user.id}: {ctasks.count()}")
 
     # Pending tasks (not completed)
     p1tasks = Tasks.objects.filter(
@@ -291,6 +293,7 @@ def tasks_events(request, pk):
     ).exclude(
         task_status__in=['Completed Early', 'Completed Today', 'Completed Late']
     )
+    print(f"Total pending tasks for project {pk}: {p1tasks.count()}")
 
     # Completed tasks
     c1tasks = Tasks.objects.filter(
@@ -299,14 +302,9 @@ def tasks_events(request, pk):
     ).filter(
         task_status__in=['Completed Early', 'Completed Today', 'Completed Late']
     )
+    print(f"Total completed tasks for project {pk}: {c1tasks.count()}")
 
-    # print(f"User ID: {user.id}")
-    # print(f"Project ID: {pk}")
-    # print(f"Number of tasks: {tasks.count()}")
-    # print(f"Number of pending tasks: {ptasks.count()}")
-    # print(f"Number of completed tasks: {ctasks.count()}")
-
-  # Query for project members
+    # Query for project members
     project_members = ProjectMembers.objects.filter(project=project, is_deleted=0)
 
     # Retrieve user details for project members
@@ -330,6 +328,7 @@ def tasks_events(request, pk):
     completed_tasks = ctasks.count()
     pending_tasks1 = p1tasks.count()
     completed_tasks1 = c1tasks.count()
+
     context = {
         'auth_user': request.user,
         'fname': user.first_name,
@@ -1406,9 +1405,12 @@ def signup(request):
 
     return render(request, 'register.html')
 
+@login_required
 def profile(request):
     user = request.user
     profile = user.profile
+    userU = Users.objects.filter(user_id=user.id)
+
 
     if request.method == "POST":
         email = request.POST.get('email')
@@ -1424,7 +1426,6 @@ def profile(request):
             return render(request, 'profile.html')
 
         # Update user details
-        user.email = email
         user.first_name = request.POST.get('fname')
         if password:
             user.set_password(password)
@@ -1432,8 +1433,6 @@ def profile(request):
 
         # Update profile information
         profile.phone_number = request.POST.get('phone')
-        profile.gender = request.POST.get('gen')
-        profile.user_type = request.POST.get('type')
         profile.updated_at = timezone.now()
 
         if 'image' in request.FILES:
@@ -1454,17 +1453,16 @@ def profile(request):
         profile.save()
 
         # Update or create entry in Users model
-        user_record, created = Users.objects.update_or_create(
-            user_id=profile.user_id,
-            defaults={
-                'email_address': email,
-                'updated_at': timezone.now(),
-                'user_type': profile.user_type
-            }
-        )
+        # user_record, created = Users.objects.update_or_create(
+        #     user_id=profile.user_id,
+        #     defaults={
+        #         'updated_at': timezone.now(),
+        #         'user_type': profile.user_type
+        #     }
+        # )
 
         messages.success(request, "Profile updated successfully!")
-        return redirect('profile')
+        return redirect('user_logout')
 
     context = {
         'user': user,
@@ -1549,11 +1547,13 @@ def signin(request):
     return render(request, 'login.html')
 
 @login_required
-def delete_user(request, user_id):
-    user = get_object_or_404(User, pk=user_id)
-    user.is_active = False  # Soft delete the user by deactivating the account
-    user.save()
-    messages.success(request, 'User has been deactivated successfully.')
+def delete_user(request):
+    if request.method == 'POST':
+        user_id = request.POST.get('uid')
+        user = get_object_or_404(User, pk=user_id)
+        user.is_active = False  # Soft delete the user by deactivating the account
+        user.save()
+        messages.success(request, 'User has been deactivated successfully.')
     return redirect('user_logout')
 
 def user_logout(request):

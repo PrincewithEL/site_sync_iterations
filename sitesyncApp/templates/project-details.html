@@ -68,6 +68,22 @@
     width: 16px;
     height: 16px;
 }
+.progress {
+    width: 100%;
+    background-color: black;
+    border-radius: 5px;
+    overflow: hidden;
+    height: 20px;
+    margin-bottom: 10px;
+}
+
+.progress-bar {
+    background-color: orange;
+    height: 100%;
+    text-align: center;
+    color: white;
+    line-height: 20px; 
+}
     </style>
   <body class="skin-black">
     <div class="wrapper">
@@ -454,7 +470,7 @@
                 <div class="box-body">
 {% with progress=progress_percentage %}
                     {% if progress > 0 %}
-                            <div class="progress">
+                            <div class="progress" style="color: white;">
                               <p>{{ progress|floatformat:2 }}% Complete</p>
                                 <div class="progress-bar" role="progressbar" style="width: {{ progress|floatformat:2 }}%" aria-valuenow="{{ progress|floatformat:2 }}" aria-valuemin="0" aria-valuemax="100">
                                     <!-- {{ progress|floatformat:2 }}% -->
