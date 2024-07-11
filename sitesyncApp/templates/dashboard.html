@@ -83,7 +83,7 @@
     height: 100%;
     text-align: center;
     color: white;
-    line-height: 20px; /* This ensures the text is vertically centered */
+    line-height: 20px; 
 }
     </style>
   <body class="skin-black">
@@ -453,14 +453,25 @@
         ({{ unread_chat_counts|get_item:project.project_id|default:"0" }})
     </b>
 </td>
-
-            <td class="mailbox-attachment">{{ progress_percentages|get_item:project.project_id|floatformat:2 }}% Complete
-                    <div class="progress">
-                        <div class="progress-bar" role="progressbar" style="width: {{ progress_percentages|get_item:project.project_id|floatformat:2 }}%" aria-valuenow="{{ progress_percentages|get_item:project.project_id|floatformat:2 }}" aria-valuemin="0" aria-valuemax="100">
-                            <!-- {{ progress_percentages|get_item:project.project_id|floatformat:2 }}% -->
-                        </div>
-                    </div>
-            </td>
+                {% with progress=progress_percentages|get_item:project.project_id %}
+                    {% if progress > 0 %}
+                        <td class="mailbox-attachment">{{ progress|floatformat:2 }}% Complete
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" style="width: {{ progress|floatformat:2 }}%" aria-valuenow="{{ progress|floatformat:2 }}" aria-valuemin="0" aria-valuemax="100">
+                                    <!-- {{ progress|floatformat:2 }}% -->
+                                </div>
+                            </div>
+                        </td>
+                    {% else %}
+                        <td class="mailbox-attachment">0% Complete
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                    <!-- 0% -->
+                                </div>
+                            </div>
+                        </td>
+                    {% endif %}
+                {% endwith %}
             <td class="mailbox-attachment">
                 <div class="form-group" style="font-size: 11px;">
                     <div class="dropdown">

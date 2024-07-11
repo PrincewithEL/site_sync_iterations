@@ -558,6 +558,16 @@ def project_detail(request, pk):
         task_status__in=['Completed Early', 'Completed Today', 'Completed Late']
     )
 
+    # Calculate the progress percentage for the project
+    if project.end_date and project.start_date:
+        total_project_days = (project.end_date - project.start_date).days
+        days_passed = (now - project.start_date).days
+        if total_project_days > 0:
+            progress_percentage = (days_passed / total_project_days) * 100
+        else:
+            progress_percentage = 0
+    else:
+        progress_percentage = 0
 
     # Retrieve user details for project members
     project_member_details = []
@@ -606,9 +616,6 @@ def project_detail(request, pk):
     pending_tasks1 = p1tasks.count()
     completed_tasks1 = c1tasks.count()
 
-    print(f"Clients: {clients_profiles.count()}")
-    print(f"Contractors: {contractors_profiles.count()}")
-
     context = {
         'auth_user': request.user,
         'fname': user.first_name,
@@ -634,6 +641,7 @@ def project_detail(request, pk):
         'leader_profile': leader_profile,
         'pending_tasks': pending_tasks,
         'project_membersC': project_membersC,
+        'progress_percentage': progress_percentage,
     }
     return render(request, 'project-details.html', context)
 
