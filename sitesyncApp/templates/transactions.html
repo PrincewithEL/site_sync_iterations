@@ -294,7 +294,7 @@
                   <h3 class="box-title">My Project Transactions</h3>
                   <div class="box-tools pull-right">
                     <div class="has-feedback">
-                      <input type="text" class="form-control input-sm" onkeyup="searchTable();" id="myInput" placeholder="Search Transaction(s) Name..."/>
+                      <input type="text" class="form-control input-sm" style="width: 200px;" onkeyup="searchTable();" id="myInput" placeholder="Search Transaction(s) Name..."/>
                       <span class="glyphicon glyphicon-search form-control-feedback"></span>
                     </div>
                   </div><!-- /.box-tools -->
@@ -343,9 +343,9 @@
                           <td class="mailbox-attachment">{{ transaction.transaction_price }}</td>
                           <td class="mailbox-attachment">{{ transaction.total_transaction_price }}</td>
                           <td class="mailbox-attachment">{{ transaction.transaction_status }}</td>
-                          <td class="mailbox-attachment">{{ transaction.transaction_votes_for }} / {{ transaction.transaction_votes_against }}</td>
+                          <!-- <td class="mailbox-attachment">{{ transaction.transaction_votes_for }} / {{ transaction.transaction_votes_against }}</td> -->
                       {% if project.leader_id == auth_user.id %}
-                          <td class="mailbox-name"><button class="btn btn-default pull-right" style="background-color: #ff3300; color: black; font-weight: bold;"><a href="{% url 'delete_task' pk=task.project_id task_id=task.task_id %}" onclick="return confirm('Are You Sure You Want To Remove This Transaction ?')" class="btn btn-primary btn-xs pull-right"><i class="fa fa-trash-o"></i></a></button></td> 
+                          <td class="mailbox-name"><button class="btn btn-default pull-right" style="background-color: #ff3300; color: black; font-weight: bold;"><a href="{% url 'delete_transaction' pk=transaction.project_id transaction_id=transaction.transaction_id %}" onclick="return confirm('Are You Sure You Want To Remove This Transaction ?')" class="btn btn-primary btn-xs pull-right"><i class="fa fa-trash-o"></i></a></button></td> 
                       {% endif %}  
                         </tr>
                         {% endfor %}

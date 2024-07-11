@@ -19,6 +19,28 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
         Profile.objects.create(user=instance)
     instance.profile.save()
 
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    phone_number = models.CharField(max_length=15, null=True, blank=True)
+    gender = models.CharField(max_length=10, null=True, blank=True)
+    user_type = models.CharField(max_length=50, choices=[('client', 'Client'), ('contractor', 'Contractor'), ('admin', 'Administrator')])
+    profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
+    created_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(null=True, blank=True)
+
+class OTP(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    otp_code = models.CharField(max_length=6, unique=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    used = models.BooleanField(default=False)
+
+    def generate_otp(self):
+        import random
+        self.otp_code = str(random.randint(100000, 999999))
+        self.created_at = timezone.now()
+        self.used = False  # Reset the used flag
+        self.save()
+
 class AuthGroup(models.Model):
     name = models.CharField(unique=True, max_length=150)
 
@@ -52,13 +74,13 @@ class AuthPermission(models.Model):
 class AuthUser(models.Model):
     password = models.CharField(max_length=128)
     last_login = models.DateTimeField(blank=True, null=True)
-    is_superuser = models.BooleanField()
+    is_superuser = models.IntegerField()
     username = models.CharField(unique=True, max_length=150)
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
     email = models.CharField(max_length=254)
-    is_staff = models.BooleanField()
-    is_active = models.BooleanField()
+    is_staff = models.IntegerField()
+    is_active = models.IntegerField()
     date_joined = models.DateTimeField()
 
     class Meta:
@@ -92,7 +114,7 @@ class BookmarkChat(models.Model):
     bookmark_id = models.AutoField(primary_key=True)
     group = models.ForeignKey('GroupChat', models.DO_NOTHING)
     chat = models.ForeignKey('Chat', models.DO_NOTHING)
-    user = models.ForeignKey('Users', models.DO_NOTHING)
+    user = models.ForeignKey(User, models.DO_NOTHING)
     timestamp = models.DateTimeField()
     is_deleted = models.IntegerField()
 
@@ -105,10 +127,11 @@ class BookmarkChat(models.Model):
 class Chat(models.Model):
     chat_id = models.AutoField(primary_key=True)
     group = models.ForeignKey('GroupChat', models.DO_NOTHING)
-    sender_user = models.ForeignKey('Users', models.DO_NOTHING)
+    sender_user = models.ForeignKey(User, models.DO_NOTHING)
     message = models.TextField()
-    timestamp = models.DateTimeField()
+    timestamp = models.DateTimeField(default=timezone.now())
     is_deleted = models.IntegerField()
+    file = models.TextField(null=True, blank=True)
 
     class Meta:
         managed = False
@@ -175,7 +198,7 @@ class DjangoSession(models.Model):
 
 class Events(models.Model):
     event_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey('Users', models.DO_NOTHING)
+    user = models.ForeignKey(User, models.DO_NOTHING)
     project = models.ForeignKey('Projects', models.DO_NOTHING)
     event_name = models.CharField(max_length=75)
     event_details = models.CharField(max_length=80)
@@ -197,7 +220,7 @@ class Events(models.Model):
 class GroupChat(models.Model):
     group_id = models.AutoField(primary_key=True)
     leader_id = models.IntegerField()
-    project = models.ForeignKey('Projects', models.DO_NOTHING)
+    project = models.OneToOneField('Projects', on_delete=models.CASCADE, related_name='groupchat')
     group_name = models.CharField(max_length=75)
     group_image = models.CharField(max_length=75, blank=True, null=True)
     is_deleted = models.IntegerField()
@@ -206,38 +229,13 @@ class GroupChat(models.Model):
         managed = False
         db_table = 'group_chat'
 
-
-class Otp(models.Model):
-    user = models.OneToOneField(AuthUser, models.DO_NOTHING)
-    otp_code = models.CharField(unique=True, max_length=6)
-    created_at = models.DateTimeField(blank=True, null=True)
-    used = models.BooleanField(blank=True, null=True)
-
-    class Meta:
-        managed = False
-        db_table = 'otp'
-
-
-class Profile(models.Model):
-    user = models.OneToOneField(AuthUser, models.DO_NOTHING)
-    phone_number = models.CharField(max_length=15, blank=True, null=True)
-    gender = models.CharField(max_length=10, blank=True, null=True)
-    user_type = models.CharField(max_length=50)
-    profile_picture = models.CharField(max_length=255, blank=True, null=True)
-    created_at = models.DateTimeField(blank=True, null=True)
-    updated_at = models.DateTimeField(blank=True, null=True)
-
-    class Meta:
-        managed = False
-        db_table = 'profile'
-
-
 class ProjectMembers(models.Model):
     member_id = models.AutoField(primary_key=True)
     project = models.ForeignKey('Projects', models.DO_NOTHING)
-    leader = models.ForeignKey('Users', models.DO_NOTHING)
+    leader = models.ForeignKey(User, models.DO_NOTHING)
     user_name = models.CharField(max_length=75)
-    user = models.ForeignKey('Users', models.DO_NOTHING, related_name='projectmembers_user_set')
+    status = models.CharField(max_length=75)
+    user = models.ForeignKey(User, models.DO_NOTHING, related_name='projectmembers_user_set')
     created_at = models.DateTimeField()
     is_deleted = models.IntegerField()
 
@@ -248,7 +246,7 @@ class ProjectMembers(models.Model):
 
 class Projects(models.Model):
     project_id = models.AutoField(primary_key=True)
-    leader = models.ForeignKey('Users', models.DO_NOTHING)
+    leader = models.ForeignKey(User, models.DO_NOTHING)
     project_name = models.CharField(max_length=75)
     project_details = models.CharField(max_length=255)
     project_image = models.CharField(max_length=75)
@@ -270,7 +268,7 @@ class Projects(models.Model):
 
 class Resources(models.Model):
     resource_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey('Users', models.DO_NOTHING)
+    user = models.ForeignKey(User, models.DO_NOTHING)
     project = models.ForeignKey(Projects, models.DO_NOTHING)
     resource_name = models.CharField(max_length=75)
     resource_details = models.CharField(max_length=80)
@@ -288,8 +286,8 @@ class Resources(models.Model):
 
 class Tasks(models.Model):
     task_id = models.AutoField(primary_key=True)
-    leader = models.ForeignKey('Users', models.DO_NOTHING)
-    member = models.ForeignKey('Users', models.DO_NOTHING, related_name='tasks_member_set')
+    leader = models.ForeignKey(User, models.DO_NOTHING)
+    member = models.ForeignKey(User, models.DO_NOTHING, related_name='tasks_member_set')
     project = models.ForeignKey(Projects, models.DO_NOTHING)
     dependant_task_id = models.IntegerField(blank=True, null=True)
     task_name = models.CharField(max_length=75)
@@ -312,7 +310,7 @@ class Tasks(models.Model):
 
 class Transactions(models.Model):
     transaction_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey('Users', models.DO_NOTHING)
+    user = models.ForeignKey(User, models.DO_NOTHING)
     project = models.ForeignKey(Projects, models.DO_NOTHING)
     transaction_name = models.CharField(max_length=75)
     transaction_details = models.CharField(max_length=80)

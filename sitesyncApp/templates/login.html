@@ -14,6 +14,7 @@
       <meta name="description" content="">
       <meta name="author" content="">
       {% load static %}
+            <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
       <!-- bootstrap css -->
       <link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.min.css' %}">
       <!-- style css -->
@@ -91,7 +92,7 @@
          <div class="container">
             <div class="row">
                <div class="col-md-3">
-                  <div class="logo"><a href="index.html"><img src="{% static 'images/site_sync_logo.png' %}"></a></div>
+                  <div class="logo"><a href="{% url 'home' %}"><img src="{% static 'images/site_sync_logo.png' %}"></a></div>
                </div>
                <div class="col-md-9">
                   <div class="menu_text">
@@ -143,6 +144,7 @@
                   {% csrf_token %}
                               <div class="form-group">
                                  <input type="email" class="email-bt" placeholder="Email Address or Phone Number" name="identifier">
+                                 <input type="hidden" name="timezone" id="timezone">
                               </div>
                               <div class="form-group">
                                  <input type="password" class="email-bt" minlength="8" placeholder="Password" id="exampleInputPassword1" name="password">
@@ -254,5 +256,11 @@
 }
 
       </script>
+      <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var timezoneInput = document.getElementById('timezone');
+        timezoneInput.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    });
+</script>
    </body>
 </html>

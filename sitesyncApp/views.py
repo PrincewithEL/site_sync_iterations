@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.core.files.storage import default_storage
 from django.conf import settings
-from .models import Users, Otp, Profile, Projects, User, ProjectMembers, Chat, GroupChat, ChatStatus, Resources, Events, Tasks, Transactions
+from .models import Users, OTP, Profile, Projects, User, ProjectMembers, Chat, GroupChat, ChatStatus, Resources, Events, Tasks, Transactions
 from django.core.mail import send_mail
 import re
 import hashlib
@@ -13,7 +13,6 @@ import os
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 import uuid
-from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth.models import User
 import logging
@@ -24,6 +23,7 @@ import random
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator
+import pytz
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +36,12 @@ def home(request):
         
         if user_id:
             try:
-                # Get the Otp entry for the user
-                otp = Otp.objects.get(user_id=user_id, otp_code=otp_code, used=False)
+                # Get the OTP entry for the user
+                otp = OTP.objects.get(user_id=user_id, otp_code=otp_code, used=False)
 
-                # Check if Otp is within the last 15 minutes
+                # Check if OTP is within the last 15 minutes
                 if otp.created_at >= timezone.now() - timedelta(minutes=15):
-                    otp.used = True  # Mark the Otp as used
+                    otp.used = True  # Mark the OTP as used
                     otp.save()
 
                     # Redirect based on user type
@@ -57,14 +57,14 @@ def home(request):
                         return redirect('home')  # Ensure 'home' matches your URL name
 
                 else:
-                    messages.error(request, 'Otp has expired. Please request a new one.')
+                    messages.error(request, 'OTP has expired. Please request a new one.')
                     return render(request, 'otp.html')
 
-            except Otp.DoesNotExist:
-                messages.error(request, 'Invalid Otp.')
+            except OTP.DoesNotExist:
+                messages.error(request, 'Invalid OTP.')
                 return render(request, 'otp.html')
 
-    # If it's not a POST request or Otp verification failed, render index.html
+    # If it's not a POST request or OTP verification failed, render index.html
     return render(request, 'index.html')
 
 def home1(request):
@@ -129,6 +129,8 @@ def add_resource(request, pk):
             resource_status='All',
             resource_directory = chat_file,
             is_deleted = 0,
+            status='Pending',
+            created_at=timezone.now()
         )
         resource.save()
         
@@ -146,7 +148,7 @@ def delete_resource(request, pk, resource_id):
 def add_transaction(request, pk):
     if request.method == 'POST':
         project = get_object_or_404(Projects, pk=pk)
-        
+        tp = float(request.POST['transaction_price']) * int(request.POST['transaction_quantity'])
         transaction = Transactions(
             user=request.user,
             project=project,
@@ -158,19 +160,33 @@ def add_transaction(request, pk):
             transaction_votes_against=0,
             total_transaction_price=float(request.POST['transaction_price']) * int(request.POST['transaction_quantity']),
             created_at=timezone.now(),
-            transaction_status='Pending',
+            transaction_status='Completed',
             is_deleted=0
         )
         transaction.save()
-        
-        messages.success(request, 'Transaction added successfully.')
+
+    newprice = project.estimated_budget - tp
+    if tp > 0:
+        project.actual_expenditure = tp
+        project.balance = project.estimated_budget - project.actual_expenditure 
+        project.save()
+    else:
+        messages.error(request, 'Price of Transaction exceeds the project budget, kindly try again.')
+        return redirect('transactions', pk=pk)
+
+        messages.success(request, '')
         return redirect('transactions', pk=pk)
     
     return redirect('transactions', pk=pk)
 
 @login_required
 def delete_transaction(request, pk, transaction_id):
-    transactions = get_object_or_404(Transactions, pk=task_id, project__pk=pk)
+    project = get_object_or_404(Projects, pk=pk)
+    transactions = get_object_or_404(Transactions, pk=transaction_id, project__pk=pk)
+    project.estimated_budget += transactions.total_transaction_price
+    project.actual_expenditure -= transactions.total_transaction_price 
+    project.balance = project.estimated_budget - project.actual_expenditure 
+    project.save()
     transactions.is_deleted = 1
     transactions.save()
     return redirect('transactions', pk=pk)
@@ -206,8 +222,8 @@ def transactions(request, pk):
         }
         project_member_details.append(member_info)
 
-    user_votes = TransactionVote.objects.filter(user=request.user, transaction__project=project)
-    user_votes_dict = {vote.transaction_id: vote.vote for vote in user_votes}
+    # user_votes = TransactionVote.objects.filter(user=request.user, transaction__project=project)
+    # user_votes_dict = {vote.transaction_id: vote.vote for vote in user_votes}
 
     context = {
         'auth_user': request.user,
@@ -221,7 +237,7 @@ def transactions(request, pk):
         'leader_profile': leader_profile,
         'project_members': project_member_details,
         'transaction_count': transaction_count,
-        'user_votes': user_votes_dict,
+        # 'user_votes': user_votes_dict,
     }
     return render(request, 'transactions.html', context)
 
@@ -232,6 +248,7 @@ def edit_message(request, pk):
         new_message = request.POST.get('edited_message')
         chat = get_object_or_404(Chat, chat_id=message_id, sender_user=request.user)
         chat.message = new_message
+        chat.timestamp = timezone.now()
         chat.save()
         return redirect('chat', pk=pk)
     return redirect('chat', pk=pk)
@@ -503,6 +520,8 @@ def project_detail(request, pk):
     project_members = ProjectMembers.objects.filter(project=project, is_deleted=0)
     project_member_ids = project_members.values_list('user_id', flat=True)
 
+    project_membersC = project_members.count()
+
     tasks = Tasks.objects.filter(project_id=pk, member_id=user.id, is_deleted=0)
 
     # Pending tasks (not completed)
@@ -558,7 +577,7 @@ def project_detail(request, pk):
 
     # Exclude users who are already members of the project
     existing_members = ProjectMembers.objects.filter(project=project, is_deleted=0).values_list('user_id', flat=True)
-    clients_profiles = Profile.objects.filter(user_type='client').exclude(user__id__in=existing_members)
+    clients_profiles = Profile.objects.filter(user_type='Client').exclude(user__id__in=existing_members)
     contractors_profiles = Profile.objects.filter(user_type='contractor').exclude(user__id__in=existing_members)
     users = list(clients_profiles) + list(contractors_profiles)
 
@@ -570,6 +589,7 @@ def project_detail(request, pk):
             'last_name': profile.user.last_name,
             'phone_number': profile.phone_number,
             'id': profile.user.id,
+            'email_address': profile.user.email,
             'image': profile.profile_picture.url if profile.profile_picture else None,
             'role': profile.user_type 
         }
@@ -585,6 +605,9 @@ def project_detail(request, pk):
     completed_tasks = ctasks.count()
     pending_tasks1 = p1tasks.count()
     completed_tasks1 = c1tasks.count()
+
+    print(f"Clients: {clients_profiles.count()}")
+    print(f"Contractors: {contractors_profiles.count()}")
 
     context = {
         'auth_user': request.user,
@@ -610,6 +633,7 @@ def project_detail(request, pk):
         'completed_tasks1': completed_tasks1,
         'leader_profile': leader_profile,
         'pending_tasks': pending_tasks,
+        'project_membersC': project_membersC,
     }
     return render(request, 'project-details.html', context)
 
@@ -795,6 +819,7 @@ def send_message(request, pk):
             group=project.groupchat,
             sender_user=sender_user,
             message=message,
+            timestamp=timezone.now(),
             is_deleted=0,
             file=chat_file
         )
@@ -891,6 +916,8 @@ def add_project_member(request, pk):
         user_id = request.POST['uid']
         leader_id = request.POST['lid']
         user_name = request.POST['uname']
+        leader_name = request.POST['lname']
+        user_email = request.POST['uemail']
 
         projectM = ProjectMembers(
             leader_id=leader_id,
@@ -902,6 +929,14 @@ def add_project_member(request, pk):
             status = 'Pending',
         )
         projectM.save()
+
+        send_mail(
+            'Site Sync: Alert - Project Invitation Notification',
+            f'Dear {user_name}, we trust you are well. You have received a project invitation from {leader_name}, on the project {project.project_name}. Kindly login to your account, to get accept/reject the project invitation request.\n\n Thank you for choosing, Site Sync.',
+            'sitesync2024@gmail.com',  # Replace with your email
+            [user_email],
+            fail_silently=False,
+        )
 
         return redirect('project_detail', pk=project.pk)
 
@@ -937,6 +972,7 @@ def add_project_member(request, pk):
             'last_name': profile.user.last_name,
             'phone_number': profile.phone_number,
             'id': profile.user.id,
+            'email_address': profile.user.email,
             'role': 'client' if profile.user_type == 'client' else 'contractor'
         }
         user_details.append(user_info)
@@ -1046,7 +1082,7 @@ def client(request):
     today = now.strftime('%Y-%m-%d')
 
     # Fetch projects where the current user is the leader
-    leader_projects = Projects.objects.filter(leader_id=profile.id, is_deleted=0)
+    leader_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=0)
 
     # Fetch projects where the current user is a member
     member_projects = Projects.objects.filter(
@@ -1056,10 +1092,13 @@ def client(request):
     # Combine both queries using OR condition
     projects = leader_projects | member_projects
 
-    # Initialize unread chat counts dictionary
+    # Initialize unread chat counts and pending tasks dictionaries
     unread_chat_counts = {}
+    pending_tasks_counts = {}
+    progress_values = {}
+    progress_percentages = {}
 
-    # Calculate unread chat statuses for each project
+    # Calculate unread chat statuses and pending tasks for each project
     for project in projects:
         try:
             group_chat = GroupChat.objects.get(project=project)
@@ -1073,11 +1112,26 @@ def client(request):
         except GroupChat.DoesNotExist:
             unread_chat_counts[project.project_id] = 0
 
+        # Count pending tasks
+        pending_tasks_count = Tasks.objects.filter(
+            project=project,
+            is_deleted=0
+        ).exclude(
+            task_status__in=['Completed Early', 'Completed Today', 'Completed Late']
+        ).count()
+        pending_tasks_counts[project.project_id] = pending_tasks_count
+
+        # Calculate progress value
+        total_days = (project.end_date - project.start_date).days
+        days_left = (project.end_date - now).days
+        progress_percentage = ((total_days - days_left) / total_days) * 100 if total_days > 0 else 0
+        progress_percentages[project.project_id] = progress_percentage
+
     # Count the number of projects where the current user is the leader
     project_count = projects.count()
 
     # Count pending project invitations for the current user
-    pending_project_count = ProjectMembers.objects.filter(user_id=profile.id, status='Pending').count()
+    pending_project_count = ProjectMembers.objects.filter(user_id=profile.user_id, status='Pending').count()
 
     # Fetch pending projects where the current user is a member
     pending_project_members = ProjectMembers.objects.filter(user_id=profile.user_id, status='Pending')
@@ -1089,6 +1143,71 @@ def client(request):
 
     # Optionally, combine them into a single list
     users = list(clients) + list(contractors)
+
+    if request.method == 'POST':
+        pname = request.POST.get('pname')
+        sdate = request.POST.get('sdate')
+        edate = request.POST.get('edate')
+        ebug = request.POST.get('ebug')
+        pdet = request.POST.get('pdet')
+        image = request.FILES.get('image')
+
+        # Check if all required form inputs are present
+        if not all([pname, sdate, edate, ebug, pdet]):
+            messages.error(request, 'Please fill in all required fields.')
+            return render(request, 'client.html', {'fname': user.first_name, 'image': profile.profile_picture.url if profile.profile_picture else None, 'MEDIA_URL': settings.MEDIA_URL, 'day': today})
+
+        try:
+            start_date = date.fromisoformat(sdate)
+            end_date = date.fromisoformat(edate)
+            total_days = (end_date - start_date).days
+            actual_expenditure = 0
+            balance = float(ebug)
+            project_status = 'Active'
+            leader_id = user.id  # Use the logged-in user's ID
+            is_deleted = 0
+
+            # Save the image if provided
+            project_image = None
+            if image:
+                profile_picture = image
+                unique_filename = str(uuid.uuid4()) + os.path.splitext(profile_picture.name)[1]
+                profile_picture_path = default_storage.save(unique_filename, profile_picture)
+
+                # Move the image to the desired directory under MEDIA_ROOT
+                dest_path = os.path.join(settings.MEDIA_ROOT, 'project_images', unique_filename)
+
+                try:
+                    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+                    os.rename(os.path.join(settings.MEDIA_ROOT, profile_picture_path), dest_path)
+                    project_image = 'project_images/' + unique_filename
+                except Exception as e:
+                    messages.error(request, f"Error saving project image: {str(e)}")
+                    return render(request, 'dashboard.html', {'fname': user.first_name, 'image': profile.profile_picture.url if profile.profile_picture else None, 'MEDIA_URL': settings.MEDIA_URL, 'day': today})
+
+            # Save the project details
+            project = Projects(
+                leader_id=leader_id,
+                project_name=pname,
+                project_details=pdet,
+                project_image=project_image,
+                created_at=timezone.now(),
+                start_date=start_date,
+                end_date=end_date,
+                total_days=total_days,
+                estimated_budget=balance,
+                actual_expenditure=actual_expenditure,
+                balance=balance,
+                project_status=project_status,
+                is_deleted=is_deleted,
+            )
+            project.save()
+            messages.success(request, 'Project created successfully.')
+            return redirect('client')  # Adjust the redirect as needed
+
+        except Exception as e:
+            messages.error(request, f"Error processing form: {str(e)}")
+            return render(request, 'dashboard.html', {'fname': user.first_name, 'image': profile.profile_picture.url if profile.profile_picture else None, 'MEDIA_URL': settings.MEDIA_URL, 'day': today})
 
     # Initialize member status as None
     member_status = None
@@ -1111,12 +1230,14 @@ def client(request):
         'projects': projects,
         'pending_projects': pending_projects,
         'pending_project_count': pending_project_count,
-        'unread_chat_counts': unread_chat_counts,  # Pass unread chat counts dictionary to the template
-        'member_status': member_status,  # Add member status to the context
+        'unread_chat_counts': unread_chat_counts,  
+        'pending_tasks_counts': pending_tasks_counts,  
+        'progress_values': progress_values, 
+        'progress_percentages': progress_percentages, 
+        'member_status': member_status,  
     }
     messages.info(request, "")
     return render(request, 'dashboard.html', context)
-
 
 @login_required
 def update_project_member(request):
@@ -1126,7 +1247,7 @@ def update_project_member(request):
     today = now.strftime('%Y-%m-%d')
 
     # Fetch projects where the current user is the leader
-    leader_projects = Projects.objects.filter(leader_id=profile.id, is_deleted=0)
+    leader_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=0)
 
     # Fetch projects where the current user is a member
     member_projects = Projects.objects.filter(
@@ -1140,7 +1261,7 @@ def update_project_member(request):
     project_count = projects.count()
 
     # Count pending project invitations for the current user
-    pending_project_count = ProjectMembers.objects.filter(user_id=profile.id, status='Pending').count()
+    pending_project_count = ProjectMembers.objects.filter(user_id=profile.user_id, status='Pending').count()
 
     # Fetch pending projects where the current user is a member
     pending_project_members = ProjectMembers.objects.filter(user_id=profile.user_id, status='Pending')
@@ -1207,7 +1328,7 @@ def signup(request):
         email = request.POST.get('email')
         
         # Check if user with this email already exists
-        if AuthUser.objects.filter(email=email).exists():
+        if User.objects.filter(email=email).exists():
             messages.error(request, "Email address already in use. Please choose a different one.")
             return render(request, 'register.html')
 
@@ -1216,18 +1337,16 @@ def signup(request):
             messages.error(request, "Password must be at least 8 characters long, contain uppercase and lowercase letters, numbers, and symbols.")
             return render(request, 'register.html')
 
-        # Create new AuthUser
-        auth_user = AuthUser.objects.create_user(username=email, email=email, first_name=request.POST.get('fname'), password=password)
+        # Create new user
+        user = User.objects.create_user(username=email, email=email, first_name=request.POST.get('fname'), password=password)
 
-        # Create the Profile for the AuthUser
-        profile = Profile.objects.create(
-            user=auth_user,
-            phone_number=request.POST.get('phone'),
-            gender=request.POST.get('gen'),
-            user_type=request.POST.get('type'),
-            created_at=timezone.now(),
-            updated_at=None
-        )
+        # Additional profile information
+        profile = Profile.objects.get(user=user)
+        profile.phone_number = request.POST.get('phone')
+        profile.gender = request.POST.get('gen')
+        profile.user_type = request.POST.get('type')
+        profile.created_at = timezone.now()
+        profile.updated_at = None
 
         if 'image' in request.FILES:
             profile_picture = request.FILES['image']
@@ -1248,12 +1367,16 @@ def signup(request):
 
         profile.save()
         Users.objects.create(
-            user_id=profile.id,
+            user_id=profile.user_id,
             email_address=email,
             created_at=timezone.now(),
-            user_type='Client'  # Set default user type, change as needed
+            user_type=profile.user_type,
+            is_deleted=0,
+            online=0,
+            gender=profile.gender,
+            phone_number=profile.phone_number  
         )
-        messages.success(request, "User Registration Successful!")
+        messages.success(request, "")
 
         # Authenticate and log in the user
         auth_user = authenticate(request, username=email, password=password)
@@ -1324,7 +1447,7 @@ def profile(request):
 
         # Update or create entry in Users model
         user_record, created = Users.objects.update_or_create(
-            user_id=profile.id,
+            user_id=profile.user_id,
             defaults={
                 'email_address': email,
                 'updated_at': timezone.now(),
@@ -1351,15 +1474,16 @@ def verify_otp(request):
         
         if user_id:
             try:
-                # Get the Otp entry for the user
-                otp = Otp.objects.get(user_id=user_id, otp_code=otp_code, used=False)
+                # Get the OTP entry for the user
+                otp = OTP.objects.get(user_id=user_id, otp_code=otp_code, used=False)
 
-                # Check if Otp is valid (you can add additional checks here if needed)
-                if otp.created_at >= timezone.now() - timedelta(minutes=15):
-                    otp.used = True  # Mark the Otp as used
+                # Check if OTP is valid (you can add additional checks here if needed)
+                # if otp.created_at >= timezone.now() - timedelta(minutes=15):
+                if otp:
+                    otp.used = True  # Mark the OTP as used
                     otp.save()
 
-                    # Get the user associated with the Otp
+                    # Get the user associated with the OTP
                     user = otp.user
 
                     # Perform login with specified backend
@@ -1377,11 +1501,11 @@ def verify_otp(request):
                         return redirect('home')
 
                 else:
-                    messages.error(request, 'Otp has expired. Please request a new one.')
+                    messages.error(request, 'OTP has expired. Please request a new one.')
                     return redirect('verify_otp')
 
-            except Otp.DoesNotExist:
-                messages.error(request, 'Invalid Otp.')
+            except OTP.DoesNotExist:
+                messages.error(request, 'Invalid OTP.')
                 return redirect('verify_otp')
 
     return render(request, 'otp.html')
@@ -1390,23 +1514,24 @@ def signin(request):
     if request.method == 'POST':
         identifier = request.POST.get('identifier')  # Could be email or phone number
         password = request.POST.get('password')
+        user_timezone = request.POST.get('timezone', 'UTC')
 
         user = authenticate(request, username=identifier, password=password)
         
         if user is not None:
-            otp, created = Otp.objects.get_or_create(user=user)
-            otp.generate_otp()  # Regenerate Otp for existing or new entry
+            otp, created = OTP.objects.get_or_create(user=user)
+            otp.generate_otp()  # Regenerate OTP for existing or new entry
 
             send_mail(
-                'Your Otp Code',
-                f'Your Otp code is {otp.otp_code}',
+                'Site Sync: OTP Code',
+                f'Your OTP code is {otp.otp_code}. \n\n Thank you for choosing, Site Sync.',
                 'sitesync2024@gmail.com',  # Replace with your email
                 [user.email],
                 fail_silently=False,
             )
 
             request.session['user_id'] = user.id
-            messages.success(request, 'Otp has been sent to your email.')
+            messages.success(request, 'OTP has been sent to your email.')
             return redirect('verify_otp')
 
         else:
@@ -1437,18 +1562,18 @@ def forgot_password(request):
 
         if user:
             otp = generate_otp()
-            otp_entry, created = Otp.objects.get_or_create(user=user)
+            otp_entry, created = OTP.objects.get_or_create(user=user)
             otp_entry.otp_code = otp
             otp_entry.save()
             send_mail(
-                'Your Password Reset Otp',
-                f'Your Otp code is {otp}',
+                'Site Sync: Alert - Password Reset OTP',
+                f'Your OTP code is {otp}. \n\n Thank you for choosing, Site Sync.',
                 'sitesync2024@gmail.com',  # Replace with your email
                 [user.email],
                 fail_silently=False,
             )
             request.session['user_id'] = user.id
-            messages.success(request, 'Otp has been sent to your email.')
+            messages.success(request, 'OTP has been sent to your email.')
             return redirect('verify_otp1')
         else:
             messages.error(request, 'No account found with this email address.')
@@ -1460,13 +1585,13 @@ def verify_otp1(request):
         otp_code = request.POST.get('otp_code')
         user_id = request.session.get('user_id')
         user = get_object_or_404(User, pk=user_id)
-        otp = Otp.objects.filter(user=user, otp_code=otp_code).first()
+        otp = OTP.objects.filter(user=user, otp_code=otp_code).first()
 
         if otp:
-            # Otp is valid, proceed to password reset
+            # OTP is valid, proceed to password reset
             return redirect('reset_password', uidb64=urlsafe_base64_encode(force_bytes(user.pk)), token=default_token_generator.make_token(user))
         else:
-            messages.error(request, 'Invalid Otp. Please try again.')
+            messages.error(request, 'Invalid OTP. Please try again.')
 
     return render(request, 'verify_otp.html')
 

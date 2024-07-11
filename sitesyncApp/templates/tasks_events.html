@@ -301,7 +301,7 @@
                           <!-- <td><input type="checkbox" /></td> -->
                           <!-- <td class="mailbox-star"><a href="#"><i class="fa fa-star text-yellow"></i></a></td> -->
                           <td class="mailbox-name" title="{{ event.created_at }}"><a href="#">{{ event.event_name }}</a></td>
-                          <td class="mailbox-name">{{ event.event_details }} <b>From {{ event.event_start_time }} to {{ event.event_end_time }}</b></td>
+                          <td class="mailbox-name">{{ event.event_details }} <br><b>From {{ event.event_start_time }} to {{ event.event_end_time }}</b></td>
                        {% if event.event_location %}
                           <td class="mailbox-name">{{ event.event_location }}</td>         
                           {% elif event.event_link %}

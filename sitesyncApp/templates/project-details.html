@@ -247,8 +247,12 @@
               {% if project.leader_id == auth_user.id %}
               <a href="#" onclick="openForm()" id="btnmyForm" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Edit Project</a>
               {% endif %}
-              <a href="{% url 'resources' project.pk %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">View Resources</a> 
+              <a href="{% url 'resources' project.pk %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">View Resources</a>
+              {% if project.leader_id == auth_user.id %} 
               <a href="{% url 'transactions' project.pk %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">View Transactions</a> 
+              {% elif  profile.user_type == 'Client' or profile.user_type == 'Quantity Surveyor' %} 
+              <a href="{% url 'transactions' project.pk %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">View Transactions</a>
+              {% endif %} 
               <div class="box box-solid">
                 <div class="box-header with-border">
                   <h3 class="box-title">List of <br>Project Members</h3>
@@ -391,7 +395,7 @@
 <!--                         <th></th>
                         <th></th> -->
                         <th>Name</th>
-                        <th>Phone Number</th>
+                        <th>Phone Number/Email Address</th>
                         <th>User Type</th>
                         <th>Profile Picture</th>
                         <th></th>
@@ -403,7 +407,7 @@
 <!-- <td><input type="checkbox" class="custom-checkbox" /></td>
 <td class="mailbox-star" style=""><a href="#"><i class="fa fa-star text-yellow"></i></a></td> -->
 <td class="mailbox-name" title="5 mins ago">{{ user.first_name }}</a></td>
-<td class="mailbox-name">{{ user.phone_number }}</td>
+<td class="mailbox-name">{{ user.phone_number }} or <a href="mailto:{{ user.email_address }}">{{ user.email_address }}</a></td>
 <td class="mailbox-name">{{ user.role }}</td>
 <td class="mailbox-name"><img src="{{ PROJECT_URL }}{{ user.image }}" style="width: 100px;"></td>                        
                           <td class="mailbox-attachment">
@@ -411,7 +415,9 @@
                               {% csrf_token %}
                               <input type="hidden" value="{{ user.id }}" name="uid" required>
                               <input type="hidden" value="{{ auth_user.id }}" name="lid" required>
+                              <input type="hidden" value="{{ auth_user.first_name }}" name="lname" required>
                               <input type="hidden" value="{{ user.first_name }}" name="uname" required>
+                              <input type="hidden" value="{{ user.email_address }}" name="uemail" required>
                               <button type="submit" class="btn btn-primary">Add To My Project</button>
                             </form>
                         </td>
@@ -561,13 +567,18 @@
                     {% endif %}
                 {% endfor %}
             {% else %}
-                <p>No new messages</p>
+                <p>No new messages.</p>
+                    {% if project_membersC == 0 %}
+                <p>Add Project Members to utilise the chatroom.</p>
+    {% endif %}
             {% endif %}
         </div><!--/.direct-chat-messages-->
     </div><!-- /.box-body -->
+    {% if project_membersC != 0 %}
     <div class="box-footer clearfix no-border">
         <button class="btn btn-default pull-right" style="background-color: #ff3300; color: black; font-weight: bold;"><a href="{% url 'chat' project.pk %}" style="color: black;">View All</a></button>
     </div>
+    {% endif %}
 </div><!--/.direct-chat -->
             </div><!-- /.col (left) -->
             </div><!-- /.col -->
