@@ -252,7 +252,7 @@ button {
 }
 
 .menu_text li a {
-    color: #e05306;
+    color: #FF0000;
 }
 
 .menu_text li a:hover {
@@ -328,7 +328,7 @@ button {
     width: 300px;
     position: relative;
     left: -30px;
-    top: -20px;
+    top: -10px;
 }
 
 .round {
@@ -341,7 +341,7 @@ button {
     width: 100%;
     float: left;
     font-size: 20px;
-    color: #e05306;
+    color: #FF0000;
     padding-left: 10px;
 }
 
@@ -361,7 +361,7 @@ button {
     width: 100%;
     float: left;
     font-size: 70px;
-    color: #e05306;
+    color: #FF0000;
     font-weight: bold;
 }
 
@@ -369,7 +369,7 @@ button {
     width: 100%;
     float: left;
     font-size: 70px;
-    color: #e05306;
+    color: #FF0000;
     font-weight: bold;
 }
 
@@ -385,7 +385,7 @@ button {
     width: 100%;
     float: left;
     font-size: 20px;
-    color: #e05306;
+    color: #FF0000;
     border: 1px solid black;
     border-radius: 5px;
     background-color: transparent;
@@ -398,7 +398,7 @@ button {
 }
 
 .contact_bt a {
-    color: #e05306;
+    color: #FF0000;
 }
 
 .contact_bt a:hover {
@@ -464,7 +464,7 @@ button {
     font-size: 16px;
     color: #ffffff;
     border-radius: 5px;
-    background-color: #e05306;
+    background-color: #FF0000;
     height: 50px;
     font-weight: bold;
     margin-top: 40px;
@@ -475,7 +475,7 @@ button {
 
 .about_bt a {
     color: #ffffff;
-    background-color: #e05306;
+    background-color: #FF0000;
 }
 
 .about_bt a:hover {
@@ -590,7 +590,7 @@ button {
     text-align: center;
     font-size: 40px;
     color: #0b0e13;
-    border-bottom: 1px solid #e05306;
+    border-bottom: 1px solid #FF0000;
     text-align: center;
 }
 
@@ -614,7 +614,7 @@ button {
 
 .seemore_bt a:hover {
     color: #fffcf4;
-    background-color: #e05306;
+    background-color: #FF0000;
 }
 
 .padding_top_0 {
@@ -688,7 +688,7 @@ button {
 .contact_section {
     width: 100%;
     float: left;
-    background-color: #e05306;
+    background-color: #FF0000;
     height: auto;
 }
 
@@ -796,7 +796,7 @@ textarea#comment.massage-bt::placeholder {
 .input-group>.input-group-prepend:not(:first-child)>.input-group-text {
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
-    background-color: #e05306;
+    background-color: #FF0000;
     color: #fff;
     border: 0px;
 }
@@ -872,7 +872,7 @@ textarea#comment.massage-bt::placeholder {
 .copyright_section {
     width: 100%;
     float: left;
-    background-color: #e05306;
+    background-color: #FF0000;
 }
 
 .copyright_text {
