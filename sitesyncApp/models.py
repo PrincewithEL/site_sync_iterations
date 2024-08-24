@@ -277,6 +277,7 @@ class Resources(models.Model):
     updated_at = models.DateTimeField(blank=True, null=True)
     resource_status = models.CharField(max_length=10)
     resource_type = models.CharField(max_length=8)
+    resource_size = models.CharField(max_length=8)
     is_deleted = models.IntegerField()
 
     class Meta:
