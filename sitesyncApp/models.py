@@ -13,6 +13,213 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+class BookmarkChat(models.Model):
+    bookmark_id = models.AutoField(primary_key=True)
+    group = models.ForeignKey('GroupChat', models.DO_NOTHING)
+    chat = models.ForeignKey('Chat', models.DO_NOTHING)
+    user = models.ForeignKey(User, models.DO_NOTHING)
+    timestamp = models.DateTimeField()
+    is_deleted = models.IntegerField()
+
+    class Meta:
+        managed = True
+        db_table = 'bookmark_chat'
+        db_table_comment = 'This Table Is Used To Store The Bookmarked Chats On the System'
+
+class PinnedChat(models.Model):
+    pinned_id = models.AutoField(primary_key=True)
+    group = models.ForeignKey('GroupChat', models.DO_NOTHING)
+    chat = models.ForeignKey('Chat', models.DO_NOTHING)
+    user = models.ForeignKey(User, models.DO_NOTHING)
+    timestamp = models.DateTimeField()
+    is_deleted = models.IntegerField()
+
+    class Meta:
+        managed = True
+        db_table = 'pinned_chat'
+        db_table_comment = 'This Table Is Used To Store The Pinned Chats On the System'
+
+class Chat(models.Model):
+    chat_id = models.AutoField(primary_key=True)
+    group = models.ForeignKey('GroupChat', models.DO_NOTHING)
+    sender_user = models.ForeignKey(User, models.DO_NOTHING)
+    message = models.TextField()
+    reply = models.TextField(null=True, blank=True)
+    scheduled_at = models.TextField(null=True, blank=True)
+    timestamp = models.DateTimeField(default=timezone.now())
+    is_deleted = models.IntegerField()
+    file = models.TextField(null=True, blank=True)
+
+    class Meta:
+        managed = True
+        db_table = 'chat'
+
+
+class ChatStatus(models.Model):
+    status_id = models.AutoField(primary_key=True)
+    chat = models.ForeignKey(Chat, models.DO_NOTHING)
+    group = models.ForeignKey('GroupChat', models.DO_NOTHING)
+    user_id = models.IntegerField()
+    status = models.IntegerField()
+    is_deleted = models.IntegerField()
+
+    class Meta:
+        managed = True
+        db_table = 'chat_status'
+
+class Events(models.Model):
+    event_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, models.DO_NOTHING)
+    project = models.ForeignKey('Projects', models.DO_NOTHING)
+    event_name = models.CharField(max_length=75)
+    event_details = models.CharField(max_length=80)
+    event_date = models.DateField()
+    event_start_time = models.TimeField()
+    event_end_time = models.TimeField()
+    event_location = models.CharField(max_length=75, blank=True, null=True)
+    event_link = models.CharField(max_length=80, blank=True, null=True)
+    event_status = models.CharField(max_length=9)
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField(blank=True, null=True)
+    is_deleted = models.IntegerField()
+
+    class Meta:
+        managed = True
+        db_table = 'events'
+
+
+class GroupChat(models.Model):
+    group_id = models.AutoField(primary_key=True)
+    leader_id = models.IntegerField()
+    project = models.OneToOneField('Projects', on_delete=models.CASCADE, related_name='groupchat')
+    group_name = models.CharField(max_length=75)
+    group_image = models.CharField(max_length=75, blank=True, null=True)
+    is_deleted = models.IntegerField()
+
+    class Meta:
+        managed = True
+        db_table = 'group_chat'
+
+class ProjectMembers(models.Model):
+    member_id = models.AutoField(primary_key=True)
+    project = models.ForeignKey('Projects', models.DO_NOTHING)
+    leader = models.ForeignKey(User, models.DO_NOTHING)
+    user_name = models.CharField(max_length=75)
+    status = models.CharField(max_length=75)
+    user = models.ForeignKey(User, models.DO_NOTHING, related_name='projectmembers_user_set')
+    created_at = models.DateTimeField()
+    is_deleted = models.IntegerField()
+
+    class Meta:
+        managed = True
+        db_table = 'project_members'
+
+
+class Projects(models.Model):
+    project_id = models.AutoField(primary_key=True)
+    leader = models.ForeignKey(User, models.DO_NOTHING)
+    project_name = models.CharField(max_length=75)
+    project_details = models.CharField(max_length=255)
+    project_image = models.CharField(max_length=75)
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField(blank=True, null=True)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    total_days = models.IntegerField()
+    estimated_budget = models.FloatField()
+    actual_expenditure = models.FloatField()
+    balance = models.FloatField()
+    project_status = models.CharField(max_length=9)
+    is_deleted = models.IntegerField()
+
+    class Meta:
+        managed = True
+        db_table = 'projects'
+
+
+class Resources(models.Model):
+    resource_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, models.DO_NOTHING)
+    project = models.ForeignKey(Projects, models.DO_NOTHING)
+    resource_name = models.CharField(max_length=75)
+    resource_details = models.CharField(max_length=80)
+    resource_directory = models.CharField(max_length=75)
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField(blank=True, null=True)
+    resource_status = models.CharField(max_length=10)
+    resource_type = models.CharField(max_length=8)
+    resource_size = models.CharField(max_length=8)
+    is_deleted = models.IntegerField()
+
+    class Meta:
+        managed = True
+        db_table = 'resources'
+
+
+class Tasks(models.Model):
+    task_id = models.AutoField(primary_key=True)
+    leader = models.ForeignKey(User, models.DO_NOTHING)
+    member = models.ForeignKey(User, models.DO_NOTHING, related_name='tasks_member_set')
+    project = models.ForeignKey(Projects, models.DO_NOTHING)
+    dependant_task_id = models.IntegerField(blank=True, null=True)
+    task_name = models.CharField(max_length=75)
+    task_details = models.CharField(max_length=80)
+    task_given_date = models.DateField()
+    task_due_date = models.DateField()
+    task_completed_date = models.DateField(blank=True, null=True)
+    task_days_left = models.IntegerField()
+    task_days_overdue = models.IntegerField()
+    task_percentage_complete = models.FloatField()
+    task_status = models.CharField(max_length=15)
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField(blank=True, null=True)
+    is_deleted = models.IntegerField()
+
+    class Meta:
+        managed = True
+        db_table = 'tasks'
+
+
+class Transactions(models.Model):
+    transaction_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, models.DO_NOTHING)
+    project = models.ForeignKey(Projects, models.DO_NOTHING)
+    transaction_name = models.CharField(max_length=75)
+    transaction_details = models.CharField(max_length=80)
+    transaction_price = models.FloatField()
+    transaction_quantity = models.IntegerField()
+    transaction_votes_for = models.IntegerField()
+    transaction_votes_against = models.IntegerField()
+    total_transaction_price = models.FloatField()
+    created_at = models.DateTimeField()
+    transaction_date = models.CharField(max_length=15)  
+    transaction_time = models.CharField(max_length=15)       
+    updated_at = models.DateTimeField(blank=True, null=True)
+    transaction_status = models.CharField(max_length=9)
+    is_deleted = models.IntegerField()
+
+    class Meta:
+        managed = True
+        db_table = 'transactions'
+
+class Users(models.Model):
+    user_id = models.AutoField(primary_key=True)
+    fullname = models.CharField(max_length=75)
+    gender = models.CharField(max_length=6)
+    phone_number = models.CharField(max_length=15)
+    email_address = models.CharField(unique=True, max_length=75)
+    profile_picture = models.CharField(max_length=75)
+    user_type = models.CharField(max_length=13)
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField(blank=True, null=True)
+    is_deleted = models.IntegerField()
+    online = models.IntegerField()
+    password = models.CharField(max_length=80)
+
+    class Meta:
+        managed = True
+        db_table = 'users'
+
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
     if created:
@@ -27,7 +234,6 @@ class Profile(models.Model):
     profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
-    deleted_at = models.DateTimeField(null=True, blank=True)
 
 class OTP(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -110,62 +316,6 @@ class AuthUserUserPermissions(models.Model):
         db_table = 'auth_user_user_permissions'
         unique_together = (('user', 'permission'),)
 
-
-class BookmarkChat(models.Model):
-    bookmark_id = models.AutoField(primary_key=True)
-    group = models.ForeignKey('GroupChat', models.DO_NOTHING)
-    chat = models.ForeignKey('Chat', models.DO_NOTHING)
-    user = models.ForeignKey(User, models.DO_NOTHING)
-    timestamp = models.DateTimeField()
-    is_deleted = models.IntegerField()
-
-    class Meta:
-        managed = False
-        db_table = 'bookmark_chat'
-        db_table_comment = 'This Table Is Used To Store The Bookmarked Chats On the System'
-
-class PinnedChat(models.Model):
-    pinned_id = models.AutoField(primary_key=True)
-    group = models.ForeignKey('GroupChat', models.DO_NOTHING)
-    chat = models.ForeignKey('Chat', models.DO_NOTHING)
-    user = models.ForeignKey(User, models.DO_NOTHING)
-    timestamp = models.DateTimeField()
-    is_deleted = models.IntegerField()
-
-    class Meta:
-        managed = False
-        db_table = 'pinned_chat'
-        db_table_comment = 'This Table Is Used To Store The Pinned Chats On the System'
-
-class Chat(models.Model):
-    chat_id = models.AutoField(primary_key=True)
-    group = models.ForeignKey('GroupChat', models.DO_NOTHING)
-    sender_user = models.ForeignKey(User, models.DO_NOTHING)
-    message = models.TextField()
-    reply = models.TextField(null=True, blank=True)
-    scheduled_at = models.TextField(null=True, blank=True)
-    timestamp = models.DateTimeField(default=timezone.now())
-    is_deleted = models.IntegerField()
-    file = models.TextField(null=True, blank=True)
-
-    class Meta:
-        managed = False
-        db_table = 'chat'
-
-
-class ChatStatus(models.Model):
-    status_id = models.AutoField(primary_key=True)
-    chat = models.ForeignKey(Chat, models.DO_NOTHING)
-    group = models.ForeignKey('GroupChat', models.DO_NOTHING)
-    user_id = models.IntegerField()
-    status = models.IntegerField()
-    is_deleted = models.IntegerField()
-
-    class Meta:
-        managed = False
-        db_table = 'chat_status'
-
-
 class DjangoAdminLog(models.Model):
     action_time = models.DateTimeField()
     object_id = models.TextField(blank=True, null=True)
@@ -209,157 +359,3 @@ class DjangoSession(models.Model):
     class Meta:
         managed = False
         db_table = 'django_session'
-
-
-class Events(models.Model):
-    event_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, models.DO_NOTHING)
-    project = models.ForeignKey('Projects', models.DO_NOTHING)
-    event_name = models.CharField(max_length=75)
-    event_details = models.CharField(max_length=80)
-    event_date = models.DateField()
-    event_start_time = models.TimeField()
-    event_end_time = models.TimeField()
-    event_location = models.CharField(max_length=75, blank=True, null=True)
-    event_link = models.CharField(max_length=80, blank=True, null=True)
-    event_status = models.CharField(max_length=9)
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField(blank=True, null=True)
-    is_deleted = models.IntegerField()
-
-    class Meta:
-        managed = False
-        db_table = 'events'
-
-
-class GroupChat(models.Model):
-    group_id = models.AutoField(primary_key=True)
-    leader_id = models.IntegerField()
-    project = models.OneToOneField('Projects', on_delete=models.CASCADE, related_name='groupchat')
-    group_name = models.CharField(max_length=75)
-    group_image = models.CharField(max_length=75, blank=True, null=True)
-    is_deleted = models.IntegerField()
-
-    class Meta:
-        managed = False
-        db_table = 'group_chat'
-
-class ProjectMembers(models.Model):
-    member_id = models.AutoField(primary_key=True)
-    project = models.ForeignKey('Projects', models.DO_NOTHING)
-    leader = models.ForeignKey(User, models.DO_NOTHING)
-    user_name = models.CharField(max_length=75)
-    status = models.CharField(max_length=75)
-    user = models.ForeignKey(User, models.DO_NOTHING, related_name='projectmembers_user_set')
-    created_at = models.DateTimeField()
-    is_deleted = models.IntegerField()
-
-    class Meta:
-        managed = False
-        db_table = 'project_members'
-
-
-class Projects(models.Model):
-    project_id = models.AutoField(primary_key=True)
-    leader = models.ForeignKey(User, models.DO_NOTHING)
-    project_name = models.CharField(max_length=75)
-    project_details = models.CharField(max_length=255)
-    project_image = models.CharField(max_length=75)
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField(blank=True, null=True)
-    start_date = models.DateField()
-    end_date = models.DateField()
-    total_days = models.IntegerField()
-    estimated_budget = models.FloatField()
-    actual_expenditure = models.FloatField()
-    balance = models.FloatField()
-    project_status = models.CharField(max_length=9)
-    is_deleted = models.IntegerField()
-
-    class Meta:
-        managed = False
-        db_table = 'projects'
-
-
-class Resources(models.Model):
-    resource_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, models.DO_NOTHING)
-    project = models.ForeignKey(Projects, models.DO_NOTHING)
-    resource_name = models.CharField(max_length=75)
-    resource_details = models.CharField(max_length=80)
-    resource_directory = models.CharField(max_length=75)
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField(blank=True, null=True)
-    resource_status = models.CharField(max_length=10)
-    resource_type = models.CharField(max_length=8)
-    resource_size = models.CharField(max_length=8)
-    is_deleted = models.IntegerField()
-
-    class Meta:
-        managed = False
-        db_table = 'resources'
-
-
-class Tasks(models.Model):
-    task_id = models.AutoField(primary_key=True)
-    leader = models.ForeignKey(User, models.DO_NOTHING)
-    member = models.ForeignKey(User, models.DO_NOTHING, related_name='tasks_member_set')
-    project = models.ForeignKey(Projects, models.DO_NOTHING)
-    dependant_task_id = models.IntegerField(blank=True, null=True)
-    task_name = models.CharField(max_length=75)
-    task_details = models.CharField(max_length=80)
-    task_given_date = models.DateField()
-    task_due_date = models.DateField()
-    task_completed_date = models.DateField(blank=True, null=True)
-    task_days_left = models.IntegerField()
-    task_days_overdue = models.IntegerField()
-    task_percentage_complete = models.FloatField()
-    task_status = models.CharField(max_length=15)
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField(blank=True, null=True)
-    is_deleted = models.IntegerField()
-
-    class Meta:
-        managed = False
-        db_table = 'tasks'
-
-
-class Transactions(models.Model):
-    transaction_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, models.DO_NOTHING)
-    project = models.ForeignKey(Projects, models.DO_NOTHING)
-    transaction_name = models.CharField(max_length=75)
-    transaction_details = models.CharField(max_length=80)
-    transaction_price = models.FloatField()
-    transaction_quantity = models.IntegerField()
-    transaction_votes_for = models.IntegerField()
-    transaction_votes_against = models.IntegerField()
-    total_transaction_price = models.FloatField()
-    created_at = models.DateTimeField()
-    transaction_date = models.CharField(max_length=15)  
-    transaction_time = models.CharField(max_length=15)       
-    updated_at = models.DateTimeField(blank=True, null=True)
-    transaction_status = models.CharField(max_length=9)
-    is_deleted = models.IntegerField()
-
-    class Meta:
-        managed = False
-        db_table = 'transactions'
-
-class Users(models.Model):
-    user_id = models.AutoField(primary_key=True)
-    fullname = models.CharField(max_length=75)
-    gender = models.CharField(max_length=6)
-    phone_number = models.CharField(max_length=15)
-    email_address = models.CharField(unique=True, max_length=75)
-    profile_picture = models.CharField(max_length=75)
-    user_type = models.CharField(max_length=13)
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField(blank=True, null=True)
-    is_deleted = models.IntegerField()
-    online = models.IntegerField()
-    password = models.CharField(max_length=80)
-
-    class Meta:
-        managed = False
-        db_table = 'users'
