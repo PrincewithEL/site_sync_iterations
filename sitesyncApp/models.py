@@ -345,7 +345,6 @@ class Transactions(models.Model):
         managed = False
         db_table = 'transactions'
 
-
 class Users(models.Model):
     user_id = models.AutoField(primary_key=True)
     fullname = models.CharField(max_length=75)
