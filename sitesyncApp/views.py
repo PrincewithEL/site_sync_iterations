@@ -24,6 +24,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator
 import pytz
+from social_django.utils import load_strategy
 
 logger = logging.getLogger(__name__)
 
@@ -1404,6 +1405,35 @@ def signup(request):
             return render(request, 'login.html')
 
     return render(request, 'register.html')
+
+def google_signup(request):
+    strategy = load_strategy(request)
+    # Strategy will handle the Google OAuth sign-up flow and redirect
+    return redirect(strategy.get_setting('LOGIN_REDIRECT_URL'))
+
+@login_required
+def complete_profile(request):
+    if request.method == "POST":
+        profile = request.user.profile
+        profile.phone_number = request.POST.get('phone')
+        profile.gender = request.POST.get('gender')
+        profile.user_type = request.POST.get('user_type')
+        profile.save()
+
+        # Authenticate and log in the user
+        login(request, request.user)
+
+        # Redirect based on user type
+        if request.user.profile.user_type == 'Admin':
+            return redirect('admin1')  # Ensure 'admin1' matches your URL name
+        elif request.user.profile.user_type == 'Client':
+            return redirect('client')  # Ensure 'client' matches your URL name
+        elif request.user.profile.user_type == 'Contractor':
+            return redirect('contractor')  # Ensure 'contractor' matches your URL name
+        else:
+            return redirect('home')  # Ensure 'home' matches your URL name
+
+    return render(request, 'complete_profile.html')
 
 @login_required
 def profile(request):

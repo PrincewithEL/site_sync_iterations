@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'social_django',
     'sitesyncApp'
 ]
 
@@ -79,6 +80,11 @@ TEMPLATES = [
         },
     },
 ]
+
+AUTHENTICATION_BACKENDS = (
+    'social_core.backends.google.GoogleOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
+)
 
 WSGI_APPLICATION = 'sitesyncProject.wsgi.application'
 
@@ -199,6 +205,9 @@ EMAIL_USE_TLS = True  # Use TLS
 EMAIL_USE_SSL = False  # Ensure SSL is not used when TLS is enabled
 EMAIL_HOST_USER = 'sitesync2024@gmail.com'  # Your Gmail address
 EMAIL_HOST_PASSWORD = 'otfpttcijyqvnkau'  # Your Gmail password or app-specific password
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = 'your-client-id'
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = 'your-client-secret'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/

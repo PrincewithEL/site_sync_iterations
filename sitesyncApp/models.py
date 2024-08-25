@@ -23,7 +23,7 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     phone_number = models.CharField(max_length=15, null=True, blank=True)
     gender = models.CharField(max_length=10, null=True, blank=True)
-    user_type = models.CharField(max_length=50, choices=[('client', 'Client'), ('contractor', 'Contractor'), ('admin', 'Administrator')])
+    user_type = models.CharField(max_length=50, choices=[('client', 'Client'), ('contractor', 'Contractor'), ('quantity surveyor', 'Quantity Surveyor'), ('project manager', 'Project Manager'), ('architect', 'Architect'), ('engineer', 'Engineer'), ('admin', 'Administrator')])
     profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
@@ -123,12 +123,26 @@ class BookmarkChat(models.Model):
         db_table = 'bookmark_chat'
         db_table_comment = 'This Table Is Used To Store The Bookmarked Chats On the System'
 
+class PinnedChat(models.Model):
+    pinned_id = models.AutoField(primary_key=True)
+    group = models.ForeignKey('GroupChat', models.DO_NOTHING)
+    chat = models.ForeignKey('Chat', models.DO_NOTHING)
+    user = models.ForeignKey(User, models.DO_NOTHING)
+    timestamp = models.DateTimeField()
+    is_deleted = models.IntegerField()
+
+    class Meta:
+        managed = False
+        db_table = 'pinned_chat'
+        db_table_comment = 'This Table Is Used To Store The Pinned Chats On the System'
 
 class Chat(models.Model):
     chat_id = models.AutoField(primary_key=True)
     group = models.ForeignKey('GroupChat', models.DO_NOTHING)
     sender_user = models.ForeignKey(User, models.DO_NOTHING)
     message = models.TextField()
+    reply = models.TextField(null=True, blank=True)
+    scheduled_at = models.TextField(null=True, blank=True)
     timestamp = models.DateTimeField(default=timezone.now())
     is_deleted = models.IntegerField()
     file = models.TextField(null=True, blank=True)
@@ -321,6 +335,8 @@ class Transactions(models.Model):
     transaction_votes_against = models.IntegerField()
     total_transaction_price = models.FloatField()
     created_at = models.DateTimeField()
+    transaction_date = models.CharField(max_length=15)  
+    transaction_time = models.CharField(max_length=15)       
     updated_at = models.DateTimeField(blank=True, null=True)
     transaction_status = models.CharField(max_length=9)
     is_deleted = models.IntegerField()
