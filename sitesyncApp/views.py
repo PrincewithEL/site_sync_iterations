@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.core.files.storage import default_storage
 from django.conf import settings
-from .models import Users, OTP, Profile, Projects, User, ProjectMembers, Chat, GroupChat, ChatStatus, Resources, Events, Tasks, Transactions
+from .models import Bookmarks, Users, OTP, Profile, Projects, User, ProjectMembers, Chat, GroupChat, ChatStatus, Resources, Events, Tasks, Transactions
 from django.core.mail import send_mail
 import re
 import hashlib
@@ -25,6 +25,14 @@ from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator
 import pytz
 from social_django.utils import load_strategy
+from django.http import JsonResponse
+from .chatbot import get_response 
+import json
+from django.core.paginator import Paginator
+from django.utils.timezone import now
+from datetime import timedelta
+from django.contrib.auth import update_session_auth_hash
+from django.db.models import Q
 
 logger = logging.getLogger(__name__)
 
@@ -75,16 +83,247 @@ def home1(request):
 def admin1(request):
     return render(request, 'admin1.html')
 
+def get_chatbot_response(request):
+    if request.method == 'POST':
+        prompt = json.loads(request.body).get('prompt', '')
+        response = get_response(prompt)
+        return JsonResponse({'response': response})
+
 @login_required
 def resources(request, pk):
     user = request.user
     profile = user.profile
     now = date.today()
+    type = profile.user_type
     today = now.strftime('%Y-%m-%d')
     project = get_object_or_404(Projects, pk=pk)
     leader_profile = Profile.objects.get(user_id=project.leader_id)
     resources = Resources.objects.filter(project_id=pk, is_deleted=0)
-    resource_count = resources.count()
+    bookmarks = Bookmarks.objects.filter(is_deleted=0, item_type='Resource', project_id=project.project_id, user_id=request.user.id)
+    bookmarked_resources_ids = bookmarks.values_list('item_id', flat=True)
+    bookmarked_resources = Resources.objects.filter(resource_id__in=bookmarked_resources_ids)
+    all_resources = (resources | bookmarked_resources).distinct()
+    bookmark_resources_count = bookmarked_resources.count()
+    trash_resources = Resources.objects.filter(project_id=pk, is_deleted=1)    
+    resource_count = all_resources.count()
+    video_count = all_resources.filter(resource_type='Video').count()
+    document_count = all_resources.filter(resource_type='Document').count()
+    audio_count = all_resources.filter(resource_type='Audio').count()
+    image_count = all_resources.filter(resource_type='Image').count()    
+    trash_resources_count = trash_resources.count()
+
+    leader_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=0)
+    current_date = timezone.now().date()
+    leader_projects.filter(end_date__lt=current_date, project_status__in=['Active']).update(project_status='Completed')
+    trash_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=1)
+    member_projects = Projects.objects.filter(
+        project_id__in=ProjectMembers.objects.filter(user_id=user.id, is_deleted=0, status='Accepted').values_list('project_id', flat=True),
+        is_deleted=0
+    )
+    projects = (leader_projects | member_projects).distinct()
+
+    unread_chat_counts = {}
+    pending_tasks_counts = {}
+
+    all_unread_chats = []
+    all_pending_tasks = []
+
+    # Calculate unread chat statuses and pending tasks for each project
+    for project1 in projects:
+        try:
+            group_chat = GroupChat.objects.get(project=project1)
+            chats = Chat.objects.filter(group_id=group_chat.group_id)
+            all_unread_chats = ChatStatus.objects.filter(
+                user_id=profile.user_id,
+                group_id=group_chat.group_id,
+                status=1,
+                is_deleted=0
+            )
+            all_unread_chats = chats.filter(
+                message__in=chats.values_list('message', flat=True),
+                timestamp__in=chats.values_list('timestamp', flat=True),
+            )
+            unread_chat_counts[project1.project_id] = all_unread_chats.count()
+        except GroupChat.DoesNotExist:
+            unread_chat_counts[project1.project_id] = 0
+
+        # Count pending tasks
+        all_pending_tasks = Tasks.objects.filter(
+            project=project,
+            is_deleted=0
+        ).exclude(
+            task_status__in=['Completed Early', 'Completed Today', 'Completed Late']
+        )
+        pending_tasks_counts[project1.project_id] = all_pending_tasks.count()
+
+    date_filter_display = "All Time"
+    status_filter_display = "All Resources"
+
+    if request.method == "POST":
+        action = request.POST.get('action')
+        action1 = request.POST.get('action1')
+        selected_resource_ids = request.POST.getlist('selected_resources')  # Handles multiple selections
+        selected_resource_id = request.POST.get('selected_resource')  # Handles single selection
+        
+        # Debugging: Print received values
+        print(f'action: {action}')
+        print(f'action1: {action1}')
+        print(f'selected_resource_ids: {selected_resource_ids}')
+        print(f'selected_resource_id: {selected_resource_id}')
+        
+        # Handle actions based on POST data
+        if action == 'bookmark':
+            if selected_resource_ids:
+                for resource_id in selected_resource_ids:
+                    try:
+                        item_id = int(resource_id)
+                        bookmarkR = Bookmarks(
+                            item_type='Resource',
+                            item_id=item_id,
+                            user_id=request.user.id,
+                            project_id=project.project_id,
+                            timestamp=timezone.now(),
+                            is_deleted=0
+                        )
+                        bookmarkR.save()
+                        messages.success(request, 'Resources bookmarked successfully.')
+                    except ValueError:
+                        messages.error(request, f'Invalid resource ID: {resource_id}.')
+                        return HttpResponseBadRequest(f'Invalid resource ID: {resource_id}')
+            else:
+                messages.error(request, 'No resources selected for bookmarking.')
+                return HttpResponseBadRequest('No resources selected')
+        
+        elif action == 'unbookmark':
+            if selected_resource_ids:
+                Bookmarks.objects.filter(
+                    item_id__in=selected_resource_ids,
+                    item_type='Resource',
+                    user_id=request.user.id
+                ).update(is_deleted=1)
+                messages.success(request, 'Resources unbookmarked successfully.')
+            else:
+                messages.error(request, 'No resources selected for unbookmarking.')
+                return HttpResponseBadRequest('No resources selected')
+
+        elif action1 == 'bookmark1':
+            if selected_resource_id:
+                try:
+                    item_id = int(selected_resource_id)
+                    bookmarkR = Bookmarks(
+                        item_type='Resource',
+                        item_id=item_id,
+                        user_id=request.user.id,
+                        project_id=project.project_id,
+                        timestamp=timezone.now(),
+                        is_deleted=0
+                    )
+                    bookmarkR.save()
+                    messages.success(request, 'Resource bookmarked successfully.')
+                except ValueError:
+                    messages.error(request, 'Invalid resource ID.')
+                    return HttpResponseBadRequest('Invalid resource ID')
+            else:
+                messages.error(request, 'No resource selected for bookmarking.')
+                return HttpResponseBadRequest('No resource selected')
+
+        elif action1 == 'unbookmark1':
+            if selected_resource_id:
+                try:
+                    item_id = int(selected_resource_id)
+                    Bookmarks.objects.filter(
+                        item_id=item_id,
+                        item_type='Resource',
+                        user_id=request.user.id
+                    ).update(is_deleted=1)
+                    messages.success(request, 'Resource unbookmarked successfully.')
+                except ValueError:
+                    messages.error(request, 'Invalid resource ID.')
+                    return HttpResponseBadRequest('Invalid resource ID')
+            else:
+                messages.error(request, 'No resource selected for unbookmarking.')
+                return HttpResponseBadRequest('No resource selected')
+
+        elif action == 'delete1':
+            if selected_resource_ids:
+                Resources.objects.filter(resource_id__in=selected_resource_ids).update(is_deleted=2)
+                messages.success(request, 'Resources permanently deleted.')
+            else:
+                messages.error(request, 'No resources selected for deletion.')
+                return HttpResponseBadRequest('No resources selected')
+        
+        elif action == 'restore':
+            if selected_resource_ids:
+                Resources.objects.filter(resource_id__in=selected_resource_ids).update(is_deleted=0)
+                messages.success(request, 'Resources restored successfully.')
+            else:
+                messages.error(request, 'No resources selected for restoration.')
+                return HttpResponseBadRequest('No resources selected')
+
+        action = None
+        action1 = None
+        selected_resource_ids = []
+        selected_resource_id = []
+
+        return redirect('resources', pk=pk)
+
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        all_resources = all_resources.filter(Q(resource_name__icontains=search_query)|Q(resource_details__icontains=search_query))
+
+    # Apply date filtering
+    date_filter = request.GET.get('date_filter')
+    if date_filter:
+        if date_filter == 'today':
+            all_projects = all_projects.filter(created_at__date=current_date)
+            date_filter_display = "Today"
+        elif date_filter == 'this_week':
+            start_of_week = current_date - timedelta(days=current_date.weekday())
+            all_projects = all_projects.filter(created_at__date__gte=start_of_week)
+            date_filter_display = "This Week"
+        elif date_filter == 'this_month':
+            all_projects = all_projects.filter(created_at__year=current_date.year, created_at__month=current_date.month)
+            date_filter_display = "This Month"
+        elif date_filter == 'this_year':
+            all_projects = all_projects.filter(created_at__year=current_date.year)
+            date_filter_display = "This Year"
+
+    # Get the filter type from the query parameters (default to 'all')
+    filter_type = request.GET.get('filter', 'all')
+
+    # Apply filtering based on the selected filter type
+    if filter_type == 'Video':
+        resources = all_resources.filter(resource_type='Video')
+    elif filter_type == 'Image':
+        resources = all_resources.filter(resource_type='Image')
+    elif filter_type == 'Audio':
+        resources = all_resources.filter(resource_type='Audio')
+    elif filter_type == 'Document':
+        resources = all_resources.filter(resource_type='Document')
+    elif filter_type == 'video':
+        resources = all_resources.filter(resource_type='Video')
+    elif filter_type == 'image':
+        resources = all_resources.filter(resource_type='Image')
+    elif filter_type == 'audio':
+        resources = all_resources.filter(resource_type='Audio')
+    elif filter_type == 'document':
+        resources = all_resources.filter(resource_type='Document')
+    elif filter_type == 'bookmarked':
+        resources = bookmarked_resources
+    else:
+        resources = all_resources
+
+    # Implement pagination (3 resources per page)
+    paginator = Paginator(resources, 3)
+    page_number = request.GET.get('page', 1)  # Default to page 1 if not provided
+    try:
+        page_number = int(page_number)
+        if page_number < 1:
+            page_number = 1
+        resources = paginator.page(page_number)
+    except (ValueError, EmptyPage):
+        resources = paginator.page(1)
+
     context = {
         'auth_user': request.user,
         'fname': user.first_name,
@@ -94,8 +333,24 @@ def resources(request, pk):
         'project': project,
         'type': profile.user_type,
         'resources': resources,
+        'all_resources': all_resources,
+        'trash_resources': trash_resources,
+        'video_count': video_count,
+        'document_count': document_count,
+        'image_count': image_count,
+        'audio_count': audio_count,
+        'trash_resources_count': trash_resources_count,
+        'bookmark_resources_count': bookmark_resources_count,
+        'bookmarked_resources_ids': bookmarked_resources_ids,
         'leader_profile': leader_profile,
         'resource_count': resource_count,
+        'status_filter_display': status_filter_display,
+        'date_filter_display': date_filter_display,
+        'unread_chat_counts': unread_chat_counts,
+        'all_unread_chats': all_unread_chats,
+        'all_pending_tasks': all_pending_tasks,
+        'pending_tasks_counts': pending_tasks_counts,
+        'type': type,
     }
     return render(request, 'resources.html', context)
 
@@ -105,18 +360,30 @@ def add_resource(request, pk):
         project = get_object_or_404(Projects, pk=pk)
         file = request.FILES.get('resource_file')
         chat_file = None
+        file_size = None
+
         if file:
             profile_picture = file
             unique_filename = str(uuid.uuid4()) + os.path.splitext(profile_picture.name)[1]
             profile_picture_path = default_storage.save(unique_filename, profile_picture)
 
-            # Move the image to the desired directory under MEDIA_ROOT
+            # Move the file to the desired directory under MEDIA_ROOT
             dest_path = os.path.join(settings.MEDIA_ROOT, 'project_resources', unique_filename)
 
             try:
                 os.makedirs(os.path.dirname(dest_path), exist_ok=True)
                 os.rename(os.path.join(settings.MEDIA_ROOT, profile_picture_path), dest_path)
                 chat_file = 'project_resources/' + unique_filename
+                
+                # Get file size in kilobytes (KB) or megabytes (MB)
+                file_size = file.size
+                if file_size < 1024:
+                    file_size_str = f"{file_size} B"
+                elif file_size < 1024 * 1024:
+                    file_size_str = f"{file_size / 1024:.2f} KB"
+                else:
+                    file_size_str = f"{file_size / (1024 * 1024):.2f} MB"
+
             except Exception as e:
                 messages.error(request, f"Error saving project file: {str(e)}")
                 return redirect('resources', pk=pk)
@@ -127,10 +394,10 @@ def add_resource(request, pk):
             resource_name=request.POST['resource_name'],
             resource_details=request.POST['resource_details'],
             resource_type=request.POST['resource_type'],
-            resource_status='All',
-            resource_directory = chat_file,
-            is_deleted = 0,
-            status='Pending',
+            resource_directory=chat_file,
+            resource_size=file_size_str,
+            is_deleted=0,
+            resource_status='Active',
             created_at=timezone.now()
         )
         resource.save()
@@ -142,6 +409,20 @@ def add_resource(request, pk):
 def delete_resource(request, pk, resource_id):
     resource = get_object_or_404(Resources, pk=resource_id, project__pk=pk)
     resource.is_deleted = 1
+    resource.save()
+    return redirect('resources', pk=pk)
+
+@login_required
+def restore_resource(request, pk, resource_id):
+    resource = get_object_or_404(Resources, pk=resource_id, project__pk=pk)
+    resource.is_deleted = 0
+    resource.save()
+    return redirect('resources', pk=pk)
+
+@login_required
+def hide_resource(request, pk, resource_id):
+    resource = get_object_or_404(Resources, pk=resource_id, project__pk=pk)
+    resource.is_deleted = 2
     resource.save()
     return redirect('resources', pk=pk)
 
@@ -456,7 +737,29 @@ def complete_task(request, pk, task_id):
 @login_required
 def delete_project(request, pk):
     project = get_object_or_404(Projects, project_id=pk)
+
+    # Check if the logged-in user is the project leader
+    if project.project_leader != request.user:
+        messages.error(request, "You do not have permission to delete this project.")
+        return redirect('client')
+
+    # Proceed with deletion if the user is the project leader
     project.is_deleted = 1
+    project.save()
+    messages.success(request, "Project deleted successfully.")
+    return redirect('client')
+
+@login_required
+def restore_project(request, pk):
+    project = get_object_or_404(Projects, project_id=pk)
+    project.is_deleted = 0
+    project.save()
+    return redirect('client')
+
+@login_required
+def hide_project(request, pk):
+    project = get_object_or_404(Projects, project_id=pk)
+    project.is_deleted = 2
     project.save()
     return redirect('client')
 
@@ -512,9 +815,55 @@ def project_detail(request, pk):
     user = request.user
     profile = user.profile
     now = date.today()
+    type = profile.user_type
     today = now.strftime('%Y-%m-%d')
     project = get_object_or_404(Projects, pk=pk)
     leader_profile = Profile.objects.get(user_id=project.leader_id)
+    leader_user = Users.objects.get(user_id=project.leader_id)
+
+    leader_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=0)
+    current_date = timezone.now().date()
+    leader_projects.filter(end_date__lt=current_date, project_status__in=['Active']).update(project_status='Completed')
+    trash_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=1)
+    member_projects = Projects.objects.filter(
+        project_id__in=ProjectMembers.objects.filter(user_id=user.id, is_deleted=0, status='Accepted').values_list('project_id', flat=True),
+        is_deleted=0
+    )
+    projects = (leader_projects | member_projects).distinct()
+
+    unread_chat_counts = {}
+    pending_tasks_counts = {}
+
+    all_unread_chats = []
+    all_pending_tasks = []
+
+    # Calculate unread chat statuses and pending tasks for each project
+    for project1 in projects:
+        try:
+            group_chat = GroupChat.objects.get(project=project1)
+            chats = Chat.objects.filter(group_id=group_chat.group_id)
+            all_unread_chats = ChatStatus.objects.filter(
+                user_id=profile.user_id,
+                group_id=group_chat.group_id,
+                status=1,
+                is_deleted=0
+            )
+            all_unread_chats = chats.filter(
+                message__in=chats.values_list('message', flat=True),
+                timestamp__in=chats.values_list('timestamp', flat=True),
+            )
+            unread_chat_counts[project1.project_id] = all_unread_chats.count()
+        except GroupChat.DoesNotExist:
+            unread_chat_counts[project1.project_id] = 0
+
+        # Count pending tasks
+        all_pending_tasks = Tasks.objects.filter(
+            project=project,
+            is_deleted=0
+        ).exclude(
+            task_status__in=['Completed Early', 'Completed Today', 'Completed Late']
+        )
+        pending_tasks_counts[project1.project_id] = all_pending_tasks.count()
 
     # Query for project members
     project_members = ProjectMembers.objects.filter(project=project, is_deleted=0)
@@ -574,13 +923,15 @@ def project_detail(request, pk):
     member_status = None  # Initialize member_status as None
     for member in project_members:
         member_profile = Profile.objects.get(user_id=member.user_id)
+        member_user = Users.objects.get(user_id=member.user_id)
         member_info = {
             'first_name': member_profile.user.first_name,
             'last_name': member_profile.user.last_name,
             'phone_number': member_profile.phone_number,
             'image': member_profile.profile_picture.url if member_profile.profile_picture else None,
             'id': member_profile.user.id,
-            'role': 'client' if member_profile.user_type == 'client' else 'contractor'
+            'role': 'client' if member_profile.user_type == 'client' else 'contractor',
+            'online': member_user.online,
         }
         project_member_details.append(member_info)
         member_status = member.status  # Set member_status to the status of the last member
@@ -588,7 +939,7 @@ def project_detail(request, pk):
     # Exclude users who are already members of the project
     existing_members = ProjectMembers.objects.filter(project=project, is_deleted=0).values_list('user_id', flat=True)
     clients_profiles = Profile.objects.filter(user_type='Client').exclude(user__id__in=existing_members)
-    contractors_profiles = Profile.objects.filter(user_type='contractor').exclude(user__id__in=existing_members)
+    contractors_profiles = Profile.objects.filter(user_type='Contractor').exclude(user__id__in=existing_members)
     users = list(clients_profiles) + list(contractors_profiles)
 
     # Retrieve user details from User model
@@ -605,6 +956,25 @@ def project_detail(request, pk):
         }
         user_details.append(user_info)
 
+    open_pmembers = False
+
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        # Filter the list using list comprehension
+        user_details = [user for user in user_details if search_query.lower() in user['first_name'].lower()]
+        open_pmembers = True
+
+    # Implement pagination (4 user details per page)
+    paginator = Paginator(user_details, 4)
+    page_number = request.GET.get('page', 1)  # Default to page 1 if not provided
+    try:
+        page_number = int(page_number)
+        if page_number < 1:
+            page_number = 1
+        user_details = paginator.page(page_number)
+    except (ValueError, EmptyPage):
+        projects = paginator.page(1)
+
     # Fetch unread messages from ChatStatus table
     unread_messages = ChatStatus.objects.filter(user_id=user.id, group=project.groupchat, status=1, is_deleted=0)
 
@@ -619,7 +989,7 @@ def project_detail(request, pk):
     context = {
         'auth_user': request.user,
         'fname': user.first_name,
-        'image1': profile.profile_picture.url if profile.profile_picture else None,
+        'image': profile.profile_picture if profile.profile_picture else None,
         'type': profile.user_type,
         'MEDIA_URL': settings.MEDIA_URL,
         'day': today,
@@ -639,9 +1009,16 @@ def project_detail(request, pk):
         'pending_tasks1': pending_tasks1,
         'completed_tasks1': completed_tasks1,
         'leader_profile': leader_profile,
+        'leader_user': leader_user,
         'pending_tasks': pending_tasks,
         'project_membersC': project_membersC,
         'progress_percentage': progress_percentage,
+        'unread_chat_counts': unread_chat_counts,
+        'all_unread_chats': all_unread_chats,
+        'all_pending_tasks': all_pending_tasks,
+        'pending_tasks_counts': pending_tasks_counts,
+        'type': type,
+        'open_pmembers': open_pmembers,
     }
     return render(request, 'project-details.html', context)
 
@@ -1083,60 +1460,196 @@ def remove_project_member(request, pk):
     return render(request, 'project-details.html', context)
 
 @login_required
-def client(request):
+def exit_project(request, pk):
     user = request.user
     profile = user.profile
     now = date.today()
     today = now.strftime('%Y-%m-%d')
+    project = get_object_or_404(Projects, pk=pk)
+    leader_profile = Profile.objects.get(user_id=project.leader_id)
 
-    # Fetch projects where the current user is the leader
+    # Query for project members
+    project_members = ProjectMembers.objects.filter(project=project, is_deleted=0)
+
+    Bookmarks.objects.filter(item_id__in=project).update(is_deleted=1)
+
+    if request.method == 'POST':
+        try:
+            uid = request.POST.get('uid')
+
+            # Retrieve the project member to update
+            project_member = ProjectMembers.objects.get(user_id=uid)
+
+            # Update the status
+            project_member.is_deleted = 1
+            project_member.status = 'Exited'
+            project_member.save()
+
+            messages.success(request, '')
+            # return redirect('project_detail', pk=project.pk)  # Redirect to the project_detail page after successful update
+
+        except ProjectMembers.DoesNotExist:
+            messages.error(request, 'Project member not found.')
+            # return redirect('project_detail', pk=project.pk)  # Redirect or render an error page as needed
+
+        except Exception as e:
+            messages.error(request, f"Error updating project member status: {str(e)}")
+            # return redirect('project_detail', pk=project.pk)  # Redirect or render an error page as needed
+
+        # return redirect('project_detail', pk=project.pk)
+
+    # Query for clients and contractors
+    clients_profiles = Profile.objects.filter(user_type='client').exclude(user=user)
+    contractors_profiles = Profile.objects.filter(user_type='contractor').exclude(user=user)
+
+    # Combine clients and contractors into a single list
+    users = list(clients_profiles) + list(contractors_profiles)
+
+    # Retrieve user details from User model
+    user_details = []
+    for profile in users:
+        user_info = {
+            'first_name': profile.user.first_name,
+            'last_name': profile.user.last_name,
+            'phone_number': profile.phone_number,
+            'id': profile.user.id,
+            'role': 'client' if profile.user_type == 'client' else 'contractor'
+        }
+        user_details.append(user_info)
+
+    context = {
+        'auth_user': request.user,
+        'fname': user.first_name,
+        'image': profile.profile_picture.url if profile.profile_picture else None,
+        'MEDIA_URL': settings.MEDIA_URL,
+        'day': today,
+        'project': project,
+        'type': profile.user_type,
+        'member_status': member.status,
+        'leader_profile': leader_profile,
+        'user_details': user_details,
+    }
+    return redirect('client')
+
+@login_required
+def client(request):
+    user = request.user
+    profile = user.profile
+    type = profile.user_type
+    now = date.today()
+    today = now.strftime('%Y-%m-%d')
+
+    # Fetch projects where the current user is the leader or a member
     leader_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=0)
-
-    # Fetch projects where the current user is a member
+    current_date = timezone.now().date()
+    leader_projects.filter(end_date__lt=current_date, project_status__in=['Active']).update(project_status='Completed')
+    trash_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=1)
     member_projects = Projects.objects.filter(
-        project_id__in=ProjectMembers.objects.filter(user_id=user.id, is_deleted=0, status='Accepted').values_list('project_id', flat=True)
+        project_id__in=ProjectMembers.objects.filter(user_id=user.id, is_deleted=0, status='Accepted').values_list('project_id', flat=True),
+        is_deleted=0
     )
+    bookmarks = Bookmarks.objects.filter(is_deleted=0, item_type='Project', user_id=request.user.id)
+    bookmarked_project_ids = bookmarks.values_list('item_id', flat=True)
+    bookmarked_projects = Projects.objects.filter(project_id__in=bookmarked_project_ids)
+    all_projects = (leader_projects | member_projects | bookmarked_projects).distinct()
 
-    # Combine both queries using OR condition
-    projects = leader_projects | member_projects
+    # Calculate counts for each category
+    all_projects_count = all_projects.count()
+    active_projects_count = all_projects.filter(project_status='Active').count()
+    completed_projects_count = all_projects.filter(project_status='Completed').count()
+    trash_projects_count = trash_projects.count()
+    bookmark_projects_count = bookmarked_projects.count()
+    # Initialize filter information
+    date_filter_display = "All Time"
+    status_filter_display = "All Projects"
 
-    # Initialize unread chat counts and pending tasks dictionaries
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        all_projects = all_projects.filter(project_name__icontains=search_query)
+
+    # Apply date filtering
+    date_filter = request.GET.get('date_filter')
+    if date_filter:
+        if date_filter == 'today':
+            all_projects = all_projects.filter(created_at__date=current_date)
+            date_filter_display = "Today"
+        elif date_filter == 'this_week':
+            start_of_week = current_date - timedelta(days=current_date.weekday())
+            all_projects = all_projects.filter(created_at__date__gte=start_of_week)
+            date_filter_display = "This Week"
+        elif date_filter == 'this_month':
+            all_projects = all_projects.filter(created_at__year=current_date.year, created_at__month=current_date.month)
+            date_filter_display = "This Month"
+        elif date_filter == 'this_year':
+            all_projects = all_projects.filter(created_at__year=current_date.year)
+            date_filter_display = "This Year"
+
+    # Apply status filtering
+    filter_type = request.GET.get('filter', 'all')
+    if filter_type == 'active':
+        projects = all_projects.filter(project_status='Active')
+        status_filter_display = "Active Projects"
+    elif filter_type == 'completed':
+        projects = all_projects.filter(project_status='Completed')
+        status_filter_display = "Completed Projects"
+    elif filter_type == 'bookmarked':
+        projects = bookmarked_projects
+        status_filter_display = "Bookmarked Projects"
+    else:
+        projects = all_projects
+        status_filter_display = "All Projects"
+
+    # Implement pagination (4 projects per page)
+    paginator = Paginator(projects, 4)
+    page_number = request.GET.get('page', 1)  # Default to page 1 if not provided
+    try:
+        page_number = int(page_number)
+        if page_number < 1:
+            page_number = 1
+        projects = paginator.page(page_number)
+    except (ValueError, EmptyPage):
+        projects = paginator.page(1)
+
     unread_chat_counts = {}
     pending_tasks_counts = {}
-    progress_values = {}
     progress_percentages = {}
 
-    # Calculate unread chat statuses and pending tasks for each project
+    all_unread_chats = []
+    all_pending_tasks = []
+
+  # Calculate unread chat statuses and pending tasks for each project
     for project in projects:
         try:
             group_chat = GroupChat.objects.get(project=project)
-            unread_count = ChatStatus.objects.filter(
+            chats = Chat.objects.filter(group_id=group_chat.group_id)
+            all_unread_chats = ChatStatus.objects.filter(
                 user_id=profile.user_id,
                 group_id=group_chat.group_id,
                 status=1,
-                is_deleted=0,
-            ).count()
-            unread_chat_counts[project.project_id] = unread_count
+                is_deleted=0
+            )
+            all_unread_chats = chats.filter(
+                message__in=chats.values_list('message', flat=True),
+                timestamp__in=chats.values_list('timestamp', flat=True),
+            )
+            unread_chat_counts[project.project_id] = all_unread_chats.count()
         except GroupChat.DoesNotExist:
             unread_chat_counts[project.project_id] = 0
 
         # Count pending tasks
-        pending_tasks_count = Tasks.objects.filter(
+        all_pending_tasks = Tasks.objects.filter(
             project=project,
             is_deleted=0
         ).exclude(
             task_status__in=['Completed Early', 'Completed Today', 'Completed Late']
-        ).count()
-        pending_tasks_counts[project.project_id] = pending_tasks_count
+        )
+        pending_tasks_counts[project.project_id] = all_pending_tasks.count()
 
         # Calculate progress value
         total_days = (project.end_date - project.start_date).days
         days_left = (project.end_date - now).days
         progress_percentage = ((total_days - days_left) / total_days) * 100 if total_days > 0 else 0
         progress_percentages[project.project_id] = progress_percentage
-
-    # Count the number of projects where the current user is the leader
-    project_count = projects.count()
 
     # Count pending project invitations for the current user
     pending_project_count = ProjectMembers.objects.filter(user_id=profile.user_id, status='Pending').count()
@@ -1153,96 +1666,179 @@ def client(request):
     users = list(clients) + list(contractors)
 
     if request.method == 'POST':
-        pname = request.POST.get('pname')
-        sdate = request.POST.get('sdate')
-        edate = request.POST.get('edate')
-        ebug = request.POST.get('ebug')
-        pdet = request.POST.get('pdet')
-        image = request.FILES.get('image')
+        action = request.POST.get('action')
+        action1 = request.POST.get('action1')
+        selected_project_ids = request.POST.getlist('selected_projects')
+        selected_project_id = request.POST.get('selected_project')
 
-        # Check if all required form inputs are present
-        if not all([pname, sdate, edate, ebug, pdet]):
-            messages.error(request, 'Please fill in all required fields.')
-            return render(request, 'client.html', {'fname': user.first_name, 'image': profile.profile_picture.url if profile.profile_picture else None, 'MEDIA_URL': settings.MEDIA_URL, 'day': today})
+        if action == 'delete':
+            user_id = request.user.id
+            projects = Projects.objects.filter(project_id__in=selected_project_ids)
+            
+            for project in projects:
+                if project.leader_id != user_id:
+                    messages.error(request, "You do not have permission to delete one or more of the selected projects.")
+                    return redirect('client')
 
-        try:
-            start_date = date.fromisoformat(sdate)
-            end_date = date.fromisoformat(edate)
-            total_days = (end_date - start_date).days
-            actual_expenditure = 0
-            balance = float(ebug)
-            project_status = 'Active'
-            leader_id = user.id  # Use the logged-in user's ID
-            is_deleted = 0
-
-            # Save the image if provided
-            project_image = None
-            if image:
-                profile_picture = image
-                unique_filename = str(uuid.uuid4()) + os.path.splitext(profile_picture.name)[1]
-                profile_picture_path = default_storage.save(unique_filename, profile_picture)
-
-                # Move the image to the desired directory under MEDIA_ROOT
-                dest_path = os.path.join(settings.MEDIA_ROOT, 'project_images', unique_filename)
-
-                try:
-                    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-                    os.rename(os.path.join(settings.MEDIA_ROOT, profile_picture_path), dest_path)
-                    project_image = 'project_images/' + unique_filename
-                except Exception as e:
-                    messages.error(request, f"Error saving project image: {str(e)}")
-                    return render(request, 'dashboard.html', {'fname': user.first_name, 'image': profile.profile_picture.url if profile.profile_picture else None, 'MEDIA_URL': settings.MEDIA_URL, 'day': today})
-
-            # Save the project details
-            project = Projects(
-                leader_id=leader_id,
-                project_name=pname,
-                project_details=pdet,
-                project_image=project_image,
-                created_at=timezone.now(),
-                start_date=start_date,
-                end_date=end_date,
-                total_days=total_days,
-                estimated_budget=balance,
-                actual_expenditure=actual_expenditure,
-                balance=balance,
-                project_status=project_status,
-                is_deleted=is_deleted,
+            projects.update(is_deleted=1)
+            messages.success(request, 'Selected projects have been deleted.')
+            return redirect('client')
+        elif action == 'bookmark':
+            for project_id in selected_project_ids:
+                bookmarkP = Bookmarks(
+                    item_type='Project',
+                    item_id=project_id,
+                    user_id=request.user.id,
+                    project_id=0,
+                    timestamp=timezone.now(),
+                    is_deleted=0
+                )
+                bookmarkP.save()
+            messages.success(request, '')
+            return redirect('client')
+        elif action == 'unbookmark':
+            Bookmarks.objects.filter(item_id__in=selected_project_ids, item_type='Project', user_id=request.user.id).update(is_deleted=1)
+            messages.success(request, '')
+            return redirect('client')
+        elif action1 == 'bookmark1':
+            bookmarkP = Bookmarks(
+                item_type='Project',
+                item_id=selected_project_id,
+                user_id=request.user.id,
+                project_id=0,
+                timestamp=timezone.now(),
+                is_deleted=0
             )
-            project.save()
-            messages.success(request, 'Project created successfully.')
-            return redirect('client')  # Adjust the redirect as needed
+            bookmarkP.save()
+            messages.success(request, '')
+            return redirect('client')
+        elif action1 == 'unbookmark1':
+            Bookmarks.objects.filter(item_id__in=selected_project_id, item_type='Project', user_id=request.user.id).update(is_deleted=1)
+            messages.success(request, '')
+            return redirect('client')
+        elif action == 'delete1':
+            user_id = request.user.id
+            projects = Projects.objects.filter(project_id__in=selected_project_ids)
+            
+            for project in projects:
+                if project.leader_id != user_id:
+                    messages.error(request, "You do not have permission to delete one or more of the selected projects.")
+                    return redirect('client')
 
-        except Exception as e:
-            messages.error(request, f"Error processing form: {str(e)}")
-            return render(request, 'dashboard.html', {'fname': user.first_name, 'image': profile.profile_picture.url if profile.profile_picture else None, 'MEDIA_URL': settings.MEDIA_URL, 'day': today})
+            projects.update(is_deleted=2)
+            messages.success(request, 'Selected projects have been deleted.')
+            return redirect('client')
+        elif action == 'restore':
+            Projects.objects.filter(project_id__in=selected_project_ids).update(is_deleted=0)
+            messages.success(request, '')
+            return redirect('client')
+        else:
+            pname = request.POST.get('pname')
+            sdate = request.POST.get('sdate')
+            edate = request.POST.get('edate')
+            ebug = request.POST.get('ebug')
+            pdet = request.POST.get('pdet')
+            image = request.FILES.get('image')
 
-    # Initialize member status as None
-    member_status = None
-    if projects.exists():
-        # Fetch the first project and check for members
-        first_project = projects.first()
-        project_members = ProjectMembers.objects.filter(project=first_project, is_deleted=0)
-        if project_members.exists():
-            # Set member status based on the first member found
-            member_status = project_members.first().status
+            # Check if all required form inputs are present
+            if not all([pname, sdate, edate, ebug, pdet]):
+                messages.error(request, 'Please fill in all required fields.')
+                return render(request, 'dashboard.html', {'fname': user.first_name, 'image': profile.profile_picture.url if profile.profile_picture else None, 'MEDIA_URL': settings.MEDIA_URL, 'day': today})
+
+            try:
+                start_date = date.fromisoformat(sdate)
+                end_date = date.fromisoformat(edate)
+                total_days = (end_date - start_date).days
+                actual_expenditure = 0
+                balance = float(ebug)
+                project_status = 'Active'
+                leader_id = user.id  # Use the logged-in user's ID
+                is_deleted = 0
+
+                # Save the image if provided
+                project_image = None
+                if image:
+                    profile_picture = image
+                    unique_filename = str(uuid.uuid4()) + os.path.splitext(profile_picture.name)[1]
+                    profile_picture_path = default_storage.save(unique_filename, profile_picture)
+
+                    # Move the image to the desired directory under MEDIA_ROOT
+                    dest_path = os.path.join(settings.MEDIA_ROOT, 'project_images', unique_filename)
+
+                    try:
+                        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+                        os.rename(os.path.join(settings.MEDIA_ROOT, profile_picture_path), dest_path)
+                        project_image = 'project_images/' + unique_filename
+                    except Exception as e:
+                        messages.error(request, f"Error saving project image: {str(e)}")
+                        return render(request, 'dashboard.html', {'fname': user.first_name, 'image': profile.profile_picture.url if profile.profile_picture else None, 'MEDIA_URL': settings.MEDIA_URL, 'day': today})
+
+                # Save the project details
+                project1 = Projects(
+                    leader_id=leader_id,
+                    project_name=pname,
+                    project_details=pdet,
+                    project_image=project_image,
+                    created_at=timezone.now(),
+                    start_date=start_date,
+                    end_date=end_date,
+                    total_days=total_days,
+                    estimated_budget=balance,
+                    actual_expenditure=actual_expenditure,
+                    balance=balance,
+                    project_status=project_status,
+                    is_deleted=is_deleted
+                )
+                project1.save()
+                group_chat = GroupChat(
+                leader_id=leader_id,
+                project=project1,
+                group_name=pname,  
+                is_deleted=is_deleted,
+                )
+                group_chat.save()
+                messages.success(request, '')
+                return redirect('client')  # Adjust the redirect as needed
+
+            except Exception as e:
+                messages.error(request, f"Error processing form: {str(e)}")
+                return render(request, 'dashboard.html', {'fname': user.first_name, 'image': profile.profile_picture.url if profile.profile_picture else None, 'MEDIA_URL': settings.MEDIA_URL, 'day': today})
+
+        # Initialize member status as None
+        member_status = None
+        if projects.exists():
+            # Fetch the first project and check for members
+            first_project = projects.first()
+            project_members = ProjectMembers.objects.filter(project=first_project, is_deleted=0)
+            if project_members.exists():
+                # Set member status based on the first member found
+                member_status = project_members.first().status
 
     context = {
         'fname': user.first_name,
         'image': profile.profile_picture.url if profile.profile_picture else None,
         'MEDIA_URL': settings.MEDIA_URL,
         'day': today,
-        'users': users,
-        'type': profile.user_type,
-        'project_count': project_count,
+        'now': now, 
         'projects': projects,
+        'filter_type': filter_type,
+        'trash_projects': trash_projects,
+        'unread_chat_counts': unread_chat_counts,
+        'all_unread_chats': all_unread_chats,
+        'all_pending_tasks': all_pending_tasks,
+        'pending_tasks_counts': pending_tasks_counts,
+        'progress_percentages': progress_percentages,
+        'all_projects_count': all_projects_count,
+        'active_projects_count': active_projects_count,
+        'bookmark_projects_count': bookmark_projects_count,
+        'status_filter_display': status_filter_display,
+        'date_filter_display': date_filter_display,
+        'completed_projects_count': completed_projects_count,
+        'trash_projects_count': trash_projects_count,
+        'type': type,
         'pending_projects': pending_projects,
         'pending_project_count': pending_project_count,
-        'unread_chat_counts': unread_chat_counts,  
-        'pending_tasks_counts': pending_tasks_counts,  
-        'progress_values': progress_values, 
-        'progress_percentages': progress_percentages, 
-        'member_status': member_status,  
+        'bookmarked_project_ids': bookmarked_project_ids,
     }
     messages.info(request, "")
     return render(request, 'dashboard.html', context)
@@ -1294,7 +1890,7 @@ def update_project_member(request):
             project_member.status = stat
             project_member.save()
 
-            messages.success(request, 'Project member status updated successfully.')
+            messages.success(request, '')
             return redirect('client')  # Redirect to the client page after successful update
 
         except ProjectMembers.DoesNotExist:
@@ -1330,6 +1926,10 @@ def validate_password(password):
         re.search(r'[!@#$%^&*(),.?":{}|<>]', password)):
         return True
     return False
+
+from django.core.mail import send_mail
+import uuid
+import os
 
 def signup(request):
     if request.method == "POST":
@@ -1386,23 +1986,23 @@ def signup(request):
         )
         messages.success(request, "")
 
-        # Authenticate and log in the user
-        auth_user = authenticate(request, username=email, password=password)
-        if auth_user is not None:
-            login(request, auth_user)
-            if hasattr(request.user, 'profile'):
-                if request.user.profile.user_type == 'Admin':
-                    return redirect('admin1')  # Ensure 'admin' matches your URL name
-                elif request.user.profile.user_type == 'Client':
-                            return redirect('client')  # Ensure 'client' matches your URL name
-                elif request.user.profile.user_type == 'Contractor':
-                            return redirect('client')  # Ensure 'contractor' matches your URL name
-                else:
-                        # Handle cases where profile doesn't exist
-                    return redirect('home')  # Ensure 'home' matches your URL name
-        else:
-            messages.error(request, 'Failed to log in. Please try again.')
-            return render(request, 'login.html')
+        # Generate OTP
+        otp, created = OTP.objects.get_or_create(user=user)
+        otp.generate_otp()
+
+        # Send OTP to user's email
+        send_mail(
+            'Site Sync: OTP Code',
+            f'Your OTP code is {otp.otp_code}. \n\n Thank you for choosing Site Sync.',
+            'sitesync2024@gmail.com',  # Replace with your email
+            [user.email],
+            fail_silently=False,
+        )
+
+        # Store the user ID in session to use during OTP verification
+        request.session['user_id'] = user.id
+        messages.success(request, 'OTP has been sent to your email. Please verify to complete the signup process.')
+        return redirect('verify_otp')
 
     return render(request, 'register.html')
 
@@ -1429,7 +2029,7 @@ def complete_profile(request):
         elif request.user.profile.user_type == 'Client':
             return redirect('client')  # Ensure 'client' matches your URL name
         elif request.user.profile.user_type == 'Contractor':
-            return redirect('contractor')  # Ensure 'contractor' matches your URL name
+            return redirect('client')  # Ensure 'contractor' matches your URL name
         else:
             return redirect('home')  # Ensure 'home' matches your URL name
 
@@ -1439,8 +2039,52 @@ def complete_profile(request):
 def profile(request):
     user = request.user
     profile = user.profile
-    userU = Users.objects.filter(user_id=user.id)
+    user_type = profile.user_type
+    user_id = profile.user_id
 
+    leader_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=0)
+    current_date = timezone.now().date()
+    leader_projects.filter(end_date__lt=current_date, project_status__in=['Active']).update(project_status='Completed')
+    trash_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=1)
+    member_projects = Projects.objects.filter(
+        project_id__in=ProjectMembers.objects.filter(user_id=user.id, is_deleted=0, status='Accepted').values_list('project_id', flat=True),
+        is_deleted=0
+    )
+    projects = (leader_projects | member_projects).distinct()
+
+    unread_chat_counts = {}
+    pending_tasks_counts = {}
+
+    all_unread_chats = []
+    all_pending_tasks = []
+
+    # Calculate unread chat statuses and pending tasks for each project
+    for project in projects:
+        try:
+            group_chat = GroupChat.objects.get(project=project)
+            chats = Chat.objects.filter(group_id=group_chat.group_id)
+            all_unread_chats = ChatStatus.objects.filter(
+                user_id=profile.user_id,
+                group_id=group_chat.group_id,
+                status=1,
+                is_deleted=0
+            )
+            all_unread_chats = chats.filter(
+                message__in=chats.values_list('message', flat=True),
+                timestamp__in=chats.values_list('timestamp', flat=True),
+            )
+            unread_chat_counts[project.project_id] = all_unread_chats.count()
+        except GroupChat.DoesNotExist:
+            unread_chat_counts[project.project_id] = 0
+
+        # Count pending tasks
+        all_pending_tasks = Tasks.objects.filter(
+            project=project,
+            is_deleted=0
+        ).exclude(
+            task_status__in=['Completed Early', 'Completed Today', 'Completed Late']
+        )
+        pending_tasks_counts[project.project_id] = all_pending_tasks.count()
 
     if request.method == "POST":
         email = request.POST.get('email')
@@ -1448,15 +2092,16 @@ def profile(request):
         # Check if the email is being changed and if it already exists
         if email != user.email and User.objects.filter(email=email).exists():
             messages.error(request, "Email address already in use. Please choose a different one.")
-            return render(request, 'profile.html')
+            return redirect('profile')
 
         password = request.POST.get('password')
         if password and not validate_password(password):
             messages.error(request, "Password must be at least 8 characters long, contain uppercase and lowercase letters, numbers, and symbols.")
-            return render(request, 'profile.html')
+            return redirect('profile')
 
         # Update user details
         user.first_name = request.POST.get('fname')
+        user.email = email
         if password:
             user.set_password(password)
         user.save()
@@ -1469,37 +2114,37 @@ def profile(request):
             profile_picture = request.FILES['image']
             unique_filename = str(uuid.uuid4()) + os.path.splitext(profile_picture.name)[1]
             profile_picture_path = default_storage.save(unique_filename, profile_picture)
-            # Move the image to the desired directory under MEDIA_ROOT
             dest_path = os.path.join(settings.MEDIA_ROOT, 'profile_pictures', unique_filename)
             try:
                 os.makedirs(os.path.dirname(dest_path), exist_ok=True)
                 os.rename(os.path.join(settings.MEDIA_ROOT, profile_picture_path), dest_path)
                 profile.profile_picture = 'profile_pictures/' + unique_filename
-                profile.save()
             except Exception as e:
                 messages.error(request, f"Error saving profile picture: {str(e)}")
-                return render(request, 'profile.html')
+                return redirect('profile')
 
         profile.save()
-
-        # Update or create entry in Users model
-        # user_record, created = Users.objects.update_or_create(
-        #     user_id=profile.user_id,
-        #     defaults={
-        #         'updated_at': timezone.now(),
-        #         'user_type': profile.user_type
-        #     }
-        # )
-
-        messages.success(request, "Profile updated successfully!")
-        return redirect('user_logout')
+        
+        messages.success(request, "")
+        
+        # If the password was changed, update the session to prevent logout
+        if password:
+            update_session_auth_hash(request, user)
+        
+        return redirect('profile')
 
     context = {
         'user': user,
         'profile': profile,
+        'type': user_type,
+        'uid': user_id,
         'fname': user.first_name,
         'image': profile.profile_picture.url if profile.profile_picture else None,
         'MEDIA_URL': settings.MEDIA_URL,
+        'unread_chat_counts': unread_chat_counts,
+        'all_unread_chats': all_unread_chats,
+        'all_pending_tasks': all_pending_tasks,
+        'pending_tasks_counts': pending_tasks_counts,
     }
     return render(request, 'profile.html', context)
 
@@ -1524,6 +2169,8 @@ def verify_otp(request):
 
                     # Perform login with specified backend
                     login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+
+                    Users.objects.filter(email_address=user).update(online=1)
 
                     # Redirect based on user type
                     if hasattr(user, 'profile'):
@@ -1550,27 +2197,32 @@ def signin(request):
     if request.method == 'POST':
         identifier = request.POST.get('identifier')  # Could be email or phone number
         password = request.POST.get('password')
-        user_timezone = request.POST.get('timezone', 'UTC')
 
+        # Authenticate the user
         user = authenticate(request, username=identifier, password=password)
         
         if user is not None:
-            otp, created = OTP.objects.get_or_create(user=user)
-            otp.generate_otp()  # Regenerate OTP for existing or new entry
+            # Log in the user
+            login(request, user)
 
-            send_mail(
-                'Site Sync: OTP Code',
-                f'Your OTP code is {otp.otp_code}. \n\n Thank you for choosing, Site Sync.',
-                'sitesync2024@gmail.com',  # Replace with your email
-                [user.email],
-                fail_silently=False,
-            )
+            # Set the user as online
+            Users.objects.filter(email_address=user.email).update(online=1)
 
-            request.session['user_id'] = user.id
-            messages.success(request, 'OTP has been sent to your email.')
-            return redirect('verify_otp')
+            # Redirect based on user type
+            if hasattr(user, 'profile'):
+                if user.profile.user_type == 'Admin':
+                    return redirect('admin1')  # Ensure 'admin1' matches your URL name
+                elif user.profile.user_type == 'Client':
+                    return redirect('client')  # Ensure 'client' matches your URL name
+                elif user.profile.user_type == 'Contractor':
+                    return redirect('client')  # Ensure 'contractor' matches your URL name
+                else:
+                    return redirect('home')  # Default redirect if user type is not recognized
+            else:
+                return redirect('home')  # Redirect if the user has no profile
 
         else:
+            # Authentication failed
             messages.error(request, 'Invalid email or password.')
             return render(request, 'login.html')
 
@@ -1587,6 +2239,8 @@ def delete_user(request):
     return redirect('user_logout')
 
 def user_logout(request):
+    user = request.user
+    Users.objects.filter(email_address=user.email).update(online=0)
     logout(request)
     return redirect('/')
 

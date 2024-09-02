@@ -1,0 +1,61 @@
+
+    {% load static %}
+<!-- Messages: style can be found in dropdown.less-->
+<li class="dropdown messages-menu">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+        <i class="fa fa-envelope-o"></i>
+        <span class="label label-success">{{ all_unread_chats|length }}</span>
+    </a>
+    <ul class="dropdown-menu">
+        <li class="header">You have {{ all_unread_chats|length }} message(s)</li>
+        <li>
+            <!-- inner menu: contains the actual data -->
+            <ul class="menu">
+                {% for chat in all_unread_chats %}
+                <li>
+                    <a href="{% url 'chat' chat.group.project.project_id %}">
+                        <div class="pull-left">
+                            <img src="{{ MEDIA_URL }}{{ chat.group.project.project_image }}" class="img-circle" alt="{{ chat.group.project.project_name }}"/>
+                        </div>
+                        <h4>
+                            {{ chat.group.project.project_name }}
+                            <small><i class="fa fa-clock-o"></i> {{ chat.timestamp|timesince }} ago</small>
+                        </h4>
+                        <p style="color: black;">{{ chat.sender_user.first_name }}: {{ chat.message }}</p>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </li>
+        <!-- <li class="footer"><a href="#">See All Messages</a></li> -->
+    </ul>
+</li>
+
+<!-- Tasks: style can be found in dropdown.less -->
+<li class="dropdown tasks-menu">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+        <i class="fa fa-flag-o"></i>
+        <span class="label label-danger">{{ all_pending_tasks|length }}</span>
+    </a>
+    <ul class="dropdown-menu">
+        <li class="header">You have {{ all_pending_tasks|length }} pending task(s)</li>
+        <li>
+            <!-- inner menu: contains the actual data -->
+            <ul class="menu">
+                {% for task in all_pending_tasks %}
+                <li>
+                    <a href="{% url 'tasks_events' task.project.project_id %}">
+                        <h3>
+                            {{ task.task_name }}
+                            <small class="pull-right">
+                                    Due on the {{ task.task_due_date }}.
+                            </small>
+                        </h3>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </li>
+        <!-- <li class="footer"><a href="#">View all tasks</a></li> -->
+    </ul>
+</li>

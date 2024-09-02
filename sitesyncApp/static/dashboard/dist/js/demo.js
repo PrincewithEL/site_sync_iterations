@@ -13,7 +13,7 @@ $(function () {
     cursor: "pointer",
     color: "#3c8dbc",
     "box-shadow": "0 1px 3px rgba(0,0,0,0.1)"
-  }).html("<i class='fa fa-gear'></i>").addClass("no-print");
+  }).html("<i class='fa fa-gear' style='color: red;'></i>").addClass("no-print");
 
   var demo_settings = $("<div />").css({
     "padding": "10px",
@@ -56,58 +56,6 @@ $(function () {
           + "</div>"
           + "</div>"
           );
-  var skins_list = $("<ul />", {"class": 'list-unstyled'});
-  var skin_blue =
-          $("<li />", {style: "float:left; width: 50%; padding: 5px;"})
-          .append("<a href='#' onclick='change_skin(\"skin-blue\")' style='display: block; box-shadow: -1px 1px 2px rgba(0,0,0,0.0);' class='clearfix full-opacity-hover'>"
-                  + "<div><span style='display:block; width: 20%; float: left; height: 10px; background: #367fa9;'></span><span class='bg-light-blue' style='display:block; width: 80%; float: left; height: 10px;'></span></div>"
-                  + "<div><span style='display:block; width: 20%; float: left; height: 40px; background: #222d32;'></span><span style='display:block; width: 80%; float: left; height: 40px; background: #f4f5f7;'></span></div>"
-                  + "<p class='text-center'>Skin Blue</p>"
-                  + "</a>");
-  skins_list.append(skin_blue);
-  var skin_black =
-          $("<li />", {style: "float:left; width: 50%; padding: 5px;"})
-          .append("<a href='#' onclick='change_skin(\"skin-black\")' style='display: block; box-shadow: -1px 1px 2px rgba(0,0,0,0.0);' class='clearfix full-opacity-hover'>"
-                  + "<div style='box-shadow: 0 0 2px rgba(0,0,0,0.1)' class='clearfix'><span style='display:block; width: 20%; float: left; height: 10px; background: #fefefe;'></span><span style='display:block; width: 80%; float: left; height: 10px; background: #fefefe;'></span></div>"
-                  + "<div><span style='display:block; width: 20%; float: left; height: 40px; background: #222;'></span><span style='display:block; width: 80%; float: left; height: 40px; background: #f4f5f7;'></span></div>"
-                  + "<p class='text-center'>Skin Black</p>"
-                  + "</a>");
-  skins_list.append(skin_black);
-  var skin_purple =
-          $("<li />", {style: "float:left; width: 50%; padding: 5px;"})
-          .append("<a href='#' onclick='change_skin(\"skin-purple\")' style='display: block; box-shadow: -1px 1px 2px rgba(0,0,0,0.0);' class='clearfix full-opacity-hover'>"
-                  + "<div><span style='display:block; width: 20%; float: left; height: 10px;' class='bg-purple-active'></span><span class='bg-purple' style='display:block; width: 80%; float: left; height: 10px;'></span></div>"
-                  + "<div><span style='display:block; width: 20%; float: left; height: 40px; background: #222d32;'></span><span style='display:block; width: 80%; float: left; height: 40px; background: #f4f5f7;'></span></div>"
-                  + "<p class='text-center'>Skin Purple</p>"
-                  + "</a>");
-  skins_list.append(skin_purple);
-  var skin_green =
-          $("<li />", {style: "float:left; width: 50%; padding: 5px;"})
-          .append("<a href='#' onclick='change_skin(\"skin-green\")' style='display: block; box-shadow: -1px 1px 2px rgba(0,0,0,0.0);' class='clearfix full-opacity-hover'>"
-                  + "<div><span style='display:block; width: 20%; float: left; height: 10px;' class='bg-green-active'></span><span class='bg-green' style='display:block; width: 80%; float: left; height: 10px;'></span></div>"
-                  + "<div><span style='display:block; width: 20%; float: left; height: 40px; background: #222d32;'></span><span style='display:block; width: 80%; float: left; height: 40px; background: #f4f5f7;'></span></div>"
-                  + "<p class='text-center'>Skin Green</p>"
-                  + "</a>");
-  skins_list.append(skin_green);
-    var skin_red =
-          $("<li />", {style: "float:left; width: 50%; padding: 5px;"})
-          .append("<a href='#' onclick='change_skin(\"skin-red\")' style='display: block; box-shadow: -1px 1px 2px rgba(0,0,0,0.0);' class='clearfix full-opacity-hover'>"
-                  + "<div><span style='display:block; width: 20%; float: left; height: 10px;' class='bg-red-active'></span><span class='bg-red' style='display:block; width: 80%; float: left; height: 10px;'></span></div>"
-                  + "<div><span style='display:block; width: 20%; float: left; height: 40px; background: #222d32;'></span><span style='display:block; width: 80%; float: left; height: 40px; background: #f4f5f7;'></span></div>"
-                  + "<p class='text-center'>Skin Red</p>"
-                  + "</a>");
-  skins_list.append(skin_red);
-    var skin_yellow =
-          $("<li />", {style: "float:left; width: 50%; padding: 5px;"})
-          .append("<a href='#' onclick='change_skin(\"skin-yellow\")' style='display: block; box-shadow: -1px 1px 2px rgba(0,0,0,0.0);' class='clearfix full-opacity-hover'>"
-                  + "<div><span style='display:block; width: 20%; float: left; height: 10px;' class='bg-yellow-active'></span><span class='bg-yellow' style='display:block; width: 80%; float: left; height: 10px;'></span></div>"
-                  + "<div><span style='display:block; width: 20%; float: left; height: 40px; background: #222d32;'></span><span style='display:block; width: 80%; float: left; height: 40px; background: #f4f5f7;'></span></div>"
-                  + "<p class='text-center'>Skin Yellow</p>"
-                  + "</a>");
-  skins_list.append(skin_yellow);
-
-  demo_settings.append("<h4 class='text-light-blue' style='margin: 0 0 5px 0; border-bottom: 1px solid #ddd; padding-bottom: 15px;'>Skins</h4>");
-  demo_settings.append(skins_list);
 
   demo.click(function () {
     if (!$(this).hasClass("open")) {
@@ -122,7 +70,6 @@ $(function () {
   });
 
   $("body").append(demo);
-  $("body").append(demo_settings);
 
   setup();
 });
@@ -130,15 +77,6 @@ $(function () {
 function change_layout(cls) {
   $("body").toggleClass(cls);
   $.AdminLTE.layout.fixSidebar();  
-}
-function change_skin(cls) {  
-  $.each(my_skins, function (i) {
-    $("body").removeClass(my_skins[i]);
-  });
-
-  $("body").addClass(cls);
-  store('skin', cls);
-  return false;
 }
 function store(name, val) {
   if (typeof (Storage) !== "undefined") {
@@ -153,10 +91,4 @@ function get(name) {
   } else {
     alert('Please use a modern browser to properly view this template!');
   }
-}
-
-function setup() {
-  var tmp = get('skin');
-  if (tmp && $.inArray(tmp, my_skins))
-    change_skin(tmp);
 }

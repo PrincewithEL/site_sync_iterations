@@ -20,6 +20,7 @@ from django.contrib.auth import views as auth_views
 from django.conf.urls.static import static
 from sitesyncApp import views
 from django.conf import settings
+from sitesyncApp.views import get_chatbot_response
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -41,6 +42,8 @@ urlpatterns = [
     path('projects/<int:pk>/resources', views.resources, name='resources'),
     path('projects/<int:pk>/addresource/', views.add_resource, name='add_resource'),
     path('projects/<int:pk>/deleteresource/<int:resource_id>/', views.delete_resource, name='delete_resource'),
+    path('projects/<int:pk>/restoreresource/<int:resource_id>/', views.restore_resource, name='restore_resource'),
+    path('projects/<int:pk>/hideresource/<int:resource_id>/', views.hide_resource, name='hide_resource'),
     path('projects/<int:pk>/tasks&events', views.tasks_events, name='tasks_events'),
     path('projects/<int:pk>/addtask/', views.add_task, name='add_task'),
     path('projects/<int:pk>/deletetask/<int:task_id>/', views.delete_task, name='delete_task'),
@@ -49,10 +52,13 @@ urlpatterns = [
     path('projects/<int:pk>/deleteevent/<int:event_id>/', views.delete_event, name='delete_event'),
     path('projects/<int:pk>/deletemessage/', views.delete_message, name='delete_message'),
     path('projects/<int:pk>/deleteproject/', views.delete_project, name='delete_project'),
+    path('projects/<int:pk>/restoreproject/', views.restore_project, name='restore_project'),
+    path('projects/<int:pk>/hideproject/', views.hide_project, name='hide_project'),
     path('projects/<int:pk>/update/', views.update_project, name='update_project'),
     path('projects/<int:pk>/addprojectmember/', views.add_project_member, name='add_project_member'),
     path('projects/<int:pk>/sendmessage/', views.send_message, name='send_message'),
     path('projects/<int:pk>/removeprojectmember/', views.remove_project_member, name='remove_project_member'),
+    path('projects/<int:pk>/exitproject/', views.exit_project, name='exit_project'),
     path('projects/updateprojectinvitation/', views.update_project_member, name='update_project_member'),
     path('projects/<int:pk>/transactions', views.transactions, name='transactions'),
     path('projects/<int:pk>/addtransaction/', views.add_transaction, name='add_transaction'),
@@ -63,6 +69,7 @@ urlpatterns = [
     path('forgot-password/', views.forgot_password, name='forgot_password'),
     path('reset-password/<uidb64>/<token>/', views.reset_password, name='reset_password'),
     path('verify-otp/', views.verify_otp1, name='verify_otp1'),
+    path('get-response/', get_chatbot_response, name='get_chatbot_response'),
  ]
 
 if settings.DEBUG:

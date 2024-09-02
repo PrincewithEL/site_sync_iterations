@@ -7,37 +7,27 @@
 # Feel free to rename the models, but don't rename db_table values or field names.
 from django.db import models
 from django.utils import timezone
+from django.utils.timezone import now
 import random
 import string
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from datetime import datetime
 
-class BookmarkChat(models.Model):
+class Bookmarks(models.Model):
     bookmark_id = models.AutoField(primary_key=True)
-    group = models.ForeignKey('GroupChat', models.DO_NOTHING)
-    chat = models.ForeignKey('Chat', models.DO_NOTHING)
-    user = models.ForeignKey(User, models.DO_NOTHING)
-    timestamp = models.DateTimeField()
+    user = models.ForeignKey(User, models.DO_NOTHING, default=0)
+    item_id = models.IntegerField()
+    project_id = models.IntegerField(default=0)
+    item_type = models.TextField(null=True, blank=True)
+    timestamp = models.DateTimeField(default=datetime.now())
     is_deleted = models.IntegerField()
 
     class Meta:
         managed = True
-        db_table = 'bookmark_chat'
-        db_table_comment = 'This Table Is Used To Store The Bookmarked Chats On the System'
-
-class PinnedChat(models.Model):
-    pinned_id = models.AutoField(primary_key=True)
-    group = models.ForeignKey('GroupChat', models.DO_NOTHING)
-    chat = models.ForeignKey('Chat', models.DO_NOTHING)
-    user = models.ForeignKey(User, models.DO_NOTHING)
-    timestamp = models.DateTimeField()
-    is_deleted = models.IntegerField()
-
-    class Meta:
-        managed = True
-        db_table = 'pinned_chat'
-        db_table_comment = 'This Table Is Used To Store The Pinned Chats On the System'
+        db_table = 'bookmarks'
+        db_table_comment = 'This Table Is Used To Store The Bookmarked Items On the System'
 
 class Chat(models.Model):
     chat_id = models.AutoField(primary_key=True)
@@ -46,8 +36,9 @@ class Chat(models.Model):
     message = models.TextField()
     reply = models.TextField(null=True, blank=True)
     scheduled_at = models.TextField(null=True, blank=True)
-    timestamp = models.DateTimeField(default=timezone.now())
+    timestamp = models.DateTimeField(default= datetime.now())
     is_deleted = models.IntegerField()
+    is_pinned = models.IntegerField(default=0)
     file = models.TextField(null=True, blank=True)
 
     class Meta:
@@ -148,7 +139,7 @@ class Resources(models.Model):
     updated_at = models.DateTimeField(blank=True, null=True)
     resource_status = models.CharField(max_length=10)
     resource_type = models.CharField(max_length=8)
-    resource_size = models.CharField(max_length=8)
+    resource_size = models.CharField(max_length=100)
     is_deleted = models.IntegerField()
 
     class Meta:

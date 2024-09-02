@@ -1,0 +1,186 @@
+     {% load static %}
+
+<style type="text/css">
+/* Ensure the response text wraps within its container */
+.response-text {
+    white-space: pre-wrap; /* Ensures spaces and line breaks are preserved */
+    word-wrap: break-word; /* Breaks long words to prevent overflow */
+    overflow-wrap: break-word; /* Breaks long words or URLs to prevent overflow */
+    max-width: 100%; /* Ensures the text doesn't overflow the container */
+    margin-top: 10px; /* Adds margin to the top for spacing */
+}
+
+/* Optional: Add styles for loading dots */
+#loading-dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dot {
+    background-color: #333;
+    border-radius: 50%;
+    height: 10px;
+    width: 10px;
+    margin: 0 2px;
+    animation: dot-blink 1.5s infinite;
+}
+
+@keyframes dot-blink {
+    0% {
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+#assistant-response {
+  max-height: 300px; /* Adjust height as needed */
+  overflow-y: auto;  /* Adds a vertical scrollbar when needed */
+  padding: 10px;     /* Optional: add padding for aesthetics */
+  border: 1px solid #ccc; /* Optional: adds a border around the container */
+  background-color: #f9f9f9; /* Optional: adds a background color */
+  box-sizing: border-box; /* Ensures padding and border are included in height calculation */
+}
+
+body {
+  margin: 0; /* Ensure no extra margin around the body that could cause unexpected scrolling */
+  padding: 0; /* Ensure no extra padding around the body */
+}
+
+
+</style>
+
+  <!-- sidebar: style can be found in sidebar.less -->
+  <section class="sidebar">
+    <!-- Sidebar user panel -->
+    <div class="user-panel">
+      <div class="pull-left image">
+        <img id="assistant-image" src="{% static 'dashboard/dist/img/support.png' %}" style="border-radius: 10px;" class="img-circle" alt="User Image" />
+      </div>
+      <div class="pull-left info">
+        <p>SiteSync Assistant</p>
+        <a id="status" href=""><i class="fa fa-circle text-success"></i> </a>
+        <a id="status-text" href="#">Active</a>
+      </div>
+    </div>
+    
+    <!-- Sidebar menu: style can be found in sidebar.less -->
+    <ul class="sidebar-menu">
+      <li class="header">NEED HELP?</li>
+    </ul>
+
+    <!-- Assistant Interaction Form -->
+    <div class="form-group">
+      <!-- <label>Ask the Assistant</label> -->
+      <!-- CSRF Token -->
+      {% csrf_token %}
+	  <input type="text" id="assistant-prompt" class="form-control" placeholder="Enter Prompt..."/>      
+      <!-- <textarea type="text" id="assistant-prompt" class="form-control" placeholder="Enter Prompt..." rows="2"></textarea> -->
+      <button id="submit-btn" class="btn btn-primary" style="margin-top: 10px;">Ask</button>
+      <!-- <button id="reset-btn" class="btn btn-secondary" style="margin-top: 10px;">Reset</button> -->
+    </div>
+    
+    <!-- Assistant Response Display -->
+    <div id="assistant-response" class="form-group" style="margin-top: 20px; max-height: 300px; overflow-y: auto;">
+      <label>Response:</label>
+      <p id="response-text" class="response-text">Hey there, {{ fname }}! I hope you are well.
+      	<br>Feel free to ask me any questions or concerns that you have concerning your project. 
+      	<br>I am here to help :)</p>
+      <div id="loading-dots" style="display: none; align-items: center; text-align: center;">
+<!--         <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span> -->
+      <img src="{% static 'dashboard/dist/img/loading.gif' %}" style="width: 60px;">
+      </div>
+    </div>
+  </section>
+
+  <script type="text/javascript">
+document.getElementById('submit-btn').addEventListener('click', function() {
+    var prompt = document.getElementById('assistant-prompt').value;
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // Update the status text and image
+    document.getElementById('status-text').innerText = 'Working on it...';
+    document.getElementById('status').innerHTML = '<i class="fa fa-circle text-warning"></i>';
+    document.getElementById('assistant-image').style.display = 'block';
+    document.getElementById('loading-dots').style.display = 'block';
+    document.getElementById('response-text').innerText = ''; 
+
+    // Simulate a lag time of 5 seconds
+    setTimeout(() => {
+        fetch('/get-response/', {
+            method: 'POST',
+            body: JSON.stringify({ 'prompt': prompt }),
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Handle the typing effect
+            typeResponse(data.response);
+
+            // Restore the UI state
+            setTimeout(() => {
+                document.getElementById('status-text').innerText = 'Active';
+                document.getElementById('status').innerHTML = '<i class="fa fa-circle text-success"></i>';
+                document.getElementById('assistant-image').style.display = 'block';
+                document.getElementById('loading-dots').style.display = 'none';
+            }, data.response.length * 50 + 2000); // Adjust timeout as needed
+        })
+        .catch(error => {
+            console.error('Error:', error);
+
+            // Handle errors and restore UI state
+            document.getElementById('response-text').innerText = 'An error occurred. Please try again later.';
+            document.getElementById('status-text').innerText = 'Active';
+            document.getElementById('status').innerHTML = '<i class="fa fa-circle text-success"></i>';
+            document.getElementById('assistant-image').style.display = 'block';
+            document.getElementById('loading-dots').style.display = 'none';
+        });
+    }, 2000); // 2 seconds delay
+});
+
+// Function to handle typing effect
+function typeResponse(response) {
+    const responseElement = document.getElementById('response-text');
+    let index = 0;
+    responseElement.innerText = '';
+
+    function typeNextCharacter() {
+        if (index < response.length) {
+            responseElement.innerText += response[index];
+            index++;
+            setTimeout(typeNextCharacter, 50); // Adjust typing speed as needed
+        }
+    }
+
+    typeNextCharacter();
+}
+</script>
+<!-- <script>
+  document.getElementById('reset-btn').addEventListener('click', function() {
+    // Clear the assistant prompt input field
+    document.getElementById('assistant-prompt').value = '';
+    
+    // Clear the response text
+    document.getElementById('response-text').innerText = 'Hey there, {{ fname }}! I hope you are well.
+      	<br>Feel free to ask me any questions or concerns that you have concerning your project. 
+      	<br>I am here to help :)';
+    
+    // Change the status link text to "Active"
+    document.getElementById('status-link').innerText = 'Active';
+  });
+</script> -->

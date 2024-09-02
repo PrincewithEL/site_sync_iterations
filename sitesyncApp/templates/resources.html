@@ -17,6 +17,8 @@
     <link href="{% static 'dashboard/dist/css/skins/skin-black.min.css' %}" rel="stylesheet" type="text/css" />
     <!-- bootstrap wysihtml5 - text editor -->
     <link href="{% static 'dashboard/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.min.css' %}" rel="stylesheet" type="text/css" />
+        <link rel="stylesheet" href="{% static 'dashboard/dist/plugins/iCheck/flat/blue.css' %}">
+<script src="{% static 'dashboard/dist/plugins/iCheck/icheck.min.js' %}"></script>
   </head>
       <style>
         .dropdown {
@@ -83,94 +85,7 @@
           </a>
           <div class="navbar-custom-menu">
                         <ul class="nav navbar-nav">
-              <!-- Messages: style can be found in dropdown.less-->
-              <li class="dropdown messages-menu">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                  <i class="fa fa-envelope-o"></i>
-                  <span class="label label-success">1</span>
-                </a>
-                <ul class="dropdown-menu">
-                  <li class="header">You have 1 messages</li>
-                  <li>
-                    <!-- inner menu: contains the actual data -->
-                    <ul class="menu">
-                      <li><!-- start message -->
-                        <a href="#">
-                          <div class="pull-left">
-                            <img src="{% static 'dashboard/dist/img/site.jpg' %}" class="img-circle" alt="User Image"/>
-                          </div>
-                          <h4>
-                            Madaraka
-                            <small><i class="fa fa-clock-o"></i> 5 mins</small>
-                          </h4>
-                          <p>Hey! What's up?</p>
-                        </a>
-                      </li><!-- end message -->
-                    </ul>
-                  </li>
-                  <li class="footer"><a href="#">See All Messages</a></li>
-                </ul>
-              </li>
-            <ul class="nav navbar-nav">
-              <!-- Notifications: style can be found in dropdown.less -->
-              <li class="dropdown notifications-menu">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                  <i class="fa fa-bell-o"></i>
-                  <span class="label label-waring">2</span>
-                </a>
-                <ul class="dropdown-menu">
-                  <li class="header">You have 2 notifications</li>
-                  <li>
-                    <!-- inner menu: contains the actual data -->
-                    <ul class="menu">
-                      <li>
-                        <a href="#">
-                          <i class="fa fa-users text-aqua"></i> 5 new members joined today
-                        </a>
-                      </li>
-                      <li>
-                        <a href="#">
-                          <i class="fa fa-warning text-yellow"></i> A task is pending...
-                        </a>
-                      </li>
-                    </ul>
-                  </li>
-                  <!-- <li class="footer"><a href="pro.html">View all</a></li> -->
-                </ul>
-              </li>
-              <!-- Tasks: style can be found in dropdown.less -->
-              <li class="dropdown tasks-menu">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                  <i class="fa fa-flag-o"></i>
-                  <span class="label label-danger">1</span>
-                </a>
-                <ul class="dropdown-menu">
-                  <li class="header">You have 1 pending task(s)</li>
-                  <li>
-                    <!-- inner menu: contains the actual data -->
-                      <ul class="menu">
-                      <li> Madaraka
-                        <a href="#">
-                          <h3>
-                            Buy some timber.
-                            <small class="pull-right">20%</small>
-                          </h3>
-                        </a>
-                      </li>
-                      <!-- end task item -->
-                     </ul>
-                  </li>
-                  <li class="footer">
-                    <a href="#">View all tasks</a>
-                  </li>
-                </ul>
-              </li> 
-              <!-- Settings -->
-              <li class="dropdown tasks-menu">
-                <a href="#" class="dropdown-toggle">
-                  <i class="fa fa-gear"></i>
-                </a>
-              </li>
+{% include 'notifications.html' %}
               <!-- User Account: style can be found in dropdown.less -->
               <li class="dropdown user user-menu">
                 <a href="{% url 'profile' %}" class="dropdown-toggle">
@@ -190,39 +105,7 @@
       </header>
       <!-- Left side column. contains the logo and sidebar -->
       <aside class="main-sidebar">
-        <!-- sidebar: style can be found in sidebar.less -->
-        <section class="sidebar">
-          <!-- Sidebar user panel -->
-          <div class="user-panel">
-            <div class="pull-left image">
-              <img src="{% static 'dashboard/dist/img/support.png' %}" style="border-radius: 10px;" class="img-circle" alt="User Image" />
-            </div>
-            <div class="pull-left info">
-              <p>SiteSync Assistant</p>
-              <a href=""><i class="fa fa-circle text-success"></i> </a>
-              <a href="#">Active</a>
-            </div>
-          </div>
-          <!-- search form -->
-<!--           <form action="#" method="get" class="sidebar-form">
-            <div class="input-group">
-              <input type="text" name="q" class="form-control" placeholder="Search..."/>
-              <span class="input-group-btn">
-                <button type='submit' name='search' id='search-btn' class="btn btn-flat"><i class="fa fa-search"></i></button>
-              </span>
-            </div>
-          </form> -->
-          <!-- /.search form -->
-          <!-- sidebar menu: : style can be found in sidebar.less -->
-          <ul class="sidebar-menu">
-            <li class="header">NEED HELP ? </li>
-          </ul>
-                              <div class="form-group">
-                      <label>No conversations yet...</label>
-                      <input type="text" class="form-control" placeholder="Enter Prompt..."/>
-                    </div>
-        </section>
-        <!-- /.sidebar -->
+  {% include 'chatbot.html' %}
       </aside>
 
       <!-- Right side column. Contains the navbar and content of the page -->
@@ -251,13 +134,13 @@
                 </div>
                 <div class="box-body no-padding">
                   <ul class="nav nav-pills nav-stacked">
-                    <li class="active"><a href="#"><i class="fa fa-inbox"></i> All Resources <span class="label label-primary pull-right">{{ resource_count }}</span></a></li>
-                    <li><a href="#" onclick="cool();"><i class="fa fa-newspaper-o"></i> Document</a></li>
-                    <li><a href="#" onclick="cool();"><i class="fa fa-file-video-o"></i> Videos</a></li>
-                    <li><a href="#" onclick="cool();"><i class="fa fa-file-photo-o"></i> Photos</a></li>
-                    <li><a href="#" onclick="cool();"><i class="fa fa-file-audio-o"></i> Audio</a></li>
-                    <li><a href="#" onclick="cool();"><i class="fa fa-file-archive-o"></i> Others</a></li>                    
-                    <li><a href="#" onclick="cool();"><i class="fa fa-star"></i> Bookmarked Resources</a></li>
+                    <li class="active"><a href="?filter=all"><i class="fa fa-inbox"></i> All Resources <span class="label label-primary pull-right">{{ resource_count }}</span></a></li>
+                    <li class="{% if filter_type == 'Document' %}active{% endif %}"><a href="?filter=Document"><i class="fa fa-newspaper-o"></i> Document <span class="label label-waring pull-right">{{ document_count }}</span></a></li>
+                    <li class="{% if filter_type == 'Video' %}active{% endif %}"><a href="?filter=Video"><i class="fa fa-file-video-o"></i> Videos <span class="label label-waring pull-right">{{ video_count }}</span></a></li>
+                    <li class="{% if filter_type == 'Image' %}active{% endif %}"><a href="?filter=Image"><i class="fa fa-file-photo-o"></i> Photos <span class="label label-waring pull-right">{{ image_count }}</span></a></li>
+                    <li class="{% if filter_type == 'Audio' %}active{% endif %}"><a href="?filter=Audio"><i class="fa fa-file-audio-o"></i> Audio <span class="label label-waring pull-right">{{ audio_count }}</span></a></li>
+                    <li id="trashResourcesNavItem"><a href="#" onclick="opentrashResources();"><i class="fa fa-file-archive-o"></i> Trash <span class="label label-waring pull-right">{{ trash_resources_count }}</span></a></li>
+                    <li class="{% if filter_type == 'bookmarked' %}active{% endif %}"><a href="?filter=bookmarked"><i class="fa fa-star"></i> Bookmarked Resources <span class="label label-waring pull-right">{{ bookmark_resources_count }}</span></a></li>
                     <li><a href="{% url 'project_detail' project.project_id %}"><i class="fa fa-mail-reply"></i> Back</a></li>
                   </ul>
                 </div><!-- /.box-body -->
@@ -281,31 +164,92 @@
               <div class="box box-primary" id="myTable">
                 <div class="box-header with-border">
                   <h3 class="box-title">My Resources</h3>
-                  <div class="box-tools pull-right">
-                    <div class="has-feedback">
-                      <input type="text" class="form-control input-sm" id="myInput" onkeyup="searchList();" placeholder="Search Resource(s) Name..."/>
-                      <span class="glyphicon glyphicon-search form-control-feedback"></span>
-                    </div>
-                  </div><!-- /.box-tools -->
+    {% if status_filter_display != 'All Resources' or date_filter_display != 'All Time' %}    
+    <div class="filter-info">
+      <p><strong>Current Filters:</strong> {{ status_filter_display }} - {{ date_filter_display }}</p>
+    </div>
+    {% endif %}
+    <div class="box-tools pull-right">
+        <!-- New search form -->
+        <form method="get" action="{% url 'resources' project.project_id %}" class="form-inline">
+            <div class="input-group">
+                <input type="text" class="form-control input-sm" name="search" placeholder="Search Resource(s)..." value="{{ request.GET.search }}">
+                <span class="input-group-btn">
+                    <button type="submit" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-search"></span></button>
+                </span>
+            </div>
+        </form>
+    </div><!-- /.box-tools -->
                 </div><!-- /.box-header -->
                 <div class="box-body no-padding">
-                  <div class="mailbox-controls">
-                    <!-- Check all button -->
-                    <button class="btn btn-default btn-sm checkbox-toggle"><i class="fa fa-square-o"></i></button>
-                    <div class="btn-group">
-                      <button class="btn btn-default btn-sm"><i class="fa fa-trash-o"></i></button>
-                      <button class="btn btn-default btn-sm"><i class="fa fa-reply"></i></button>
-                      <button class="btn btn-default btn-sm"><i class="fa fa-share"></i></button>
-                    </div><!-- /.btn-group -->
-                    <button class="btn btn-default btn-sm"><i class="fa fa-refresh"></i></button>
-                    <div class="pull-right">
-                      1-50/999
-                      <div class="btn-group">
-                        <button class="btn btn-default btn-sm"><i class="fa fa-chevron-left"></i></button>
-                        <button class="btn btn-default btn-sm"><i class="fa fa-chevron-right"></i></button>
-                      </div><!-- /.btn-group -->
-                    </div><!-- /.pull-right -->
-                  </div>
+<div class="mailbox-controls">
+    <!-- Check all button -->
+<button type="button" class="btn btn-default btn-sm checkbox-toggle">
+    <i class="fa fa-square-o"></i>
+</button>
+    <div class="btn-group">
+<button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Delete This Resource(s) ?')) { submitForm('delete'); }">
+    <i class="fa fa-trash-o"></i> Delete
+</button>
+<button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Bookmark This Resource(s) ?')) { submitForm('bookmark'); }">
+    <i class="fa fa-bookmark"></i> Bookmark
+</button>
+<button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Remove This Bookmark(s) ?')) { submitForm('unbookmark'); }">
+    <i class="fa fa-bookmark-o"></i> Unbookmark
+</button>
+</div>
+      <div class="btn-group">
+      <div class="filter-options">
+        <form method="get" action="{% url 'resources' project.project_id %}" class="form-inline">
+          <div class="form-group">
+            <label for="date_filter" class="sr-only">Date Filter:</label>
+            <select name="date_filter" id="date_filter" class="form-control input-sm">
+              <option value="" {% if not current_date_filter %}selected{% endif %}>All Time</option>
+              <option value="today" {% if current_date_filter == 'today' %}selected{% endif %}>Today</option>
+              <option value="this_week" {% if current_date_filter == 'this_week' %}selected{% endif %}>This Week</option>
+              <option value="this_month" {% if current_date_filter == 'this_month' %}selected{% endif %}>This Month</option>
+              <option value="this_year" {% if current_date_filter == 'this_year' %}selected{% endif %}>This Year</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filter" class="sr-only">Status Filter:</label>
+            <select name="filter" id="filter" class="form-control input-sm">
+              <option value="all" {% if current_status_filter == 'all' %}selected{% endif %}>All Resources</option>
+              <option value="audio" {% if current_status_filter == 'audio' %}selected{% endif %}>Audio</option>
+              <option value="document" {% if current_status_filter == 'documents' %}selected{% endif %}>Documents</option>
+              <option value="image" {% if current_status_filter == 'image' %}selected{% endif %}>Photos</option>
+              <option value="video" {% if current_status_filter == 'video' %}selected{% endif %}>Video</option>              
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
+        </form>
+      </div>
+    </div><!-- /.btn-group -->
+<div class="pull-right">
+    Page {{ resources.number }} of {{ resources.paginator.num_pages }}
+    <div class="btn-group">
+      {% if resources.has_previous %}
+        <a href="?page=1&filter={{ filter_type }}" class="btn btn-default btn-sm {% if resources.number == 1 %}disabled{% endif %}">
+            <i class="fa fa-chevron-left"></i><i class="fa fa-chevron-left"></i> First
+        </a>
+        <a href="?page={% if resources.has_previous %}{{ resources.previous_page_number }}{% else %}1{% endif %}&filter={{ filter_type }}" class="btn btn-default btn-sm {% if not resources.has_previous %}disabled{% endif %}">
+            <i class="fa fa-chevron-left"></i> Previous
+        </a>
+        {% endif %}
+        {% if resources.has_next %}
+        <a href="?page={% if resources.has_next %}{{ resources.next_page_number }}{% else %}{{ resources.paginator.num_pages }}{% endif %}&filter={{ filter_type }}" class="btn btn-default btn-sm {% if not resources.has_next %}disabled{% endif %}">
+            <i class="fa fa-chevron-right"></i> Next
+        </a>
+        <a href="?page={{ resources.paginator.num_pages }}&filter={{ filter_type }}" class="btn btn-default btn-sm {% if resources.number == resources.paginator.num_pages %}disabled{% endif %}">
+            <i class="fa fa-chevron-right"></i><i class="fa fa-chevron-right"></i> Last
+        </a>
+        {% endif %}
+    </div><!-- /.btn-group -->
+</div><!-- /.pull-right -->
+</div><!-- /.mailbox-controls -->
+<form method="post" id="resources-action-form" onsubmit="">
+    {% csrf_token %}
+    <input type="hidden" name="action" id="form-action" value="">
                 <div class="box-footer">
         <ul class="mailbox-attachments clearfix" id="resources">
             {% for resource in resources %}
@@ -324,16 +268,83 @@
                 <div class="mailbox-attachment-info">
                     <a href="#" class="mailbox-attachment-name">{{ resource.resource_name }}</a>
                     <span class="mailbox-attachment-size">
-                        <!-- {{MEDIA_URL}}{{ resource.file.size|filesizeformat }} -->
+                        {{ resource.resource_size }}<br>
                         {{ resource.resource_details }}
                         <a href="{{MEDIA_URL}}{{ resource.resource_directory }}" class="btn btn-default btn-xs pull-right" download><i class="fa fa-cloud-download"></i></a>
                         <a href="{% url 'delete_resource' pk=resource.project_id resource_id=resource.resource_id %}" onclick="return confirm('Are You Sure You Want To Remove This Resource ?')" class="btn btn-default btn-xs pull-right"><i class="fa fa-trash-o"></i></a>
+                            <input type="checkbox" id="resource-{{ resource.resource_id }}" name="selected_resources" value="{{ resource.resource_id }}" class="resources-checkbox">
+    <label for="resource-{{ resource.resource_id }}"></label>
+    <form method="post" action="{% url 'resources' pk=project.project_id %}">
+        <button type="submit" class="btn btn-link" style="padding: 0; border: none; background: none;"
+        onclick="return confirm('Are You Sure You Want To {% if resource.resource_id in bookmarked_resources_ids %}Remove The Bookmark For{% else %}Bookmark{% endif %} This Resource?')">
+        <input type="hidden" id="inputs" name="selected_resource" value="{{ resource.resource_id }}">
+        <input type="hidden" name="action1" value="{% if resource.resource_id in bookmarked_resources_ids %}unbookmark1{% else %}bookmark1{% endif %}">
+        <i class="fa {% if resource.resource_id in bookmarked_resources_ids %}fa-star{% else %}fa-star-o{% endif %} text-yellow"></i>
+    </button>
+  </form>
                     </span>
                 </div>
             </li>
             {% endfor %}
         </ul>
                 </div><!-- /.box-footer -->
+              </form>
+                </div><!-- /.box-body -->
+              </div><!-- /. box -->
+
+              <div class="box box-primary" id="myForm1">
+                <div class="box-header with-border">
+                  <h3 class="box-title">My Trash Projects</h3>
+                  <button type="button" style="position: relative;" onclick="closetrashResources();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
+                  <div class="box-tools pull-right">
+                    <div class="has-feedback">
+                      <input type="text" class="form-control input-sm" id="myInput" onkeyup="searchTable();"  placeholder="Search My Projects..."/>
+                      <span class="glyphicon glyphicon-search form-control-feedback"></span>
+                    </div>
+                  </div><!-- /.box-tools -->
+                </div><!-- /.box-header -->
+                                <div class="mailbox-controls">
+    <div class="btn-group">
+<button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Restore This Resource(s) ?')) { submitForm('restore'); }">
+    <i class="fa fa-save"></i> Restore
+</button>
+<button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Permanently Delete This Resource(s) ?')) { submitForm('delete1'); }">
+    <i class="fa fa-trash-o"></i> Delete
+</button>
+    </div><!-- /.btn-group -->
+</div><!-- /.mailbox-controls -->
+                <div class="box-body no-padding">
+                  <div class="table-responsive mailbox-messages">
+                    <table class="table table-hover table-striped" id="resources1">
+                      <thead>
+                        <!-- <th></th> -->
+                        <th>Name</th>
+                        <th>Resource Details</th>
+                        <th></th>
+                        <th></th>
+                      </thead>
+                      <tbody>
+{% for trash_resource in trash_resources %}
+    <tr>
+        <td class="mailbox-name" title="{{ trash_project.created_at }}"><a href="#">{{ trash_resource.resource_name }}</a></td>
+        <td class="mailbox-name" title="{{ trash_resource.created_at }}"><a href="#">{{ trash_resource.resource_details }}</a></td>
+                            <td class="mailbox-attachment">
+                            <form method="POST" name="update_project_member_form" action="{% url 'restore_resource' pk=trash_resource.project_id  resource_id=trash_resource.resource_id %}" enctype="multipart/form-data">
+                              {% csrf_token %}
+                              <button type="submit" class="btn btn-primary" onclick="return confirm('Are You Sure You Want To Restore This Resource ?')">Restore</button>
+                            </form>
+                        </td>
+                                                  <td class="mailbox-attachment">
+                            <form method="POST" name="update_project_member_form" action="{% url 'hide_resource' pk=trash_resource.project_id resource_id=trash_resource.resource_id %}" enctype="multipart/form-data">
+                              {% csrf_token %}
+                              <button type="submit" class="btn btn-primary" onclick="return confirm('Are You Sure You Want To Permanently Remove This Resource ?')">Remove</button>
+                            </form>
+                        </td>
+    </tr>
+{% endfor %}
+                      </tbody>
+                    </table><!-- /.table -->
+                  </div><!-- /.mail-box-messages -->
                 </div><!-- /.box-body -->
               </div><!-- /. box -->
 
@@ -346,13 +357,13 @@
 <form action="{% url 'add_resource' project.pk %}" method="POST" enctype="multipart/form-data">
     {% csrf_token %}
     <div class="box-body">
-      <div class="form-group col-md-6">
+      <div class="form-group col-md-12">
         <label for="resource_name">Resource Name</label>
         <input type="text" class="form-control" id="resource_name" name="resource_name" required>
       </div>
-            <div class="form-group col-md-6">
+            <div class="form-group col-md-6" style="display: none;">
         <label for="resource_type">Resource Type</label>
-        <select class="form-control" id="resource_type" name="resource_type" required>
+        <select class="form-control" id="resource_type" name="resource_type" required >
           <option value="" disabled selected>Kindly Select A Resource Type</option>
           <option value="Image">Image</option>
           <option value="Video">Video</option>
@@ -392,27 +403,29 @@
 function openForm() {
   document.getElementById("myForm").style.display = "block";
   document.getElementById("myTable").style.display = "none";
+  document.getElementById("myForm1").style.display = "none";
   document.getElementById("btnmyForm").style.display = "none";
 }
 
 function closeForm() {
   document.getElementById("myForm").style.display = "none";
   document.getElementById("myTable").style.display = "block";
+  document.getElementById("myForm1").style.display = "none";
   document.getElementById("btnmyForm").style.display = "block";
 }
 
-function openPendingProj() {
+function opentrashResources() {
   document.getElementById("myForm1").style.display = "block";
   document.getElementById("myTable").style.display = "none";
   document.getElementById('allProjNavItem').classList.remove('active');
-  document.getElementById('pendingProjNavItem').classList.add('active');
+  document.getElementById('trashResourcesNavItem').classList.add('active');
 }
 
-function closePendingProj() {
+function closetrashResources() {
   document.getElementById("myForm1").style.display = "none";
   document.getElementById("myTable").style.display = "block";
   document.getElementById('allProjNavItem').classList.add('active');
-  document.getElementById('pendingProjNavItem').classList.remove('active');
+  document.getElementById('trashResourcesNavItem').classList.remove('active');
 }
 
 function allProj() {
@@ -420,7 +433,7 @@ function allProj() {
   document.getElementById("myForm").style.display = "none";
   document.getElementById("myTable").style.display = "block";
   document.getElementById('allProjNavItem').classList.add('active');
-  document.getElementById('pendingProjNavItem').classList.remove('active');
+  document.getElementById('trashResourcesNavItem').classList.remove('active');
 }
 
 function searchList() {
@@ -442,15 +455,118 @@ function searchList() {
   }
 }
 
-</script>
+function searchTable() {
+  var input, filter, table, tr, tdName, tdDetails, i, txtValueName, txtValueDetails;
+  input = document.getElementById("myInput");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("resources1");
+  tr = table.getElementsByTagName("tr");
 
+  // Start loop from 1 to skip the header row (assuming the first row is the header)
+  for (i = 1; i < tr.length; i++) {
+    tr[i].style.display = "none"; // Initially hide the row
+    
+    // Get the "Name" and "Resource Details" columns (assuming 1st and 2nd columns)
+    tdName = tr[i].getElementsByTagName("td")[0]; 
+    tdDetails = tr[i].getElementsByTagName("td")[1];
+
+    if (tdName || tdDetails) {
+      txtValueName = tdName ? tdName.textContent || tdName.innerText : "";
+      txtValueDetails = tdDetails ? tdDetails.textContent || tdDetails.innerText : "";
+
+      if (txtValueName.toUpperCase().indexOf(filter) > -1 || txtValueDetails.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = ""; 
+      }
+    }
+  }
+}
+
+
+</script>
       <script type="text/javascript">
         function cool() {
           alert("Hold on, we are making something cool! Kindly visit later ;)")
         }
       </script>
 
+<script>
+    document.getElementById("resource_file").addEventListener("change", function() {
+        var fileInput = document.getElementById("resource_file");
+        var resourceTypeSelect = document.getElementById("resource_type");
+        var fileName = fileInput.value.split('.').pop().toLowerCase();
+        var resourceType = "";
 
+        switch (fileName) {
+            case 'png':
+            case 'jpeg':
+                resourceType = "Image";
+                break;
+            case 'mp4':
+            case 'mov':
+                resourceType = "Video";
+                break;
+            case 'mp3':
+            case 'wav':
+            case 'm4a':
+                resourceType = "Audio";
+                break;
+            case 'pdf':
+            case 'doc':
+            case 'docx':
+            case 'ppt':
+            case 'zip':
+                resourceType = "Document";
+                break;
+            default:
+                resourceType = "";
+        }
+
+        // Set the value of the resource_type select element
+        for (var i = 0; i < resourceTypeSelect.options.length; i++) {
+            if (resourceTypeSelect.options[i].value === resourceType) {
+                resourceTypeSelect.selectedIndex = i;
+                break;
+            }
+        }
+    });
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var checkAllButton = document.querySelector('.checkbox-toggle');
+    var projectCheckboxes = document.querySelectorAll('.resources-checkbox');
+
+    checkAllButton.addEventListener('click', function() {
+        var isChecked = this.classList.toggle('checked');
+        console.log(2);
+        projectCheckboxes.forEach(function(checkbox) {
+            checkbox.checked = isChecked;
+        });
+
+        this.innerHTML = isChecked ? '<i class="fa fa-check-square-o"></i>' : '<i class="fa fa-square-o"></i>';
+    });
+            function showAlert(type, message) {
+            if (type === 'success') {
+                alert('Success: ' + message);
+            } else if (type === 'error') {
+                alert('Error: ' + message);
+            }
+        }
+        const successMessages = "{{ messages.success|safe }}";
+        const errorMessages = "{{ messages.error|safe }}";
+        if (successMessages) {
+            successMessages.split(',').forEach(message => showAlert('success', message));
+        }
+        if (errorMessages) {
+            errorMessages.split(',').forEach(message => showAlert('error', message));
+        }
+});
+// Function to submit form
+function submitForm(action) {
+    document.getElementById('form-action').value = action;
+    document.getElementById('resources-action-form').submit();
+    document.getElementById('inputs').value = 0;    
+}
+</script>
 
     <!-- jQuery 2.1.3 -->
     <script src="{% static 'dashboard/plugins/jQuery/jQuery-2.1.3.min.js' %}"></script>
@@ -487,10 +603,6 @@ function searchList() {
     <script src="{% static 'dashboard/plugins/fastclick/fastclick.min.js' %}"></script>
     <!-- Site Sync App -->
     <script src="{% static 'dashboard/dist/js/app.min.js' %}" type="text/javascript"></script>
-
-    <!-- Site Sync dashboard demo (This is only for demo purposes) -->
-    <script src="{% static 'dashboard/dist/js/pages/dashboard.js' %}" type="text/javascript"></script>
-
     <!-- Site Sync for demo purposes -->
     <script src="{% static 'dashboard/dist/js/demo.js' %}" type="text/javascript"></script>
 
@@ -498,6 +610,5 @@ function searchList() {
          new Date().getFullYear()
 document.getElementById("year").innerHTML = new Date().getFullYear();
       </script>
-
   </body>
 </html>

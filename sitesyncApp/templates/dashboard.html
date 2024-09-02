@@ -79,7 +79,7 @@
 }
 
 .progress-bar {
-    background-color: orange;
+    background-color: red;
     height: 100%;
     text-align: center;
     color: white;
@@ -91,7 +91,7 @@
       
       <header class="main-header">
         <!-- Logo -->
-        <a href="admin.html" class="logo" style="color: orange;"><img src="{% static 'dashboard/dist/img/site_sync_logo.png' %}" style="width: 120px; position: relative; top: -8px;"></a>
+        <a href="#" class="logo" style="color: orange;"><img src="{% static 'dashboard/dist/img/site_sync_logo.png' %}" style="width: 120px; position: relative; top: -8px;"></a>
         <!-- Header Navbar: style can be found in header.less -->
         <nav class="navbar navbar-static-top" role="navigation">
           <!-- Sidebar toggle button-->
@@ -99,96 +99,9 @@
             <span class="sr-only">Toggle navigation</span>
           </a>
           <div class="navbar-custom-menu">
-                        <ul class="nav navbar-nav">
-              <!-- Messages: style can be found in dropdown.less-->
-              <li class="dropdown messages-menu">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                  <i class="fa fa-envelope-o"></i>
-                  <span class="label label-success">1</span>
-                </a>
-                <ul class="dropdown-menu">
-                  <li class="header">You have 1 messages</li>
-                  <li>
-                    <!-- inner menu: contains the actual data -->
-                    <ul class="menu">
-                      <li><!-- start message -->
-                        <a href="#">
-                          <div class="pull-left">
-                            <img src="{% static 'dashboard/dist/img/site.jpg' %}" class="img-circle" alt="User Image"/>
-                          </div>
-                          <h4>
-                            Madaraka
-                            <small><i class="fa fa-clock-o"></i> 5 mins</small>
-                          </h4>
-                          <p>Hey! What's up?</p>
-                        </a>
-                      </li><!-- end message -->
-                    </ul>
-                  </li>
-                  <li class="footer"><a href="#">See All Messages</a></li>
-                </ul>
-              </li>
-            <ul class="nav navbar-nav">
-              <!-- Notifications: style can be found in dropdown.less -->
-              <li class="dropdown notifications-menu">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                  <i class="fa fa-bell-o"></i>
-                  <span class="label label-waring">2</span>
-                </a>
-                <ul class="dropdown-menu">
-                  <li class="header">You have 2 notifications</li>
-                  <li>
-                    <!-- inner menu: contains the actual data -->
-                    <ul class="menu">
-                      <li>
-                        <a href="#">
-                          <i class="fa fa-users text-aqua"></i> 5 new members joined today
-                        </a>
-                      </li>
-                      <li>
-                        <a href="#">
-                          <i class="fa fa-warning text-yellow"></i> A task is pending...
-                        </a>
-                      </li>
-                    </ul>
-                  </li>
-                  <!-- <li class="footer"><a href="pro.html">View all</a></li> -->
-                </ul>
-              </li>
-              <!-- Tasks: style can be found in dropdown.less -->
-              <li class="dropdown tasks-menu">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                  <i class="fa fa-flag-o"></i>
-                  <span class="label label-danger">1</span>
-                </a>
-                <ul class="dropdown-menu">
-                  <li class="header">You have 1 pending task(s)</li>
-                  <li>
-                    <!-- inner menu: contains the actual data -->
-                      <ul class="menu">
-                      <li> Madaraka
-                        <a href="#">
-                          <h3>
-                            Buy some timber.
-                            <small class="pull-right">20%</small>
-                          </h3>
-                        </a>
-                      </li>
-                      <!-- end task item -->
-                     </ul>
-                  </li>
-                  <li class="footer">
-                    <a href="#">View all tasks</a>
-                  </li>
-                </ul>
-              </li> 
-              <!-- Settings -->
-              <li class="dropdown tasks-menu">
-                <a href="#" class="dropdown-toggle">
-                  <i class="fa fa-gear"></i>
-                </a>
-              </li>
-              <!-- User Account: style can be found in dropdown.less -->
+              <ul class="nav navbar-nav">
+  {% include 'notifications.html' %}
+                <!-- User Account: style can be found in dropdown.less -->
               <li class="dropdown user user-menu">
                 <a href="{% url 'profile' %}" class="dropdown-toggle">
                   <img src="{{ image }}" class="user-image" alt="User Image"/>
@@ -205,43 +118,11 @@
           </div>
         </nav>
       </header>
-      <!-- Left side column. contains the logo and sidebar -->
-      <aside class="main-sidebar">
-        <!-- sidebar: style can be found in sidebar.less -->
-        <section class="sidebar">
-          <!-- Sidebar user panel -->
-          <div class="user-panel">
-            <div class="pull-left image">
-              <img src="{% static 'dashboard/dist/img/support.png' %}" style="border-radius: 10px;" class="img-circle" alt="User Image" />
-            </div>
-            <div class="pull-left info">
-              <p>SiteSync Assistant</p>
-              <a href=""><i class="fa fa-circle text-success"></i> </a>
-              <a href="#">Active</a>
-            </div>
-          </div>
-          <!-- search form -->
-<!--           <form action="#" method="get" class="sidebar-form">
-            <div class="input-group">
-              <input type="text" name="q" class="form-control" placeholder="Search..."/>
-              <span class="input-group-btn">
-                <button type='submit' name='search' id='search-btn' class="btn btn-flat"><i class="fa fa-search"></i></button>
-              </span>
-            </div>
-          </form> -->
-          <!-- /.search form -->
-          <!-- sidebar menu: : style can be found in sidebar.less -->
-          <ul class="sidebar-menu">
-            <li class="header">NEED HELP ? </li>
-          </ul>
-                              <div class="form-group">
-                      <label>No conversations yet...</label>
-                      <input type="text" class="form-control" placeholder="Enter Prompt..."/>
-                    </div>
-        </section>
-        <!-- /.sidebar -->
-      </aside>
-
+<!-- Left side column. contains the logo and sidebar -->
+<aside class="main-sidebar">
+  {% include 'chatbot.html' %}
+  <!-- /.sidebar -->
+</aside>
       <!-- Right side column. Contains the navbar and content of the page -->
       <div class="content-wrapper">
         <!-- Content Header (Page header) -->
@@ -260,20 +141,38 @@
           <div class="row">
             <div id="home">
             <div class="col-md-3">
-              <a href="#" id="btnmyForm" onclick="openForm()" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold; display: block; background-color: #FF0000;">Create A New Project</a>
+              <a href="#" id="btnmyForm" onclick="openForm()" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold; display: block; background-color: red;">Create A New Project</a>
               <div class="box box-solid">
                 <div class="box-header with-border">
                   <h3 class="box-title">List of Projects</h3>
                 </div>
-                <div class="box-body no-padding">
-                  <ul class="nav nav-pills nav-stacked">
-                    <li id="allProjNavItem" class="active"><a href="#" onclick="allProj();"><i class="fa fa-inbox"></i> All Projects <span class="label label-primary pull-right">{{ project_count }}</span></a></li>
-                    <li><a href="#"><i class="fa fa-folder-open-o"></i> Active</a></li>
-                    <li><a href="#"><i class="fa fa-file-text-o"></i> Completed</a></li>
-                    <li id="pendingProjNavItem"><a href="#" onclick="openPendingProj();"><i class="fa fa-folder-o"></i> Project Invitations <span class="label label-waring pull-right">{{ pending_project_count }}</span></a></li>
-                    <li><a href="#"><i class="fa fa-trash-o"></i> Trash</a></li>
-                  </ul>
-                </div><!-- /.box-body -->
+<div class="box-body no-padding">
+    <ul class="nav nav-pills nav-stacked">
+        <li id="allProjNavItem" class="{% if filter_type == 'all' %}active{% endif %}">
+            <a href="?filter=all"><i class="fa fa-inbox"></i> All Projects 
+                <span class="label label-primary pull-right">{{ all_projects_count }}</span>
+            </a>
+        </li>
+        <li class="{% if filter_type == 'active' %}active{% endif %}">
+            <a href="?filter=active"><i class="fa fa-folder-open-o"></i> Active 
+                <span class="label label-success pull-right">{{ active_projects_count }}</span>
+            </a>
+        </li>
+        <li id="pendingProjNavItem"><a href="#" onclick="openPendingProj();"><i class="fa fa-folder-o"></i> Project Invitations <span class="label label-waring pull-right">{{ pending_project_count }}</span></a></li>
+        <li class="{% if filter_type == 'completed' %}active{% endif %}">
+            <a href="?filter=bookmarked"><i class="fa fa-bookmark"></i> Bookmarked 
+                <span class="label label-info pull-right">{{ bookmark_projects_count }}</span>
+            </a>
+        </li>        
+        <li class="{% if filter_type == 'completed' %}active{% endif %}">
+            <a href="?filter=completed"><i class="fa fa-file-text-o"></i> Completed 
+                <span class="label label-info pull-right">{{ completed_projects_count }}</span>
+            </a>
+        </li>
+        <li id="trashProjNavItem"><a href="#" onclick="openTrashProj();"><i class="fa fa-trash-o"></i> Trash <span class="label label-waring pull-right">{{ trash_projects_count }}</span></a></li>
+    </ul>
+</div>
+
               </div><!-- /. box -->
             </div><!-- /.col -->
             <div class="col-md-9">
@@ -327,31 +226,14 @@
                   <button type="button" style="position: relative;" onclick="closePendingProj();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
                   <div class="box-tools pull-right">
                     <div class="has-feedback">
-                      <input type="text" class="form-control input-sm" placeholder="Search My Projects..."/>
+                      <input type="text" class="form-control input-sm" id="myInput1" onkeyup="searchTable1();"  placeholder="Search My Project Invites..."/>
                       <span class="glyphicon glyphicon-search form-control-feedback"></span>
                     </div>
                   </div><!-- /.box-tools -->
                 </div><!-- /.box-header -->
                 <div class="box-body no-padding">
-                  <div class="mailbox-controls">
-                    <!-- Check all button -->
-                    <button class="btn btn-default btn-sm checkbox-toggle"><i class="fa fa-square-o"></i></button>
-                    <div class="btn-group">
-                      <button class="btn btn-default btn-sm"><i class="fa fa-trash-o"></i></button>
-                      <button class="btn btn-default btn-sm"><i class="fa fa-reply"></i></button>
-                      <button class="btn btn-default btn-sm"><i class="fa fa-share"></i></button>
-                    </div><!-- /.btn-group -->
-                    <button class="btn btn-default btn-sm"><i class="fa fa-refresh"></i></button>
-                    <div class="pull-right">
-                      1-50/999
-                      <div class="btn-group">
-                        <button class="btn btn-default btn-sm"><i class="fa fa-chevron-left"></i></button>
-                        <button class="btn btn-default btn-sm"><i class="fa fa-chevron-right"></i></button>
-                      </div><!-- /.btn-group -->
-                    </div><!-- /.pull-right -->
-                  </div>
                   <div class="table-responsive mailbox-messages">
-                    <table class="table table-hover table-striped">
+                    <table class="table table-hover table-striped" id="projects1">
                       <thead>
 <!--                         <th></th>
                         <th></th> -->
@@ -365,11 +247,11 @@
                       <tbody>
 {% for pending_project in pending_projects %}
     <tr>
-        <td class="mailbox-name" title="5 mins ago"><a href="#">{{ pending_project.project_name }}</a></td>
+        <td class="mailbox-name" title="{{ pending_project.created_at }}"><a href="#">{{ pending_project.project_name }}</a></td>
         <td class="mailbox-name"><img src="{{ MEDIA_URL }}{{ pending_project.project_image }}" style="width: 100px;"></td> 
 {% for user in users %}
     {% if user.id == pending_project.leader_id %}
-        <td class="mailbox-name" title="5 mins ago">
+        <td class="mailbox-name" title="{{ pending_project.created_at }}">
             <a href="#">{{ user.first_name }}</a>
         </td>
     {% endif %}
@@ -380,7 +262,7 @@
                               {% csrf_token %}
                               <input type="hidden" value="{{ pending_project.project_id }}" name="pid" required>
                               <input type="hidden" value="Accepted" name="stat" required>
-                              <button type="submit" class="btn btn-primary">Accept</button>
+                              <button type="submit" class="btn btn-primary" onclick="return confirm('Are You Sure That You Want To Accept this Project Invitation?');">Accept</button>
                             </form>
                         </td>
                                                   <td class="mailbox-attachment">
@@ -388,7 +270,7 @@
                               {% csrf_token %}
                               <input type="hidden" value="{{ pending_project.project_id }}" name="pid" required>
                               <input type="hidden" value="Rejected" name="stat" required>
-                              <button type="submit" class="btn btn-primary">Reject</button>
+                              <button type="submit" class="btn btn-primary" onclick="return confirm('Are You Sure That You Want To Reject this Project Invitation?');">Reject</button>
                             </form>
                         </td>
     </tr>
@@ -399,97 +281,232 @@
                 </div><!-- /.box-body -->
               </div><!-- /. box -->
 
-              <div class="box box-primary" id="myTable">
+              <div class="box box-primary" id="myForm2">
                 <div class="box-header with-border">
-                  <h3 class="box-title">My Projects</h3>
-                               {% if messages %}
-            <div class="messages">
-                {% for message in messages %}
-                    <p style="font-weight: bold; color: black;" class="{{ message.tags }}">{{ message }}</p>
-                {% endfor %}
-            </div>
-        {% endif %}
+                  <h3 class="box-title">My Trash Projects</h3>
+                  <button type="button" style="position: relative;" onclick="closeTrashProj();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
                   <div class="box-tools pull-right">
                     <div class="has-feedback">
-                      <input type="text" class="form-control input-sm" placeholder="Search Project(s) Name..."/>
+                      <input type="text" class="form-control input-sm" id="myInput2" onkeyup="searchTable2();"  placeholder="Search My Trash Projects..."/>
                       <span class="glyphicon glyphicon-search form-control-feedback"></span>
                     </div>
                   </div><!-- /.box-tools -->
                 </div><!-- /.box-header -->
+                <div class="mailbox-controls">
+    <div class="btn-group">
+<button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Restore This Project(s) ?')) { submitForm('restore'); }">
+    <i class="fa fa-save"></i> Restore
+</button>
+<button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Permanently Delete This Project(s) ?')) { submitForm('delete1'); }">
+    <i class="fa fa-trash-o"></i> Delete
+</button>
+    </div><!-- /.btn-group -->
+</div><!-- /.mailbox-controls -->
                 <div class="box-body no-padding">
-                  <div class="mailbox-controls">
-                    <!-- Check all button -->
-                    <button class="btn btn-default btn-sm checkbox-toggle"><i class="fa fa-square-o"></i></button>
-                    <div class="btn-group">
-                      <button class="btn btn-default btn-sm"><i class="fa fa-trash-o"></i></button>
-                      <button class="btn btn-default btn-sm"><i class="fa fa-reply"></i></button>
-                      <button class="btn btn-default btn-sm"><i class="fa fa-share"></i></button>
-                    </div><!-- /.btn-group -->
-                    <button class="btn btn-default btn-sm"><i class="fa fa-refresh"></i></button>
-                    <div class="pull-right">
-                      1-50/999
-                      <div class="btn-group">
-                        <button class="btn btn-default btn-sm"><i class="fa fa-chevron-left"></i></button>
-                        <button class="btn btn-default btn-sm"><i class="fa fa-chevron-right"></i></button>
-                      </div><!-- /.btn-group -->
-                    </div><!-- /.pull-right -->
-                  </div>
                   <div class="table-responsive mailbox-messages">
-<table class="table table-hover table-striped">
-    <thead>
-        <th>Name</th>
-        <th>Pending Tasks</th>
-        <th>Unread Messages</th>
-        <th>Progress</th>
-        <th></th>
-    </thead>
-    <tbody>
-        {% for project in projects %}
-        <tr>
-            <td class="mailbox-name" title="5 mins ago"><a href="{% url 'project_detail' project.project_id %}">{{ project.project_name }}</a></td>
-            <td class="mailbox-name"><b>({{ pending_tasks_counts|get_item:project.project_id }})</b></td>
-<td class="mailbox-name">
-    <b>
-        ({{ unread_chat_counts|get_item:project.project_id|default:"0" }})
-    </b>
-</td>
-                {% with progress=progress_percentages|get_item:project.project_id %}
-                    {% if progress > 0 %}
-                        <td class="mailbox-attachment">{{ progress|floatformat:2 }}% Complete
-                            <div class="progress">
-                                <div class="progress-bar" role="progressbar" style="width: {{ progress|floatformat:2 }}%" aria-valuenow="{{ progress|floatformat:2 }}" aria-valuemin="0" aria-valuemax="100">
-                                    <!-- {{ progress|floatformat:2 }}% -->
-                                </div>
-                            </div>
+                    <table class="table table-hover table-striped" id="projects2">
+                      <thead>
+                        <!-- <th></th> -->
+                        <th>Name</th>
+                        <th>Project Image</th>
+                        <th>Project Details</th>
+                        <th></th>
+                        <th></th>
+                      </thead>
+                      <tbody>
+{% for trash_project in trash_projects %}
+    <tr>
+        <td class="mailbox-name" title="{{ trash_project.created_at }}"><a href="#">{{ trash_project.project_name }}</a></td>
+        <td class="mailbox-name"><img src="{{ MEDIA_URL }}{{ trash_project.project_image }}" style="width: 100px;"></td> 
+        <td class="mailbox-name" title="{{ trash_project.created_at }}"><a href="#">{{ trash_project.project_details }}</a></td>
+                            <td class="mailbox-attachment">
+                            <form method="POST" name="update_project_member_form" action="{% url 'restore_project' trash_project.project_id %}" enctype="multipart/form-data">
+                              {% csrf_token %}
+                              <button type="submit" class="btn btn-primary" onclick="return confirm('Are You Sure You Want To Restore This Project ?')">Restore</button>
+                            </form>
                         </td>
-                    {% else %}
-                        <td class="mailbox-attachment">0% Complete
-                            <div class="progress">
-                                <div class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                                    <!-- 0% -->
-                                </div>
-                            </div>
+                                                  <td class="mailbox-attachment">
+                            <form method="POST" name="update_project_member_form" action="{% url 'hide_project' trash_project.project_id %}" enctype="multipart/form-data">
+                              {% csrf_token %}
+                              <button type="submit" class="btn btn-primary" onclick="return confirm('Are You Sure You Want To Permanently Remove This Project ?')">Remove</button>
+                            </form>
                         </td>
-                    {% endif %}
-                {% endwith %}
-            <td class="mailbox-attachment">
-                <div class="form-group" style="font-size: 11px;">
-                    <div class="dropdown">
-                        <button class="dropbtn">Select An Option</button>
-                        <div class="dropdown-content">
-                            <a href="{% url 'chat' project.project_id %}">Chat Room</a>
-                            <a href="{% url 'resources' project.project_id %}">View Resources</a>
-                            <a href="{% url 'transactions' project.project_id %}">View Transactions</a>
-                            <a href="#" onclick="cool();">View Dashboard</a>
-                            <a href="{% url 'tasks_events' project.project_id %}">View Tasks & Events</a>
-                        </div>
-                    </div>
-                </div>
-            </td>
-        </tr>
+    </tr>
+{% endfor %}
+                      </tbody>
+                    </table><!-- /.table -->
+                  </div><!-- /.mail-box-messages -->
+                </div><!-- /.box-body -->
+              </div><!-- /. box -->
+
+<div class="box box-primary" id="myTable">
+<div class="box-header with-border">
+    <h3 class="box-title">My Projects</h3>
+    {% if messages %}
+      <div class="messages">
+        {% for message in messages %}
+          <p style="font-weight: bold; color: black;" class="{{ message.tags }}">{{ message }}</p>
         {% endfor %}
-    </tbody>
-</table><!-- /.table -->
+      </div>
+    {% endif %}
+    {% if status_filter_display != 'All Projects' or date_filter_display != 'All Time' %}    
+    <div class="filter-info">
+      <p><strong>Current Filters:</strong> {{ status_filter_display }} - {{ date_filter_display }}</p>
+    </div>
+    {% endif %}
+    <div class="box-tools pull-right">
+        <!-- New search form -->
+        <form method="get" action="{% url 'client' %}" class="form-inline">
+            <div class="input-group">
+                <input type="text" class="form-control input-sm" name="search" placeholder="Search Project(s) Name..." value="{{ request.GET.search }}">
+                <span class="input-group-btn">
+                    <button type="submit" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-search"></span></button>
+                </span>
+            </div>
+        </form>
+    </div><!-- /.box-tools -->
+</div><!-- /.box-header -->
+  <div class="box-body no-padding">
+    <div class="mailbox-controls">
+      <!-- Check all button -->
+<button type="button" class="btn btn-default btn-sm checkbox-toggle">
+    <i class="fa fa-square-o"></i>
+</button>
+      <div class="btn-group">
+        <button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Delete This Project(s) ?')) { submitForm('delete'); }">
+          <i class="fa fa-trash-o"></i> Delete
+        </button>
+        <button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Bookmark This Project(s) ?')) { submitForm('bookmark'); }">
+          <i class="fa fa-bookmark"></i> Bookmark
+        </button>
+        <button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Remove This Bookmark(s) ?')) { submitForm('unbookmark'); }">
+          <i class="fa fa-bookmark-o"></i> Unbookmark
+        </button>
+      </div><!-- /.btn-group -->
+      <div class="btn-group">
+      <div class="filter-options">
+        <form method="get" action="{% url 'client' %}" class="form-inline">
+          <div class="form-group">
+            <label for="date_filter" class="sr-only">Date Filter:</label>
+            <select name="date_filter" id="date_filter" class="form-control input-sm">
+              <option value="" {% if not current_date_filter %}selected{% endif %}>All Time</option>
+              <option value="today" {% if current_date_filter == 'today' %}selected{% endif %}>Today</option>
+              <option value="this_week" {% if current_date_filter == 'this_week' %}selected{% endif %}>This Week</option>
+              <option value="this_month" {% if current_date_filter == 'this_month' %}selected{% endif %}>This Month</option>
+              <option value="this_year" {% if current_date_filter == 'this_year' %}selected{% endif %}>This Year</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filter" class="sr-only">Status Filter:</label>
+            <select name="filter" id="filter" class="form-control input-sm">
+              <option value="all" {% if current_status_filter == 'all' %}selected{% endif %}>All Projects</option>
+              <option value="active" {% if current_status_filter == 'active' %}selected{% endif %}>Active Projects</option>
+              <option value="completed" {% if current_status_filter == 'completed' %}selected{% endif %}>Completed Projects</option>
+              <option value="bookmarked" {% if current_status_filter == 'bookmarked' %}selected{% endif %}>Bookmarked Projects</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
+        </form>
+      </div>
+    </div>
+    </div><!-- /.mailbox-controls -->
+<div class="pull-right">
+    Page {{ projects.number }} of {{ projects.paginator.num_pages }}
+    <div class="btn-group">
+      {% if projects.has_previous %}
+        <a href="?page=1&filter={{ filter_type }}" class="btn btn-default btn-sm {% if projects.number == 1 %}disabled{% endif %}">
+            <i class="fa fa-chevron-left"></i><i class="fa fa-chevron-left"></i> First
+        </a>
+        <a href="?page={% if projects.has_previous %}{{ projects.previous_page_number }}{% else %}1{% endif %}&filter={{ filter_type }}" class="btn btn-default btn-sm {% if not projects.has_previous %}disabled{% endif %}">
+            <i class="fa fa-chevron-left"></i> Previous
+        </a>
+        {% endif %}
+        {% if projects.has_next %}
+        <a href="?page={% if projects.has_next %}{{ projects.next_page_number }}{% else %}{{ projects.paginator.num_pages }}{% endif %}&filter={{ filter_type }}" class="btn btn-default btn-sm {% if not projects.has_next %}disabled{% endif %}">
+            <i class="fa fa-chevron-right"></i> Next
+        </a>
+        <a href="?page={{ projects.paginator.num_pages }}&filter={{ filter_type }}" class="btn btn-default btn-sm {% if projects.number == projects.paginator.num_pages %}disabled{% endif %}">
+            <i class="fa fa-chevron-right"></i><i class="fa fa-chevron-right"></i> Last
+        </a>
+        {% endif %}        
+    </div><!-- /.btn-group -->
+</div><!-- /.pull-right -->
+</div><!-- /.mailbox-controls -->
+<form method="post" id="project-action-form">
+    {% csrf_token %}
+    <input type="hidden" name="action" id="form-action" value="">
+    <div class="table-responsive mailbox-messages">
+        <table class="table table-hover table-striped" id="projects">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th></th>
+                    <th>Name</th>
+                    <th>Pending Tasks</th>
+                    <th>Unread Messages</th>
+                    <th>Progress</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for project in projects %}
+                <tr>
+                    <td>
+                        <input type="checkbox" id="project-{{ project.project_id }}" name="selected_projects" value="{{ project.project_id }}" class="project-checkbox">
+                        <label for="project-{{ project.project_id }}"></label>
+                    </td>
+<td class="mailbox-star">
+    <button type="submit" class="btn btn-link" style="padding: 0; border: none; background: none;"
+        onclick="return confirm('Are You Sure You Want To {% if project.project_id in bookmarked_project_ids %}Remove The Bookmark For{% else %}Bookmark{% endif %} This Project?')">
+        <input type="hidden" name="selected_project" value="{{ project.project_id }}">
+        <input type="hidden" name="action1" value="{% if project.project_id in bookmarked_project_ids %}unbookmark1{% else %}bookmark1{% endif %}">
+        <i class="fa {% if project.project_id in bookmarked_project_ids %}fa-star{% else %}fa-star-o{% endif %} text-yellow"></i>
+    </button>
+</td>
+                    <td class="mailbox-name" title="{{ project.created_at }}">
+                        <a href="{% url 'project_detail' project.project_id %}">{{ project.project_name }}</a>
+                    </td>
+                    <td class="mailbox-name">
+                        <b>({{ pending_tasks_counts|get_item:project.project_id }})</b>
+                    </td>
+                    <td class="mailbox-name">
+                        <b>({{ unread_chat_counts|get_item:project.project_id|default:"0" }})</b>
+                    </td>
+                    <td class="mailbox-attachment">
+                        {% with progress=progress_percentages|get_item:project.project_id %}
+                {% if progress > 0 %}                        
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: {{ progress|default:0|floatformat:2 }}%" aria-valuenow="{{ progress|default:0|floatformat:2 }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ progress|default:0|floatformat:2 }}% Complete
+                            </div>
+                        </div>
+                {% else %}
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0%" aria-valuemin="0" aria-valuemax="100">
+                               0% Complete
+                            </div>
+                        </div>  
+                {% endif %}                                                              
+                        {% endwith %}
+                    </td>
+                    <td class="mailbox-attachment">
+                        <div class="dropdown">
+                            <button class="dropbtn">Select An Option</button>
+                            <div class="dropdown-content">
+                                <a href="{% url 'chat' project.project_id %}">Chat Room</a>
+                                <a href="{% url 'resources' project.project_id %}">View Resources</a>
+                                <a href="{% url 'transactions' project.project_id %}">View Transactions</a>
+                                <a href="#" onclick="cool();">View Dashboard</a>
+                                <a href="{% url 'tasks_events' project.project_id %}">View Tasks & Events</a>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table><!-- /.table -->
+    </div>
+</form>
 
                   </div><!-- /.mail-box-messages -->
                 </div><!-- /.box-body -->
@@ -506,42 +523,173 @@
     </div><!-- ./wrapper -->
 <script>
   document.getElementById("myForm").style.display = "none";
-  document.getElementById("myForm1").style.display = "none";  
+  document.getElementById("myForm1").style.display = "none";
+  document.getElementById("myForm2").style.display = "none";    
 function openForm() {
   document.getElementById("myForm").style.display = "block";
   document.getElementById("myTable").style.display = "none";
+  document.getElementById("myForm2").style.display = "none";
+  document.getElementById("myForm1").style.display = "none";
   document.getElementById("btnmyForm").style.display = "none";
 }
 
 function closeForm() {
   document.getElementById("myForm").style.display = "none";
   document.getElementById("myTable").style.display = "block";
+  document.getElementById("myForm2").style.display = "none";
+  document.getElementById("myForm1").style.display = "none";
   document.getElementById("btnmyForm").style.display = "block";
 }
 
 function openPendingProj() {
   document.getElementById("myForm1").style.display = "block";
   document.getElementById("myTable").style.display = "none";
+  document.getElementById("myForm2").style.display = "none";
   document.getElementById('allProjNavItem').classList.remove('active');
+  document.getElementById('trashProjNavItem').classList.remove('active');
   document.getElementById('pendingProjNavItem').classList.add('active');
 }
 
 function closePendingProj() {
   document.getElementById("myForm1").style.display = "none";
   document.getElementById("myTable").style.display = "block";
+  document.getElementById("myForm2").style.display = "none";
   document.getElementById('allProjNavItem').classList.add('active');
+  document.getElementById('trashProjNavItem').classList.remove('active');  
+  document.getElementById('pendingProjNavItem').classList.remove('active');
+}
+
+function openTrashProj() {
+  document.getElementById("myForm2").style.display = "block";
+  document.getElementById("myTable").style.display = "none";
+  document.getElementById("myForm1").style.display = "none";
+  document.getElementById('allProjNavItem').classList.remove('active');
+  document.getElementById('trashProjNavItem').classList.add('active');
+  document.getElementById('pendingProjNavItem').classList.remove('active');
+}
+
+function closeTrashProj() {
+  document.getElementById("myForm2").style.display = "none";
+  document.getElementById("myTable").style.display = "block";
+  document.getElementById("myForm1").style.display = "none";
+  document.getElementById('allProjNavItem').classList.add('active');
+  document.getElementById('trashProjNavItem').classList.remove('active'); 
   document.getElementById('pendingProjNavItem').classList.remove('active');
 }
 
 function allProj() {
-  document.getElementById("myForm1").style.display = "none";
+  document.getElementById("myForm2").style.display = "none";
+  document.getElementById("myForm1").style.display = "none";  
   document.getElementById("myForm").style.display = "none";
   document.getElementById("myTable").style.display = "block";
   document.getElementById('allProjNavItem').classList.add('active');
+  document.getElementById('trashProjNavItem').classList.remove('active'); 
   document.getElementById('pendingProjNavItem').classList.remove('active');
 }
 
+function searchTable() {
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("myInput");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("projects");
+  tr = table.getElementsByTagName("tr");
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[2];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }       
+  }
+}
+
+function searchTable1() {
+  var input, filter, table, tr, td, i, j, txtValue;
+  input = document.getElementById("myInput1");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("projects1");
+  tr = table.getElementsByTagName("tr");
+
+  for (i = 0; i < tr.length; i++) {
+    tr[i].style.display = "none"; // Initially hide the row
+    td = tr[i].getElementsByTagName("td");
+
+    for (j = 0; j < td.length; j++) {
+      if (td[j]) {
+        txtValue = td[j].textContent || td[j].innerText;
+        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+          tr[i].style.display = ""; 
+          break; 
+        }
+      }
+    }
+  }
+}
+
+function searchTable2() {
+  var input, filter, table, tr, td, i, j, txtValue;
+  input = document.getElementById("myInput2");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("projects2");
+  tr = table.getElementsByTagName("tr");
+
+  for (i = 1; i < tr.length; i++) {
+    tr[i].style.display = "none"; // Initially hide the row
+    td = tr[i].getElementsByTagName("td");
+
+    for (j = 0; j < td.length; j++) {
+      if (td[j]) {
+        txtValue = td[j].textContent || td[j].innerText;
+        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+          tr[i].style.display = ""; 
+          break; 
+        }
+      }
+    }
+  }
+}
+
 </script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var checkAllButton = document.querySelector('.checkbox-toggle');
+    var projectCheckboxes = document.querySelectorAll('.project-checkbox');
+
+    checkAllButton.addEventListener('click', function() {
+        var isChecked = this.classList.toggle('checked');
+        console.log(2);
+        projectCheckboxes.forEach(function(checkbox) {
+            checkbox.checked = isChecked;
+        });
+
+        this.innerHTML = isChecked ? '<i class="fa fa-check-square-o"></i>' : '<i class="fa fa-square-o"></i>';
+    });
+            function showAlert(type, message) {
+            if (type === 'success') {
+                alert('Success: ' + message);
+            } else if (type === 'error') {
+                alert('Error: ' + message);
+            }
+        }
+        const successMessages = "{{ messages.success|safe }}";
+        const errorMessages = "{{ messages.error|safe }}";
+        if (successMessages) {
+            successMessages.split(',').forEach(message => showAlert('success', message));
+        }
+        if (errorMessages) {
+            errorMessages.split(',').forEach(message => showAlert('error', message));
+        }
+});
+// Function to submit form
+function submitForm(action) {
+    document.getElementById('form-action').value = action;
+    document.getElementById('project-action-form').submit();
+}
+</script>
+
     <!-- jQuery 2.1.3 -->
     <script src="{% static 'dashboard/plugins/jQuery/jQuery-2.1.3.min.js' %}"></script>
     <!-- jQuery UI 1.11.2 -->
@@ -577,13 +725,10 @@ function allProj() {
     <script src="{% static 'dashboard/plugins/fastclick/fastclick.min.js' %}"></script>
     <!-- Site Sync App -->
     <script src="{% static 'dashboard/dist/js/app.min.js' %}" type="text/javascript"></script>
-
-    <!-- Site Sync dashboard demo (This is only for demo purposes) -->
-    <script src="{% static 'dashboard/dist/js/pages/dashboard.js' %}" type="text/javascript"></script>
-
     <!-- Site Sync for demo purposes -->
     <script src="{% static 'dashboard/dist/js/demo.js' %}" type="text/javascript"></script>
-
+    <link rel="stylesheet" href="{% static 'dashboard/dist/plugins/iCheck/flat/blue.css' %}">
+<script src="{% static 'dashboard/dist/plugins/iCheck/icheck.min.js' %}"></script>
       <script type="text/javascript">
          new Date().getFullYear()
 document.getElementById("year").innerHTML = new Date().getFullYear();

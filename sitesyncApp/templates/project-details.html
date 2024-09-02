@@ -5,6 +5,7 @@
     <title>Site Sync - {{ type }} Module - Project Details</title>
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
     {% load static %}
+        {% load custom_filters %}
     <!-- Bootstrap 3.3.2 -->
     <link href="{% static 'dashboard/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css" />   
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">   
@@ -19,55 +20,6 @@
     <link href="{% static 'dashboard/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.min.css' %}" rel="stylesheet" type="text/css" />
   </head>
       <style>
-        .dropdown {
-            position: relative;
-            display: inline-block;
-        }
-        
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background-color: #f9f9f9;
-            min-width: 200px;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-            z-index: 1;
-        }
-        
-        .dropdown-content a {
-            color: black;
-            padding: 12px 16px;
-            text-decoration: none;
-            display: block;
-        }
-        
-        .dropdown-content a:hover {
-            background-color: #f1f1f1;
-        }
-        
-        .dropdown:hover .dropdown-content {
-            display: block;
-        }
-        
-        .dropdown:hover .dropbtn {
-            background-color: orange;
-        }
-        
-        .dropbtn {
-            background-color: white;
-            color: black;
-            padding: 5px;
-            font-size: 16px;
-            border: none;
-            cursor: pointer;
-            width: 200px;
-            text-align: left;
-        }
-        .custom-checkbox {
-    display: block !important;
-    margin: auto;
-    width: 16px;
-    height: 16px;
-}
 .progress {
     width: 100%;
     background-color: black;
@@ -78,7 +30,7 @@
 }
 
 .progress-bar {
-    background-color: orange;
+    background-color: red;
     height: 100%;
     text-align: center;
     color: white;
@@ -92,105 +44,19 @@
         <!-- Logo -->
         <a href="{% url 'client' %}" class="logo" style="color: orange;"><img src="{% static 'dashboard/dist/img/site_sync_logo.png' %}" style="width: 120px; position: relative; top: -8px;"></a>
         <!-- Header Navbar: style can be found in header.less -->
+<!-- Header Navbar: style can be found in header.less -->
         <nav class="navbar navbar-static-top" role="navigation">
           <!-- Sidebar toggle button-->
           <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button">
             <span class="sr-only">Toggle navigation</span>
           </a>
           <div class="navbar-custom-menu">
-                        <ul class="nav navbar-nav">
-              <!-- Messages: style can be found in dropdown.less-->
-              <li class="dropdown messages-menu">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                  <i class="fa fa-envelope-o"></i>
-                  <span class="label label-success">1</span>
-                </a>
-                <ul class="dropdown-menu">
-                  <li class="header">You have 1 messages</li>
-                  <li>
-                    <!-- inner menu: contains the actual data -->
-                    <ul class="menu">
-                      <li><!-- start message -->
-                        <a href="#">
-                          <div class="pull-left">
-                            <img src="{% static 'dashboard/dist/img/site.jpg' %}" class="img-circle" alt="User Image"/>
-                          </div>
-                          <h4>
-                            Madaraka
-                            <small><i class="fa fa-clock-o"></i> 5 mins</small>
-                          </h4>
-                          <p>Hey! What's up?</p>
-                        </a>
-                      </li><!-- end message -->
-                    </ul>
-                  </li>
-                  <li class="footer"><a href="#">See All Messages</a></li>
-                </ul>
-              </li>
-            <ul class="nav navbar-nav">
-              <!-- Notifications: style can be found in dropdown.less -->
-              <li class="dropdown notifications-menu">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                  <i class="fa fa-bell-o"></i>
-                  <span class="label label-waring">2</span>
-                </a>
-                <ul class="dropdown-menu">
-                  <li class="header">You have 2 notifications</li>
-                  <li>
-                    <!-- inner menu: contains the actual data -->
-                    <ul class="menu">
-                      <li>
-                        <a href="#">
-                          <i class="fa fa-users text-aqua"></i> 5 new members joined today
-                        </a>
-                      </li>
-                      <li>
-                        <a href="#">
-                          <i class="fa fa-warning text-yellow"></i> A task is pending...
-                        </a>
-                      </li>
-                    </ul>
-                  </li>
-                  <!-- <li class="footer"><a href="pro.html">View all</a></li> -->
-                </ul>
-              </li>
-              <!-- Tasks: style can be found in dropdown.less -->
-              <li class="dropdown tasks-menu">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                  <i class="fa fa-flag-o"></i>
-                  <span class="label label-danger">1</span>
-                </a>
-                <ul class="dropdown-menu">
-                  <li class="header">You have 1 pending task(s)</li>
-                  <li>
-                    <!-- inner menu: contains the actual data -->
-                      <ul class="menu">
-                      <li> Madaraka
-                        <a href="#">
-                          <h3>
-                            Buy some timber.
-                            <small class="pull-right">20%</small>
-                          </h3>
-                        </a>
-                      </li>
-                      <!-- end task item -->
-                     </ul>
-                  </li>
-                  <li class="footer">
-                    <a href="#">View all tasks</a>
-                  </li>
-                </ul>
-              </li> 
-              <!-- Settings -->
-              <li class="dropdown tasks-menu">
-                <a href="#" class="dropdown-toggle">
-                  <i class="fa fa-gear"></i>
-                </a>
-              </li>
-              <!-- User Account: style can be found in dropdown.less -->
+              <ul class="nav navbar-nav">
+  {% include 'notifications.html' %}
+                <!-- User Account: style can be found in dropdown.less -->
               <li class="dropdown user user-menu">
                 <a href="{% url 'profile' %}" class="dropdown-toggle">
-                  <img src="{{ MEDIA_URL }}{{ auth_user.profile.profile_picture }}" class="user-image" alt="User Image"/>
+                  <img src="{{ image }}" class="user-image" alt="User Image"/>
                   <span class="hidden-xs">{{ fname }}</span>
                 </a>
               </li>
@@ -199,46 +65,14 @@
                 <a href="{% url 'logout' %}" class="dropdown-toggle">
                   <i class="fa fa-mail-forward"></i>
                 </a>
-              </li> 
+              </li>  
             </ul>
           </div>
         </nav>
       </header>
       <!-- Left side column. contains the logo and sidebar -->
       <aside class="main-sidebar">
-        <!-- sidebar: style can be found in sidebar.less -->
-        <section class="sidebar">
-          <!-- Sidebar user panel -->
-          <div class="user-panel">
-            <div class="pull-left image">
-              <img src="{% static 'dashboard/dist/img/support.png' %}" style="border-radius: 10px;" class="img-circle" alt="User Image" />
-            </div>
-            <div class="pull-left info">
-              <p>SiteSync Assistant</p>
-              <a href=""><i class="fa fa-circle text-success"></i> </a>
-              <a href="#">Active</a>
-            </div>
-          </div>
-          <!-- search form -->
-<!--           <form action="#" method="get" class="sidebar-form">
-            <div class="input-group">
-              <input type="text" name="q" class="form-control" placeholder="Search..."/>
-              <span class="input-group-btn">
-                <button type='submit' name='search' id='search-btn' class="btn btn-flat"><i class="fa fa-search"></i></button>
-              </span>
-            </div>
-          </form> -->
-          <!-- /.search form -->
-          <!-- sidebar menu: : style can be found in sidebar.less -->
-          <ul class="sidebar-menu">
-            <li class="header">NEED HELP ? </li>
-          </ul>
-                              <div class="form-group">
-                      <label>No conversations yet...</label>
-                      <input type="text" class="form-control" placeholder="Enter Prompt..."/>
-                    </div>
-        </section>
-        <!-- /.sidebar -->
+  {% include 'chatbot.html' %}
       </aside>
 
       <!-- Right side column. Contains the navbar and content of the page -->
@@ -290,21 +124,37 @@
     border-radius: 50%;
     padding: 3px;" />
     <span class='direct-chat-name pull-left'>{{ leader_profile.user.first_name }} (Project Leader)</span>
+{% if leader_user.online == 1 %}
+<a id="status" href="" title="Online"><i class="fa fa-circle text-success"></i> </a>
+{% else %}
+<a id="status" href="" title="Offline"><i class="fa fa-circle" style="color: red;"></i> </a>
+{% endif %}
 {% endif %}                  
                     </div><!-- /.direct-chat-msg -->
                     <div class="direct-chat-msg">
                     {% for member in project_member_details %}                      
                       <img class="direct-chat-img" src="{{ member.image }}" alt="message user image" /><!-- /.direct-chat-img --><span class='direct-chat-name pull-left'>{{ member.first_name }}</span>
+                      {% if member.online == 1 %}
+<a id="status" href="" title="Online"><i class="fa fa-circle text-success"></i> </a>
+{% else %}
+<a id="status" href="" title="Offline"><i class="fa fa-circle" style="color: black;"></i> </a>
+{% endif %}
                       {% if project.leader_id == auth_user.id %}
                       {% if member_status == "Accepted" %}
                       <form method="POST" name="remove_project_member_form" action="{% url 'remove_project_member' project.pk %}" enctype="multipart/form-data">
                               {% csrf_token %}
                               <input type="hidden" value="{{ member.id }}" name="uid" required>
-                              <button type="submit" onclick="return confirm('Are You Sure You Want To Remove This Project Member ?')" class="btn btn-primary"style="font-size:12px;"><i class="fa fa-remove" ></i></button>
+                              <button type="submit" onclick="return confirm('Are You Sure You Want To Remove This Project Member ?')" class="btn btn-primary"style="font-size:12px;" title="Remove From Project"><i class="fa fa-remove" ></i></button>
                             </form>
                         {% else %}
                         <span class='direct-chat-name pull-left' style="color: orange;">Pending Invitation Acceptance</span>
                         {% endif %}
+                        {% else %}
+                      <form method="POST" name="remove_project_member_form" action="{% url 'exit_project' project.pk %}" enctype="multipart/form-data">
+                              {% csrf_token %}
+                              <input type="hidden" value="{{ member.id }}" name="uid" required>
+                              <button type="submit" onclick="return confirm('Are You Sure You Want To Exit This Project ?')" class="btn btn-primary"style="font-size:12px;" title="Exit Project"><i class="fa fa-sign-out" ></i></button>
+                            </form>                        
                         {% endif %}
 {% endfor %}                      
                     </div><!-- /.direct-chat-msg -->
@@ -373,36 +223,41 @@
                 <div class="box-header with-border">
                   <h3 class="box-title">Add A Project Member</h3>
                   <button type="button" style="position: relative;" onclick="closePMembers();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
-                               {% if messages %}
-            <div class="messages">
-                {% for message in messages %}
-                    <p style="font-weight: bold; color: black;" class="{{ message.tags }}">{{ message }}</p>
-                {% endfor %}
-            </div>
-        {% endif %}
                   <div class="box-tools pull-right">
                     <div class="has-feedback">
-                      <input type="text" class="form-control input-sm" onkeyup="searchTable();" id="myInput" placeholder="Search User(s) Names..."/>
-                      <span class="glyphicon glyphicon-search form-control-feedback"></span>
+        <form method="get" action="{% url 'project_detail' project.project_id %}" class="form-inline">
+            <div class="input-group">
+                <input type="text" class="form-control input-sm" name="search" placeholder="Search User(s) Names..." value="{{ request.GET.search }}">
+                <span class="input-group-btn">
+                    <button type="submit" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-search"></span></button>
+                </span>
+            </div>
+        </form>
                     </div>
                   </div><!-- /.box-tools -->
                 </div><!-- /.box-header -->
                 <div class="box-body no-padding">
                   <div class="mailbox-controls">
-                    <!-- Check all button -->
-                    <button class="btn btn-default btn-sm checkbox-toggle"><i class="fa fa-square-o"></i></button>
-                    <div class="btn-group">
-                      <button class="btn btn-default btn-sm"><i class="fa fa-trash-o"></i></button>
-                      <button class="btn btn-default btn-sm"><i class="fa fa-reply"></i></button>
-                      <button class="btn btn-default btn-sm"><i class="fa fa-share"></i></button>
-                    </div><!-- /.btn-group -->
-                    <button class="btn btn-default btn-sm"><i class="fa fa-refresh"></i></button>
                     <div class="pull-right">
-                      1-50/999
-                      <div class="btn-group">
-                        <button class="btn btn-default btn-sm"><i class="fa fa-chevron-left"></i></button>
-                        <button class="btn btn-default btn-sm"><i class="fa fa-chevron-right"></i></button>
-                      </div><!-- /.btn-group -->
+    Page {{ user_details.number }} of {{ user_details.paginator.num_pages }}
+    <div class="btn-group">
+      {% if user_details.has_previous %}
+        <a href="?page=1&filter={{ filter_type }}" class="btn btn-default btn-sm {% if user_details.number == 1 %}disabled{% endif %}">
+            <i class="fa fa-chevron-left"></i><i class="fa fa-chevron-left"></i> First
+        </a>
+        <a href="?page={% if user_details.has_previous %}{{ user_details.previous_page_number }}{% else %}1{% endif %}&filter={{ filter_type }}" class="btn btn-default btn-sm {% if not user_details.has_previous %}disabled{% endif %}">
+            <i class="fa fa-chevron-left"></i> Previous
+        </a>
+        {% endif %}
+        {% if user_details.has_next %}
+        <a href="?page={% if user_details.has_next %}{{ user_details.next_page_number }}{% else %}{{ user_details.paginator.num_pages }}{% endif %}&filter={{ filter_type }}" class="btn btn-default btn-sm {% if not user_details.has_next %}disabled{% endif %}">
+            <i class="fa fa-chevron-right"></i> Next
+        </a>
+        <a href="?page={{ user_details.paginator.num_pages }}&filter={{ filter_type }}" class="btn btn-default btn-sm {% if user_details.number == user_details.paginator.num_pages %}disabled{% endif %}">
+            <i class="fa fa-chevron-right"></i><i class="fa fa-chevron-right"></i> Last
+        </a>
+        {% endif %}        
+    </div><!-- /.btn-group -->
                     </div><!-- /.pull-right -->
                   </div>
                   <div class="table-responsive mailbox-messages">
@@ -434,7 +289,7 @@
                               <input type="hidden" value="{{ auth_user.first_name }}" name="lname" required>
                               <input type="hidden" value="{{ user.first_name }}" name="uname" required>
                               <input type="hidden" value="{{ user.email_address }}" name="uemail" required>
-                              <button type="submit" class="btn btn-primary">Add To My Project</button>
+                              <button type="submit" class="btn btn-primary" onclick="return confirm('Are You Sure That You Want To Add This User to Your Project?');">Add To My Project</button>
                             </form>
                         </td>
                         {% endif %}
@@ -465,14 +320,16 @@
                             <div class="box box-solid">
                 <div class="box-header with-border">
                   <h3 class="box-title">Project Progress</h3>
+                  {% if  profile.user_type == 'Client' or profile.user_type == 'Quantity Surveyor' %} 
                   <button class="btn btn-default pull-right" style="background-color: #ff3300; color: black; font-weight: bold;"> <a href="#" onclick="cool();" style="color: black;">View Dashboard</a></button>
+                  {% endif %}
                 </div><!-- /.box-header -->
-                <div class="box-body">
+                <div class="">
 {% with progress=progress_percentage %}
                     {% if progress > 0 %}
                             <div class="progress" style="color: white;">
-                              <p>{{ progress|floatformat:2 }}% Complete</p>
-                                <div class="progress-bar" role="progressbar" style="width: {{ progress|floatformat:2 }}%" aria-valuenow="{{ progress|floatformat:2 }}" aria-valuemin="0" aria-valuemax="100">
+                              <p style="color: white;">{{ progress|floatformat:2 }}% Complete</p>
+                                <div class="progress-bar" role="progressbar" style="width: {{ progress|floatformat:2 }}%;" aria-valuenow="{{ progress|floatformat:2 }}" aria-valuemin="0" aria-valuemax="100">
                                     <!-- {{ progress|floatformat:2 }}% -->
                                 </div>
                             </div>
@@ -719,6 +576,12 @@ function searchTable() {
          new Date().getFullYear()
 document.getElementById("year").innerHTML = new Date().getFullYear();
       </script>
-
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        {% if open_pmembers %}
+        openPMembers();
+        {% endif %}
+    });
+</script>
   </body>
 </html>
