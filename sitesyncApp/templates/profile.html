@@ -126,7 +126,7 @@
         <section class="content">
           <div class="row">
             <div class="col-md-3">
-              <a href="project-details.html" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Home</a> 
+              <a href="{% url 'client' %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Home</a> 
               <div class="box box-solid">
                 <div class="box-header with-border">
                   <h3 class="box-title">Profile Image</h3>
@@ -202,7 +202,7 @@
 {% csrf_token %}
 <input type="hidden" value="{{ uid }}" name="uid" required>
 <div class="box-footer">
-<button style="position: relative;" type="submit" onclick="return confirm('Are You Sure You Want To Deactivate Your Account ?')" class="btn btn-primary">Delete</button>
+<button style="position: relative;" type="submit" onclick="return confirm('Are You Sure You Want To Deactivate Your Account ?')" class="btn btn-primary">Delete My Account</button>
 </div>
 </form>
               </div><!-- /.box -->

@@ -1,17 +1,21 @@
 
     {% load static %}
+                {% load tz %} 
 <!-- Messages: style can be found in dropdown.less-->
 <li class="dropdown messages-menu">
-    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown" title="Messages ({{ all_unread_chats|length }})">
         <i class="fa fa-envelope-o"></i>
-        <span class="label label-success">{{ all_unread_chats|length }}</span>
+
+        <span class="label label-success">{{ unread_count }}</span>
     </a>
     <ul class="dropdown-menu">
-        <li class="header">You have {{ all_unread_chats|length }} message(s)</li>
+
+        <li class="header">You have {{ unread_count }} message(s)</li>       
         <li>
             <!-- inner menu: contains the actual data -->
             <ul class="menu">
                 {% for chat in all_unread_chats %}
+                {% if chat.timestamp|localtime <= now %}              
                 <li>
                     <a href="{% url 'chat' chat.group.project.project_id %}">
                         <div class="pull-left">
@@ -23,7 +27,8 @@
                         </h4>
                         <p style="color: black;">{{ chat.sender_user.first_name }}: {{ chat.message }}</p>
                     </a>
-                </li>
+                </li>            
+                {% endif %}
                 {% endfor %}
             </ul>
         </li>
@@ -33,7 +38,7 @@
 
 <!-- Tasks: style can be found in dropdown.less -->
 <li class="dropdown tasks-menu">
-    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown" title="Pending Tasks ({{ all_pending_tasks|length }})">
         <i class="fa fa-flag-o"></i>
         <span class="label label-danger">{{ all_pending_tasks|length }}</span>
     </a>
@@ -44,7 +49,7 @@
             <ul class="menu">
                 {% for task in all_pending_tasks %}
                 <li>
-                    <a href="{% url 'tasks_events' task.project.project_id %}">
+                    <a href="{% url 'tasks' task.project.project_id %}">
                         <h3>
                             {{ task.task_name }}
                             <small class="pull-right">

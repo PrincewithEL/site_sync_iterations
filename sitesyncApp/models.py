@@ -9,11 +9,23 @@ from django.db import models
 from django.utils import timezone
 from django.utils.timezone import now
 import random
+from datetime import date
 import string
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from datetime import datetime
+from django.utils import timezone
+from datetime import timedelta
+
+class DeletableManager(models.Manager):
+    def delete_old_records(self):
+        # Calculate the date 30 days ago from now
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        
+        # Filter the queryset to include only records that are marked as deleted 
+        # and have a deleted_at date older than 30 days
+        return self.filter(is_deleted=True, deleted_at__lte=thirty_days_ago).delete()
 
 class Bookmarks(models.Model):
     bookmark_id = models.AutoField(primary_key=True)
@@ -23,6 +35,14 @@ class Bookmarks(models.Model):
     item_type = models.TextField(null=True, blank=True)
     timestamp = models.DateTimeField(default=datetime.now())
     is_deleted = models.IntegerField()
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    objects = DeletableManager() 
+
+    @property
+    def days_until_permanent_deletion(self):
+        if self.deleted_at:
+            return (self.deleted_at + timedelta(days=30) - timezone.now()).days
+        return None
 
     class Meta:
         managed = True
@@ -36,10 +56,19 @@ class Chat(models.Model):
     message = models.TextField()
     reply = models.TextField(null=True, blank=True)
     scheduled_at = models.TextField(null=True, blank=True)
+    updated_at = models.DateTimeField(null=True, blank=True)    
     timestamp = models.DateTimeField(default= datetime.now())
     is_deleted = models.IntegerField()
     is_pinned = models.IntegerField(default=0)
     file = models.TextField(null=True, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    objects = DeletableManager() 
+
+    @property
+    def days_until_permanent_deletion(self):
+        if self.deleted_at:
+            return (self.deleted_at + timedelta(days=30) - timezone.now()).days
+        return None
 
     class Meta:
         managed = True
@@ -53,6 +82,14 @@ class ChatStatus(models.Model):
     user_id = models.IntegerField()
     status = models.IntegerField()
     is_deleted = models.IntegerField()
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    objects = DeletableManager() 
+
+    @property
+    def days_until_permanent_deletion(self):
+        if self.deleted_at:
+            return (self.deleted_at + timedelta(days=30) - timezone.now()).days
+        return None
 
     class Meta:
         managed = True
@@ -73,6 +110,14 @@ class Events(models.Model):
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField(blank=True, null=True)
     is_deleted = models.IntegerField()
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    objects = DeletableManager() 
+
+    @property
+    def days_until_permanent_deletion(self):
+        if self.deleted_at:
+            return (self.deleted_at + timedelta(days=30) - timezone.now()).days
+        return None
 
     class Meta:
         managed = True
@@ -86,6 +131,14 @@ class GroupChat(models.Model):
     group_name = models.CharField(max_length=75)
     group_image = models.CharField(max_length=75, blank=True, null=True)
     is_deleted = models.IntegerField()
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    objects = DeletableManager() 
+
+    @property
+    def days_until_permanent_deletion(self):
+        if self.deleted_at:
+            return (self.deleted_at + timedelta(days=30) - timezone.now()).days
+        return None
 
     class Meta:
         managed = True
@@ -100,6 +153,14 @@ class ProjectMembers(models.Model):
     user = models.ForeignKey(User, models.DO_NOTHING, related_name='projectmembers_user_set')
     created_at = models.DateTimeField()
     is_deleted = models.IntegerField()
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    objects = DeletableManager() 
+
+    @property
+    def days_until_permanent_deletion(self):
+        if self.deleted_at:
+            return (self.deleted_at + timedelta(days=30) - timezone.now()).days
+        return None
 
     class Meta:
         managed = True
@@ -122,6 +183,14 @@ class Projects(models.Model):
     balance = models.FloatField()
     project_status = models.CharField(max_length=9)
     is_deleted = models.IntegerField()
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    objects = DeletableManager() 
+
+    @property
+    def days_until_permanent_deletion(self):
+        if self.deleted_at:
+            return (self.deleted_at + timedelta(days=30) - timezone.now()).days
+        return None
 
     class Meta:
         managed = True
@@ -141,6 +210,14 @@ class Resources(models.Model):
     resource_type = models.CharField(max_length=8)
     resource_size = models.CharField(max_length=100)
     is_deleted = models.IntegerField()
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    objects = DeletableManager() 
+
+    @property
+    def days_until_permanent_deletion(self):
+        if self.deleted_at:
+            return (self.deleted_at + timedelta(days=30) - timezone.now()).days
+        return None
 
     class Meta:
         managed = True
@@ -150,14 +227,15 @@ class Resources(models.Model):
 class Tasks(models.Model):
     task_id = models.AutoField(primary_key=True)
     leader = models.ForeignKey(User, models.DO_NOTHING)
-    member = models.ForeignKey(User, models.DO_NOTHING, related_name='tasks_member_set')
+    member = models.ManyToManyField(User, related_name='assigned_tasks') 
     project = models.ForeignKey(Projects, models.DO_NOTHING)
     dependant_task_id = models.IntegerField(blank=True, null=True)
     task_name = models.CharField(max_length=75)
     task_details = models.CharField(max_length=80)
     task_given_date = models.DateField()
     task_due_date = models.DateField()
-    task_completed_date = models.DateField(blank=True, null=True)
+    task_completed_date = models.DateTimeField(blank=True, null=True)
+    dependant_tasks = models.ManyToManyField('self', blank=True, related_name='task_dependencies', symmetrical=False)
     task_days_left = models.IntegerField()
     task_days_overdue = models.IntegerField()
     task_percentage_complete = models.FloatField()
@@ -165,6 +243,51 @@ class Tasks(models.Model):
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField(blank=True, null=True)
     is_deleted = models.IntegerField()
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    objects = DeletableManager() 
+
+    @property
+    def days_until_permanent_deletion(self):
+        if self.deleted_at:
+            return (self.deleted_at + timedelta(days=30) - timezone.now()).days
+        return None
+
+    @property
+    def days_to_complete(self):
+        if self.task_due_date:
+            return (self.task_due_date - timezone.now().date()).days
+        return None
+
+    @property
+    def days_overdue(self):
+        if self.task_due_date:
+            return (self.task_due_date + timezone.now().date()).days
+        return None  
+
+    @property
+    def completed_at(self):
+        if self.task_due_date:
+            return (self.task_due_date - self.task.completed_date).days
+        return None    
+
+    @property
+    def expected_percentage_complete(self):
+        if self.task_given_date and self.task_due_date:
+            total_days = (self.task_due_date - self.task_given_date).days
+            elapsed_days = (date.today() - self.task_given_date).days
+                
+            # Avoid negative values if task_given_date is in the future
+            if total_days <= 0:
+                return 0.0
+            if elapsed_days <= 0:
+                return 0.0
+
+            # Clamp to 100% if elapsed days exceed total days
+            expected_percentage = (elapsed_days / total_days) * 100
+            return min(expected_percentage, 100.0)
+        if self.task_completed_date:
+            return 100.0
+        return 0.0    
 
     class Meta:
         managed = True
@@ -179,8 +302,8 @@ class Transactions(models.Model):
     transaction_details = models.CharField(max_length=80)
     transaction_price = models.FloatField()
     transaction_quantity = models.IntegerField()
-    transaction_votes_for = models.IntegerField()
-    transaction_votes_against = models.IntegerField()
+    transaction_category = models.TextField(default=0)
+    transaction_type = models.TextField(default=0)
     total_transaction_price = models.FloatField()
     created_at = models.DateTimeField()
     transaction_date = models.CharField(max_length=15)  
@@ -188,6 +311,14 @@ class Transactions(models.Model):
     updated_at = models.DateTimeField(blank=True, null=True)
     transaction_status = models.CharField(max_length=9)
     is_deleted = models.IntegerField()
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    objects = DeletableManager() 
+
+    @property
+    def days_until_permanent_deletion(self):
+        if self.deleted_at:
+            return (self.deleted_at + timedelta(days=30) - timezone.now()).days
+        return None
 
     class Meta:
         managed = True
@@ -205,7 +336,17 @@ class Users(models.Model):
     updated_at = models.DateTimeField(blank=True, null=True)
     is_deleted = models.IntegerField()
     online = models.IntegerField()
+    logged_in = models.DateTimeField(null=True, blank=True)
+    logged_out = models.DateTimeField(null=True, blank=True)
     password = models.CharField(max_length=80)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    objects = DeletableManager() 
+
+    @property
+    def days_until_permanent_deletion(self):
+        if self.deleted_at:
+            return (self.deleted_at + timedelta(days=30) - timezone.now()).days
+        return None
 
     class Meta:
         managed = True
@@ -225,12 +366,22 @@ class Profile(models.Model):
     profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    objects = DeletableManager() 
+
+    @property
+    def days_until_permanent_deletion(self):
+        if self.deleted_at:
+            return (self.deleted_at + timedelta(days=30) - timezone.now()).days
+        return None
 
 class OTP(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     otp_code = models.CharField(max_length=6, unique=True)
     created_at = models.DateTimeField(default=timezone.now)
     used = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    objects = DeletableManager() 
 
     def generate_otp(self):
         import random
@@ -280,6 +431,8 @@ class AuthUser(models.Model):
     is_staff = models.IntegerField()
     is_active = models.IntegerField()
     date_joined = models.DateTimeField()
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    objects = DeletableManager() 
 
     class Meta:
         managed = False

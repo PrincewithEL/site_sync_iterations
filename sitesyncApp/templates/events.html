@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>Site Sync - {{ type }} Module - Transactions Page</title>
+    <title>Site Sync - {{ type }} Module - Events Page</title>
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
        {% load static %}
        {% load custom_filters %}
@@ -122,7 +122,7 @@
             <li><a href="{% url 'client' %}"><i class="fa fa-dashboard"></i> Home</a></li>
             <li><a href="{% url 'client' %}">My Projects</a></li>
             <li><a href="{% url 'project_detail' project.pk %}">{{ project.project_name }}</a></li>
-            <li class="active">My Transactions</li>            
+            <li class="active">My Events</li>
           </ol>
         </section>
 
@@ -131,47 +131,39 @@
           <div class="row">
             <div class="col-md-3">
               <a href="{% url 'client' %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Home</a>
-              <a href="#" onclick="openForm();" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Add A Transaction</a>              
+              <a href="#" onclick="openForm();" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Add An Event</a>              
               <div class="box box-solid">
                 <div class="box-header with-border">
                   <h3 class="box-title">List of Transactions</h3>
                 </div>
 <div class="box-body no-padding">
     <ul class="nav nav-pills nav-stacked">
-        <li id="allTransactionNavItem" class="{% if filter_type == 'all' %}active{% endif %}">
-            <a href="?filter=all"><i class="fa fa-inbox"></i> All Transactions 
-                <span class="label label-primary pull-right">{{ transactions_count }}</span>
+        <li id="allEventNavItem" class="{% if filter_type == 'all' %}active{% endif %}">
+            <a href="?filter=all"><i class="fa fa-calendar"></i> All Events 
+                <span class="label label-primary pull-right">{{ ecounts }}</span>
             </a>
         </li>
-        <li class="{% if filter_type == 'internal' %}active{% endif %}">
-            <a href="?filter=internal"><i class="fa fa-money"></i> Internal 
-                <span class="label label-success pull-right">{{ internal_count }}</span>
+        <li class="{% if filter_type == 'active' %}active{% endif %}">
+            <a href="?filter=active"><i class="fa fa-calendar-o"></i> Active 
+                <span class="label label-success pull-right">{{ a1events }}</span>
             </a>
         </li>
-        <li class="{% if filter_type == 'external' %}active{% endif %}">
-            <a href="?filter=external"><i class="fa fa-credit-card"></i> External 
-                <span class="label label-info pull-right">{{ external_count }}</span>
+        <li class="{% if filter_type == 'completed' %}active{% endif %}">
+            <a href="?filter=completed"><i class="fa fa-calendar-check-o"></i> Completed 
+                <span class="label label-info pull-right">{{ c1events }}</span>
             </a>
         </li>        
         <li class="{% if filter_type == 'bookmarked' %}active{% endif %}">
             <a href="?filter=bookmarked"><i class="fa fa-star"></i> Starred 
-                <span class="label label-info pull-right">{{ bookmark_transactions_count }}</span>
+                <span class="label label-info pull-right">{{ bookmarked_events_count }}</span>
             </a>
         </li>  
                               {% if project.leader_id == auth_user.id %}      
-        <li id="trashTransactionsNavItem"><a onclick="openTrashTransactions();"><i class="fa fa-trash-o"></i> Trash <span class="label label-waring pull-right">{{ trash_transactions_count }}</span></a></li>
+        <li id="trashEventNavItem"><a onclick="openTrashEvents();"><i class="fa fa-trash-o"></i> Trash <span class="label label-waring pull-right">{{ trash_events_count }}</span></a></li>
         {% endif %}
                     <li><a href="{% url 'project_detail' project.pk %}"><i class="fa fa-mail-reply"></i> Back</a></li>
     </ul>
 </div>
-                <div class="box-body no-padding">
-                  <ul class="nav nav-pills nav-stacked">
-                    <li style="text-align: center;"><b><a href="#">Project Budget - {{ project.estimated_budget }} kshs.</a></b></li>
-                    <li style="text-align: center;"><b><a href="#">Project Expenses - {{ project.actual_expenditure }} kshs.</a></b></li>
-                    <li style="text-align: center;"><b><a href="#">Project Balance - {{ project.balance }} kshs.</a></b></li>
-                    <br>
-                  </ul>
-                </div><!-- /.box-body -->
               </div><!-- /. box -->
 <!--               <div class="box box-solid">
                 <div class="box-header with-border">
@@ -191,18 +183,11 @@
             <div class="col-md-9">
               <div class="box box-primary" id="myTable">
                 <div class="box-header with-border">
-                  <h3 class="box-title">My Project Transactions</h3>
-                      {% if messages %}
-      <div class="messages">
-        {% for message in messages %}
-          <p style="font-weight: bold; color: black;" class="{{ message.tags }}">{{ message }}</p>
-        {% endfor %}
-      </div>
-    {% endif %}
+                  <h3 class="box-title">My Events</h3>
                   <div class="box-tools pull-right">
-        <form method="get" action="{% url 'transactions' project.project_id %}" class="form-inline">
+        <form method="get" action="{% url 'events' project.project_id %}" class="form-inline">
             <div class="input-group">
-                <input type="text" class="form-control input-sm" name="search" placeholder="Search Transaction(s)..." value="{{ request.GET.search }}">
+                <input type="text" class="form-control input-sm" name="search" placeholder="Search Event(s)..." value="{{ request.GET.search }}">
                 <span class="input-group-btn">
                     <button type="submit" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-search"></span></button>
                 </span>
@@ -211,27 +196,25 @@
                   </div><!-- /.box-tools -->
                 </div><!-- /.box-header -->
                 <div class="box-body no-padding">
-    <div class="mailbox-controls">
+                  <div class="mailbox-controls">
       <!-- Check all button -->
 <button type="button" class="btn btn-default btn-sm checkbox-toggle">
     <i class="fa fa-square-o"></i>
 </button>
       <div class="btn-group">
-                              {% if project.leader_id == auth_user.id %}
-        <button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Delete This Transaction(s) ?')) { submitForm('delete'); }">
+        <button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Delete This Event(s) ?')) { submitForm('delete'); }">
           <i class="fa fa-trash-o"></i> Delete
         </button>
-        {% endif %}
-        <button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Star This Transaction(s) ?')) { submitForm('bookmark'); }">
+                <button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Star This Event(s) ?')) { submitForm('bookmark'); }">
           <i class="fa fa-star"></i> Star
         </button>
         <button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Remove This Star(s) ?')) { submitForm('unbookmark'); }">
           <i class="fa fa-star-o"></i> Not Star
         </button>
       </div><!-- /.btn-group -->
-      <div class="btn-group">
+            <div class="btn-group">
       <div class="filter-options">
-        <form method="get" action="{% url 'transactions' project.project_id %}" class="form-inline">
+        <form method="get" action="{% url 'events' project.project_id %}" class="form-inline">
           <div class="form-group">
             <label for="date_filter" class="sr-only">Date Filter:</label>
             <select name="date_filter" id="date_filter" class="form-control input-sm">
@@ -245,118 +228,115 @@
           <div class="form-group">
             <label for="filter" class="sr-only">Status Filter:</label>
             <select name="filter" id="filter" class="form-control input-sm">
-              <option value="all" {% if current_status_filter == 'all' %}selected{% endif %}>All Transactions</option>
-              <option value="internal" {% if current_status_filter == 'internal' %}selected{% endif %}>Internal Transactions</option>
-              <option value="external" {% if current_status_filter == 'external' %}selected{% endif %}>External Transactions</option>
-              <option value="bookmarked" {% if current_status_filter == 'bookmarked' %}selected{% endif %}>Starred Transactions</option>
+              <option value="all" {% if current_status_filter == 'all' %}selected{% endif %}>All Events</option>
+              <option value="completed" {% if current_status_filter == 'internal' %}selected{% endif %}>Completed Events</option>
+              <option value="active" {% if current_status_filter == 'active' %}selected{% endif %}>Active Events</option>
+              <option value="bookmarked" {% if current_status_filter == 'bookmarked' %}selected{% endif %}>Starred Events</option>
             </select>
           </div>
           <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
         </form>
       </div>
     </div>
-    <div class="pull-right">
-    Page {{ all_transactions.number }} of {{ all_transactions.paginator.num_pages }}
+<div class="pull-right">
+    Page {{ events.number }} of {{ events.paginator.num_pages }}
     <div class="btn-group">
-      {% if all_transactions.has_previous %}
-        <a href="?page=1&filter={{ filter_type }}" class="btn btn-default btn-sm {% if all_transactions.number == 1 %}disabled{% endif %}">
+      {% if events.has_previous %}
+        <a href="?page=1&filter={{ filter_type }}" class="btn btn-default btn-sm {% if events.number == 1 %}disabled{% endif %}">
             <i class="fa fa-chevron-left"></i><i class="fa fa-chevron-left"></i> First
         </a>
-        <a href="?page={% if all_transactions.has_previous %}{{ all_transactions.previous_page_number }}{% else %}1{% endif %}&filter={{ filter_type }}" class="btn btn-default btn-sm {% if not all_transactions.has_previous %}disabled{% endif %}">
+        <a href="?page={% if events.has_previous %}{{ events.previous_page_number }}{% else %}1{% endif %}&filter={{ filter_type }}" class="btn btn-default btn-sm {% if not events.has_previous %}disabled{% endif %}">
             <i class="fa fa-chevron-left"></i> Previous
         </a>
         {% endif %}
-        {% if transactions.has_next %}
-        <a href="?page={% if all_transactions.has_next %}{{ all_transactions.next_page_number }}{% else %}{{ all_transactions.paginator.num_pages }}{% endif %}&filter={{ filter_type }}" class="btn btn-default btn-sm {% if not all_transactions.has_next %}disabled{% endif %}">
+        {% if events.has_next %}
+        <a href="?page={% if events.has_next %}{{ events.next_page_number }}{% else %}{{ events.paginator.num_pages }}{% endif %}&filter={{ filter_type }}" class="btn btn-default btn-sm {% if not events.has_next %}disabled{% endif %}">
             <i class="fa fa-chevron-right"></i> Next
         </a>
-        <a href="?page={{ all_transactions.paginator.num_pages }}&filter={{ filter_type }}" class="btn btn-default btn-sm {% if all_transactions.number == all_transactions.paginator.num_pages %}disabled{% endif %}">
+        <a href="?page={{ events.paginator.num_pages }}&filter={{ filter_type }}" class="btn btn-default btn-sm {% if events.number == events.paginator.num_pages %}disabled{% endif %}">
             <i class="fa fa-chevron-right"></i><i class="fa fa-chevron-right"></i> Last
         </a>
         {% endif %}
     </div><!-- /.btn-group -->
-</div><!-- /.pull-right -->
-    </div><!-- /.mailbox-controls -->
-    <form method="post" id="transaction-action-form">
+                  </div>
+                </div>
+                    <form method="post" id="events-action-form">
     {% csrf_token %}
     <input type="hidden" name="action" id="form-action" value="">
                   <div class="table-responsive mailbox-messages">
-                    <table class="table table-hover table-striped" id="transactions">
+                    <table class="table table-hover table-striped" id="events">
                       <thead>
                         <th></th>
                         <th></th>
-                        <th>Transaction</th>
+                        <th>Name</th>
                         <th>Details</th>
-                        <th>Category</th>
-                        <th>Type</th>   
-                        <th>Quantity</th>                     
-                        <th>Singular Price (in kshs.)</th>
-                        <th>Total Price (in kshs.)</th>
-                        <!-- <th>Votes (For/Against)</th>
-                        <th></th>  -->
-                        <th></th>                    
+                        <th>Location/Link</th>
+                        <th>Date</th>
+                                {% if filter_type == '' or filter_type == 'all' %}                        
+                                <th>Status</th> 
+        {% endif %}     
+                        <th></th>         
+
                       </thead>
                       <tbody>
-                        {% for transaction in transactions %}
-                        <tr title="{{ transaction.created_at }}">
-                    <td>
-                        <input type="checkbox" id="transaction-{{ transaction.transaction_id }}" name="selected_transactions" value="{{ transaction.transaction_id }}" class="transaction-checkbox">
-                        <label for="transaction-{{ transaction.transaction_id }}"></label>
+{% for event in events %}
+    <tr title="{{ event.created_at }}">
+        <td>
+                        <input type="checkbox" id="event-{{ event.event_id }}" name="selected_events" value="{{ event.event_id }}" class="events-checkbox">
+                        <label for="event-{{ event.event_id }}"></label>
                     </td>
 <td class="mailbox-star">
-                    <form method="POST" id="transaction-action-form" action="{% url 'transactions' pk=transaction.project_id %}">
+                    <form method="POST" action="{% url 'events' pk=event.project_id %}">
     {% csrf_token %}
                         <button type="submit" class="btn btn-link" style="padding: 0; border: none; background: none;"
-                            onclick="return confirm('Are You Sure You Want To {% if transaction.transaction_id in bookmarked_transactions_ids %}Remove The Star For{% else %}Star{% endif %} This Transaction?')">
-                            <input type="hidden" name="action1" value="{% if transaction.transaction_id in bookmarked_transactions_ids %}unbookmark1{% else %}bookmark1{% endif %}">
-                            <i class="fa {% if transaction.transaction_id in bookmarked_transactions_ids %}fa-star{% else %}fa-star-o{% endif %} text-yellow"></i>
+                            onclick="return confirm('Are You Sure You Want To {% if event.event_id in bookmarked_events_ids %}Remove The Star For{% else %}Star{% endif %} This Event?')">
+                            <input type="hidden" id="inputs" name="selected_event" value="{{ event.event_id }}">
+                            <input type="hidden" name="action1" value="{% if event.event_id in bookmarked_events_ids %}unbookmark1{% else %}bookmark1{% endif %}">
+                            <i class="fa {% if event.event_id in bookmarked_events_ids %}fa-star{% else %}fa-star-o{% endif %} text-yellow"></i>
                         </button>
                     </form>
 </td>
-                          <td class="mailbox-name">{{ transaction.transaction_name }}</td>
-                          <td class="mailbox-name">{{ transaction.transaction_details }}</td>
-                          <td class="mailbox-name">{{ transaction.transaction_category }}</td>
-                          <td class="mailbox-name">{{ transaction.transaction_type }}</td>                          
-                          <td class="mailbox-name">{{ transaction.transaction_quantity }}</td>                          
-                          <td class="mailbox-attachment">{{ transaction.transaction_price }} kshs.</td>
-                          <td class="mailbox-attachment">{{ transaction.total_transaction_price }} kshs.</td>
-                      {% if project.leader_id == auth_user.id %}
-                          <td class="mailbox-name"><form method="POST" action="{% url 'delete_transaction' pk=transaction.project_id transaction_id=transaction.transaction_id %}">
+        <td class="mailbox-name">
+            <a href="#">{{ event.event_name }}</a>
+        </td>
+        <td class="mailbox-name">
+            {{ event.event_details }} <br><b>From {{ event.event_start_time }} to {{ event.event_end_time }}</b>
+        </td>
+        {% if event.event_location %}
+            <td class="mailbox-name">{{ event.event_location }}</td>         
+        {% elif event.event_link %}
+            <td class="mailbox-name">{{ event.event_link }}</td>  
+        {% endif %}
+        <td class="mailbox-attachment">{{ event.event_date }}</td>
+                                {% if filter_type == '' or filter_type == 'all' %} 
+        <td class="mailbox-attachment">{{ event.event_status }}</td>  
+        {% endif %}      
+        {% if user_id == event.user_id %}
+                          <td class="mailbox-name"><form method="POST" action="{% url 'delete_event' pk=event.project_id event_id=event.event_id %}">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-primary btn-xs pull-right" onclick="return confirm('Are You Sure You Want To Remove This Transaction?'); deleteT();">
+                        <button type="submit" class="btn btn-primary btn-xs pull-right" onclick="return confirm('Are You Sure You Want To Remove This Event?'); deleteE();">
                             <i class="fa fa-trash-o"></i>
                         </button>
                     </form></td> 
-                      {% endif %}  
-                        </tr>
-                        {% endfor %}
-                        <tr>
-                          <td class="mailbox-name">Total: </td>
-                          <td class="mailbox-name"></td>
-                          <td class="mailbox-name"></td>
-                          <td class="mailbox-name"></td>                          
-                          <td class="mailbox-name"></td> 
-                          <td class="mailbox-name"></td>                          
-                          <td class="mailbox-name"></td>      
-                          <td class="mailbox-attachment"></td>
-                          <td class="mailbox-attachment"><b>{{ total_price_sum }} kshs.</b></td>
-                        </tr>
+        {% endif %}
+    </tr>
+{% endfor %}
                       </tbody>
                     </table><!-- /.table -->
                   </div><!-- /.mail-box-messages -->
                 </form>
-              </div>
-            </div>
-
+                </div><!-- /.box-body -->
+              </div><!-- /. box -->
+            </form>
               {% if project.leader_id == user_id %}
 
               <div class="box box-primary" id="myForm1">
                 <div class="box-header with-border">
-                  <h3 class="box-title">My Trash Transactions</h3>
-                  <button type="button" style="position: relative;" onclick="closetrashTransactions();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
+                  <h3 class="box-title">My Trash Events</h3>
+                  <button type="button" style="position: relative;" onclick="closeTrashEvents();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
                   <div class="box-tools pull-right">
                     <div class="has-feedback">
-                      <input type="text" class="form-control input-sm" id="myInput" onkeyup="searchTable();"  placeholder="Search My Transactions..."/>
+                      <input type="text" class="form-control input-sm" id="myInput" onkeyup="searchTable();"  placeholder="Search My Events..."/>
                       <span class="glyphicon glyphicon-search form-control-feedback"></span>
                     </div>
                   </div><!-- /.box-tools -->
@@ -374,37 +354,37 @@
 </div><!-- /.mailbox-controls -->
                 <div class="box-body no-padding">
                   <div class="table-responsive mailbox-messages">
-                    <table class="table table-hover table-striped" id="resources1">
+                    <table class="table table-hover table-striped" id="events1">
                       <thead>
                         <!-- <th></th> -->
                         <th>Name</th>
-                        <th>Transaction Details</th>
-                        <th>Transaction Category</th>
-                        <th>Transaction Type</th>
-                        <th>Total Price (in kshs.)</th>
+                        <th>Event Details</th>
+                        <th>Event Date</th>
                         <th>Days Until Permanent Deletion</th>
                         <th></th>
                         <th></th>
                       </thead>
                       <tbody>
-{% for trash_transaction in trash_transactions %}
-    <tr title="{{ trash_transaction.deleted_at }}">
-        <td class="mailbox-name">{{ trash_transaction.transaction_name }}</td>
-        <td class="mailbox-name">{{ trash_transaction.transaction_details }}</td>
-        <td class="mailbox-name">{{ trash_transaction.transaction_category }}</td>        
-        <td class="mailbox-name">{{ trash_transaction.transaction_type }}</td>
-        <td class="mailbox-name">{{ trash_transaction.total_transaction_price }} ksh.</td>
-        <td class="mailbox-name">{{ trash_transaction.days_until_permanent_deletion }}</td>                
+{% for trash_event in trash_events %}
+    <tr title="{{ trash_event.deleted_at }}">
+        <td class="mailbox-name">
+            <a href="#">{{ trash_event.event_name }}</a>
+        </td>
+        <td class="mailbox-name">
+            {{ trash_event.event_details }} <br><b>From {{ trash_event.event_start_time }} to {{ trash_event.event_end_time }}</b>
+        </td>
+                <td class="mailbox-attachment">{{ event.event_date }}</td>
+        <td class="mailbox-name">{{ trash_event.days_until_permanent_deletion }}</td>                
                             <td class="mailbox-attachment">
-                            <form method="POST" name="update_project_member_form" action="{% url 'restore_transaction' pk=trash_transaction.project_id  transaction_id=trash_transaction.transaction_id %}" enctype="multipart/form-data">
+                            <form method="POST" name="update_project_member_form" action="{% url 'restore_event' pk=trash_event.project_id  event_id=trash_event.event_id %}" enctype="multipart/form-data">
                               {% csrf_token %}
-                              <button type="submit" class="btn btn-primary" onclick="return confirm('Are You Sure You Want To Restore This Transaction ?')">Restore</button>
+                              <button type="submit" class="btn btn-primary" onclick="return confirm('Are You Sure You Want To Restore This Event ?')">Restore</button>
                             </form>
                         </td>
                                                   <td class="mailbox-attachment">
-                            <form method="POST" name="update_project_member_form" action="{% url 'hide_transaction' pk=trash_transaction.project_id transaction_id=trash_transaction.transaction_id %}" enctype="multipart/form-data">
+                            <form method="POST" name="update_project_member_form" action="{% url 'hide_event' pk=trash_event.project_id event_id=trash_event.event_id %}" enctype="multipart/form-data">
                               {% csrf_token %}
-                              <button type="submit" class="btn btn-primary" onclick="return confirm('Are You Sure You Want To Permanently Remove This Transaction ?')">Remove</button>
+                              <button type="submit" class="btn btn-primary" onclick="return confirm('Are You Sure You Want To Permanently Remove This Event ?')">Remove</button>
                             </form>
                         </td>
     </tr>
@@ -414,52 +394,47 @@
                   </div><!-- /.mail-box-messages -->
                 </div><!-- /.box-body -->
               </div><!-- /. box -->
-            {% endif %}
-              {% if project.leader_id == user_id %}
+
                                         <div class="box box-primary" id="myForm">
                               <div class="box-header">
-                                <h3 class="box-title">Add A Transaction</h3>
+                                <h3 class="box-title">Add An Event</h3>
                                 <button type="button" style="position: relative;" onclick="closeForm();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
                               </div><!-- /.box-header -->
                               <!-- form start -->
-<form action="{% url 'add_transaction' project.pk %}" method="POST">
+<form action="{% url 'add_event' project.pk %}" method="POST">
     {% csrf_token %}
     <div class="box-body">
-        <div class="form-group">
-            <label for="task_name">Transaction Name</label>
-            <input type="text" class="form-control" id="task_name" name="transaction_name" placeholder="Transaction Name" required>
+        <div class="form-group col-md-6">
+            <label for="event_name">Event Name</label>
+            <input type="text" class="form-control" id="event_name" name="event_name"placeholder="Event Name"  required>
+        </div>
+        <div class="form-group col-md-6">
+            <label for="event_date">Event Date</label>
+    <input type="date" min="{{ day|date:'Y-m-d' }}" class="form-control" id="event_date" placeholder="Event Date" name="event_date" required>
+        </div>
+        <div class="form-group col-md-6">
+            <label for="event_start_time">Start Time</label>
+            <input type="time" class="form-control" id="event_start_time"placeholder="Event Start Time"  name="event_start_time" required>
+        </div>
+        <div class="form-group col-md-6">
+            <label for="event_end_time">End Time</label>
+            <input type="time" class="form-control" id="event_end_time"placeholder="Event End Time"  name="event_end_time" required>
         </div>
         <div class="form-group">
-            <label for="task_details">Transaction Details</label>
-            <textarea class="form-control" id="task_details" name="transaction_details" placeholder="Transaction Details" required></textarea>
+            <label for="event_details">Event Details</label>
+            <textarea class="form-control" rows="4" id="event_details"placeholder="Event Details..."  name="event_details" required placeholder="Enter Event Details..."></textarea>
         </div>
-        <div class="form-group">
-            <label for="task_name">Transaction Price (in kshs.)</label>
-            <input type="number" class="form-control" id="task_name" name="transaction_price" min="0" placeholder="Transaction Price" required>
+        <div class="form-group col-md-6">
+            <label for="event_location">Event Location (optional)</label>
+            <input type="text" class="form-control" id="event_location"placeholder="Event Location"  name="event_location">
         </div>
-        <div class="form-group">
-            <label for="task_name">Transaction Quantity</label>
-            <input type="number" class="form-control" id="task_name" name="transaction_quantity" min="0" placeholder="Transaction Quantity" required>
+        <div class="form-group col-md-6">
+            <label for="event_link">Event Link (optional)</label>
+            <input type="url" class="form-control" id="event_link" placeholder="Event Link" name="event_link">
         </div>
-        <div class="form-group">
-          <label for="task_name">Transaction Category</label>
-          <select required class="form-control" id="task_name" name="transaction_category">
-            <option selected value="" disabled>Select A Transaction Category</option>
-            <option value="Internal">Internal</option>
-            <option value="External">External</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="task_name">Transaction Type</label>
-          <select required class="form-control" id="task_name" name="transaction_type">
-            <option selected value="" disabled>Select A Transaction Type</option>
-            <option value="Machinery">Machinery</option>
-            <option value="Salary">Salary</option>
-          </select>
-        </div>        
     </div>
     <div class="box-footer">
-        <button type="submit" class="btn btn-primary">Add Transaction</button>
+        <button type="submit" class="btn btn-primary">Add Event</button>
         <button type="reset" class="btn btn-primary">Reset</button>
     </div>
 </form>
@@ -476,7 +451,7 @@
     </div><!-- ./wrapper -->
 
 <script>
-function deleteT() {
+  function deleteE() {
   document.getElementByName("action1").value = "";
 }
   document.getElementById("myForm").style.display = "none";
@@ -495,27 +470,27 @@ function closeForm() {
   document.getElementById("btnmyForm").style.display = "block";
 }
 
-function openTrashTransactions() {
+function openTrashEvents() {
   document.getElementById("myTable").style.display = "none";
   document.getElementById("myForm1").style.display = "block";
   document.getElementById("myForm").style.display = "none";
-  document.getElementById('allTransactionNavItem').classList.remove('active');
-  document.getElementById('trashTransactionsNavItem').classList.add('active');
+  document.getElementById('allEventNavItem').classList.remove('active');
+  document.getElementById('trashEventNavItem').classList.add('active');
 }
 
-function closetrashTransactions() {
+function closeTrashEvents() {
   document.getElementById("myTable").style.display = "block";
   document.getElementById("myForm1").style.display = "none";
   document.getElementById("myForm").style.display = "none";
-  document.getElementById('allTransactionNavItem').classList.add('active');
-  document.getElementById('trashTransactionsNavItem').classList.remove('active');
+  document.getElementById('allEventNavItem').classList.add('active');
+  document.getElementById('trashEventNavItem').classList.remove('active');
 }
 
 function searchTable() {
   var input, filter, table, tr, td, i, txtValue;
   input = document.getElementById("myInput");
   filter = input.value.toUpperCase();
-  table = document.getElementById("transactions");
+  table = document.getElementById("events");
   tr = table.getElementsByTagName("tr");
   for (i = 0; i < tr.length; i++) {
     td = tr[i].getElementsByTagName("td")[0];
@@ -541,7 +516,7 @@ function searchTable() {
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     var checkAllButton = document.querySelector('.checkbox-toggle');
-    var projectCheckboxes = document.querySelectorAll('.transaction-checkbox');
+    var projectCheckboxes = document.querySelectorAll('.events-checkbox');
 
     checkAllButton.addEventListener('click', function() {
         var isChecked = this.classList.toggle('checked');
@@ -571,7 +546,7 @@ function searchTable() {
 // Function to submit form
 function submitForm(action) {
     document.getElementById('form-action').value = action;
-    document.getElementById('transaction-action-form').submit();
+    document.getElementById('events-action-form').submit();
 }
 </script>
 
@@ -611,7 +586,7 @@ function submitForm(action) {
     <!-- Site Sync App -->
     <script src="{% static 'dashboard/dist/js/app.min.js' %}" type="text/javascript"></script>
     <!-- Site Sync for demo purposes -->
-    <!-- <script src="{% static 'dashboard/dist/js/demo.js' %}" type="text/javascript"></script> -->
+    <script src="{% static 'dashboard/dist/js/demo.js' %}" type="text/javascript"></script>
 
       <script type="text/javascript">
          new Date().getFullYear()

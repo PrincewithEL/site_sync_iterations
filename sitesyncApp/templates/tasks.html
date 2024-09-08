@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Site Sync - {{ type }} Module - Tasks Details</title>
+    <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
+    {% load static %}
+    {% load custom_filters %}
+                {% load tz %} 
+    <!-- Bootstrap 3.3.2 -->
+    <link href="{% static 'dashboard/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css" />   
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">   
+    <!-- FontAwesome 4.3.0 -->
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" type="text/css" /> 
+    <!-- Theme style -->
+    <link href="{% static 'dashboard/dist/css/sitesync.css' %}" rel="stylesheet" type="text/css" />
+    <!-- Skins -->
+    <link href="{% static 'dashboard/dist/css/skins/skin-black.min.css' %}" rel="stylesheet" type="text/css" />
+    <!-- bootstrap wysihtml5 - text editor -->
+    <link href="{% static 'dashboard/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.min.css' %}" rel="stylesheet" type="text/css" />
+  </head>
+      <style>
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+        }
+        
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        
+        .dropdown:hover .dropbtn {
+            background-color: orange;
+        }
+        
+        .dropbtn {
+            background-color: white;
+            color: black;
+            padding: 5px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            width: 200px;
+            text-align: left;
+        }
+        .custom-checkbox {
+    display: block !important;
+    margin: auto;
+    width: 16px;
+    height: 16px;
+}
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            // Load the Google Charts library
+            google.charts.load('current', {'packages':['gantt']});
+            google.charts.setOnLoadCallback(fetchDataAndDrawChart);
+            var projectId = '{{ project.project_id }}';  // Ensure `project` is contextually available
+                
+            function fetchDataAndDrawChart() {
+                $.ajax({
+                    url: '/projects/' + projectId + '/tasks1/', // URL to fetch data from
+                    method: 'GET',              // HTTP method
+                    dataType: 'json',           // Expecting JSON response
+                    success: function(data) {
+                        drawChart(data);   // Call your chart drawing function
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        // Handle errors
+                        console.error('Error fetching data:', textStatus, errorThrown);
+                    }
+                });
+            }
+
+            function drawChart(data) {
+                // Create a DataTable and add columns
+                var chartData = new google.visualization.DataTable();
+                chartData.addColumn('string', 'Task ID');
+                chartData.addColumn('string', 'Task Name');
+                chartData.addColumn('string', 'Resource');
+                chartData.addColumn('date', 'Start Date');
+                chartData.addColumn('date', 'End Date');
+                chartData.addColumn('number', 'Duration');
+                chartData.addColumn('number', 'Percent Complete');
+                chartData.addColumn('string', 'Dependencies');
+
+                // Populate DataTable with data from AJAX response
+                data.tasks.forEach(task => {
+                    chartData.addRow([
+                        task[0],  // Task ID
+                        task[1],  // Task Name
+                        task[2],  // Resource
+                        new Date(task[3]),  // Start Date
+                        new Date(task[4]),  // End Date
+                        task[5],  // Duration
+                        task[6],  // Percent Complete
+                        task[7]   // Dependencies
+                    ]);
+                });
+
+                // Instantiate and draw the chart
+                var chart = new google.visualization.Gantt(document.getElementById('chart_div'));
+                chart.draw(chartData, {
+                    height: 150,
+                    gantt: {
+                        trackHeight: 20
+                    }
+                });
+            }
+        });
+    </script>
+  <body class="skin-black">
+    <div class="wrapper">
+      
+      <header class="main-header">
+        <!-- Logo -->
+        <a href="{% url 'client' %}" title="Site Sync" class="logo" style="color: orange;"><img src="{% static 'dashboard/dist/img/site_sync_logo.png' %}" style="width: 120px; position: relative; top: -8px;"></a>
+        <!-- Header Navbar: style can be found in header.less -->
+        <nav class="navbar navbar-static-top" role="navigation">
+          <!-- Sidebar toggle button-->
+          <a href="#" title="Hide the Site Sync Assistant" class="sidebar-toggle" data-toggle="offcanvas" role="button">
+            <span class="sr-only">Toggle navigation</span>
+          </a>
+          <div class="navbar-custom-menu">
+              <ul class="nav navbar-nav">
+  {% include 'notifications.html' %}
+                <!-- User Account: style can be found in dropdown.less -->
+              <li class="dropdown user user-menu" title="My Profile">
+                <a href="{% url 'profile' %}" class="dropdown-toggle">
+                  <img src="{{ MEDIA_URL }}{{ auth_user.profile.profile_picture }}" class="user-image" alt="User Image"/>
+                  <span class="hidden-xs">{{ fname }}</span>
+                </a>
+              </li>
+              <!-- Sign Out  -->
+              <li class="dropdown tasks-menu" title="Logout">
+                <a href="{% url 'logout' %}" class="dropdown-toggle">
+                  <i class="fa fa-power-off"></i>
+                </a>
+              </li>  
+            </ul>
+          </div>
+        </nav>
+      </header>
+      <!-- Left side column. contains the logo and sidebar -->
+      <aside class="main-sidebar">
+       {% include 'chatbot.html' %}
+      </aside>
+
+      <!-- Right side column. Contains the navbar and content of the page -->
+      <div class="content-wrapper">
+        <!-- Content Header (Page header) -->
+        <section class="content-header">
+          <h1>
+            <small></small>
+          </h1>
+          <ol class="breadcrumb">
+            <li><a href="{% url 'client' %}"><i class="fa fa-dashboard"></i> Home</a></li>
+            <li><a href="{% url 'client' %}">My Projects</a></li>
+            <li href="{% url 'project_detail' project.project_id %}">{{ project.project_name }}</li>
+            <li class="active">Tasks</li>
+          </ol>
+        </section>
+
+
+        <!-- Main content -->
+        <section class="content">
+          <div class="row">
+            <div class="col-md-12">
+              <div id="myTable">
+              <div class="col-md-6">
+              <div class="col-md-4">
+              <a href="{% url 'client' %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Home</a>
+            </div>
+            <div class="col-md-4">
+              <a href="{% url 'project_detail' project.project_id %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Back</a>
+              </div> 
+               {% if project.leader_id == auth_user.id %}
+              <div class="col-md-4">
+              <a href="#" onclick="openForm1();" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Add A Task</a>
+            </div>
+                {% endif %}
+            <div class="col-md-12">
+               <div class="box box-primary">
+                <div class="box-header">
+                  <i class="ion ion-clipboard"></i>
+                  <h3 class="box-title">Overdue Project Tasks</h3>
+                  {% if project.leader_id == auth_user.id %}
+                  <h5>Overdue - ({{ overdue_tasks1 }})</h5>
+                  {% endif %}
+                  {% if project.leader_id != auth_user.id %}
+                  <h5>Overdue - ({{ overdue_tasks }})</h5>
+                  {% endif %}
+                  <div class="box-tools pull-right">
+                    <ul class="pagination pagination-sm inline">
+                                    {% if project.leader_id == auth_user.id %}
+    {% if o1tasks.has_previous %}
+        <li>
+            <a href="?page=1&filter={{ filter_type }}" class="{% if o1tasks.number == 1 %}disabled{% endif %}" aria-label="First">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+        </li>
+        <li>
+            <a href="?page={{ o1tasks.previous_page_number }}&filter={{ filter_type }}" class="{% if not o1tasks.has_previous %}disabled{% endif %}" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+    {% else %}
+<!--         <li class="disabled">
+            <a href="#" aria-label="First">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+        </li>
+        <li class="disabled">
+            <a href="#" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li> -->
+    {% endif %}
+
+    {% for page_num in o1tasks.paginator.page_range %}
+        <li class="{% if o1tasks.number == page_num %}active{% endif %}">
+            <a href="?page={{ page_num }}&filter={{ filter_type }}">{{ page_num }}</a>
+        </li>
+    {% endfor %}
+
+    {% if o1tasks.has_next %}
+        <li>
+            <a href="?page={{ o1tasks.next_page_number }}&filter={{ filter_type }}" class="{% if not o1tasks.has_next %}disabled{% endif %}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+        <li>
+            <a href="?page={{ o1tasks.paginator.num_pages }}&filter={{ filter_type }}" class="{% if o1tasks.number == o1tasks.paginator.num_pages %}disabled{% endif %}" aria-label="Last">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+        </li>
+    {% else %}
+<!--         <li class="disabled">
+            <a href="#" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+        <li class="disabled">
+            <a href="#" aria-label="Last">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+        </li> -->
+        {% endif %}
+        {% endif %}
+                      {% if project.leader_id != auth_user.id %}
+    {% if otasks.has_previous %}
+        <li>
+            <a href="?page=1&filter={{ filter_type }}" class="{% if otasks.number == 1 %}disabled{% endif %}" aria-label="First">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+        </li>
+        <li>
+            <a href="?page={{ otasks.previous_page_number }}&filter={{ filter_type }}" class="{% if not otasks.has_previous %}disabled{% endif %}" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+    {% else %}
+<!--         <li class="disabled">
+            <a href="#" aria-label="First">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+        </li>
+        <li class="disabled">
+            <a href="#" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li> -->
+    {% endif %}
+
+    {% for page_num in otasks.paginator.page_range %}
+        <li class="{% if otasks.number == page_num %}active{% endif %}">
+            <a href="?page={{ page_num }}&filter={{ filter_type }}">{{ page_num }}</a>
+        </li>
+    {% endfor %}
+
+    {% if otasks.has_next %}
+        <li>
+            <a href="?page={{ otasks.next_page_number }}&filter={{ filter_type }}" class="{% if not otasks.has_next %}disabled{% endif %}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+        <li>
+            <a href="?page={{ otasks.paginator.num_pages }}&filter={{ filter_type }}" class="{% if otasks.number == otasks.paginator.num_pages %}disabled{% endif %}" aria-label="Last">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+        </li>
+    {% else %}
+<!--         <li class="disabled">
+            <a href="#" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+        <li class="disabled">
+            <a href="#" aria-label="Last">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+        </li> -->                 
+    {% endif %}
+        {% endif %}
+</ul>
+                  </div>
+                </div><!-- /.box-header -->
+                <div class="box-body">
+                  <ul class="todo-list">
+                    {% if project.leader_id == auth_user.id %}
+                    {% for task in o1tasks %}
+                    <li>
+                      <!-- drag handle -->
+                      <!-- checkbox -->
+                      <input type="checkbox" value="" name=""/>
+                      <!-- todo text -->
+            <span class="text">{{ task.task_name }} assigned to 
+                {% for member in task.member.all %}
+                    {{ member.first_name }} ({{ member.profile.user_type }}){% if not forloop.last %}, {% endif %}
+                {% endfor %} - {{ task.task_details }}
+            </span>
+                      <!-- Emphasis label -->
+                      {% if task.task_days_overdue != 0 %}
+                      <small class="label label-danger"><i class="fa fa-clock-o"></i> {{ task.task_days_left }} days left</small>
+                      {% elif task.task_days_overdue == 0 %}
+                      <small class="label label-danger"><i class="fa fa-clock-o"></i> {{ task.task_days_left }} days left</small>
+                      {% endif %}
+                      <!-- General tools such as edit or delete-->
+                      <div class="tools">
+                        <a href="{% url 'delete_task' pk=task.project_id task_id=task.task_id %}" onclick="return confirm('Are You Sure You Want To Remove This Task ?')" class="btn btn-primary btn-xs pull-right"><i class="fa fa-trash-o"></i></a>
+                      </div>
+                    </li>
+                    {% endfor %}
+                    {% endif %}
+                    {% if project.leader_id != auth_user.id %}
+                    {% for task in otasks %}
+                    <li>
+                      <!-- drag handle -->
+                      <!-- checkbox -->
+                      <input type="checkbox" value="" name=""/>
+                      <!-- todo text -->
+                      <span class="text">{{ task.task_name }} - {{ task.task_details }}</span>
+                      <!-- Emphasis label -->
+                      {% if task.task_days_overdue != 0 %}
+                      <small class="label label-danger"><i class="fa fa-clock-o"></i> {{ task.task_days_left }} days left</small>
+                      {% elif task.task_days_overdue == 0 %}
+                      <small class="label label-danger"><i class="fa fa-clock-o"></i> {{ task.task_days_left }} days left</small>
+                      {% endif %}
+                      <!-- General tools such as edit or delete-->
+                      <div class="tools">
+                        <a href="{% url 'complete_task' pk=task.project_id task_id=task.task_id %}" onclick="return confirm('Are You Sure You Want To Complete This Task ?')" class="btn btn-primary btn-xs pull-right"><i class="fa fa-check"></i></a>
+                      </div>
+                    </li>
+                    {% endfor %}
+                    {% endif %}
+                  </ul>
+                </div><!-- /.box-body -->
+              </div><!-- /.box -->
+            </div>
+            <div class="col-md-12">
+                              <div class="box-header with-border">
+                  <h3 class="box-title">Gantt Chart</h3>
+                  <div class="box-tools pull-right">
+                    <button class="btn btn-default pull-right" style="background-color: #ff3300; color: black; font-weight: bold;"><i class="fa fa-plus"></i> <a href="{% url 'gantt' project.project_id %}" style="color: black;">Full View</a></button>
+                  </div><!-- /.box-tools -->
+                </div><!-- /.box-header -->
+              <div id="chart_div"></div>
+            </div>
+            </div>
+            <div class="col-md-6">
+                          <!-- TO DO List -->
+              <div class="box box-primary">
+                <div class="box-header">
+                  <i class="ion ion-clipboard"></i>
+                  <h3 class="box-title">Pending Project Tasks</h3>
+                  {% if project.leader_id == auth_user.id %}
+                  <h5>Pending - ({{ pending_tasks1 }})</h5>
+                  {% endif %}
+                  {% if project.leader_id != auth_user.id %}
+                  <h5>Pending - ({{ pending_tasks }})</h5>
+                  {% endif %}
+                  <div class="box-tools pull-right">
+                    <ul class="pagination pagination-sm inline">
+                                    {% if project.leader_id == auth_user.id %}
+    {% if p1tasks.has_previous %}
+        <li>
+            <a href="?page=1&filter={{ filter_type }}" class="{% if p1tasks.number == 1 %}disabled{% endif %}" aria-label="First">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+        </li>
+        <li>
+            <a href="?page={{ p1tasks.previous_page_number }}&filter={{ filter_type }}" class="{% if not p1tasks.has_previous %}disabled{% endif %}" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+    {% else %}
+<!--         <li class="disabled">
+            <a href="#" aria-label="First">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+        </li>
+        <li class="disabled">
+            <a href="#" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li> -->
+    {% endif %}
+
+    {% for page_num in p1tasks.paginator.page_range %}
+        <li class="{% if p1tasks.number == page_num %}active{% endif %}">
+            <a href="?page={{ page_num }}&filter={{ filter_type }}">{{ page_num }}</a>
+        </li>
+    {% endfor %}
+
+    {% if p1tasks.has_next %}
+        <li>
+            <a href="?page={{ p1tasks.next_page_number }}&filter={{ filter_type }}" class="{% if not p1tasks.has_next %}disabled{% endif %}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+        <li>
+            <a href="?page={{ p1tasks.paginator.num_pages }}&filter={{ filter_type }}" class="{% if p1tasks.number == p1tasks.paginator.num_pages %}disabled{% endif %}" aria-label="Last">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+        </li>
+    {% else %}
+<!--         <li class="disabled">
+            <a href="#" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+        <li class="disabled">
+            <a href="#" aria-label="Last">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+        </li> -->
+        {% endif %}
+        {% endif %}
+                      {% if project.leader_id != auth_user.id %}
+    {% if p1tasks.has_previous %}
+        <li>
+            <a href="?page=1&filter={{ filter_type }}" class="{% if p1tasks.number == 1 %}disabled{% endif %}" aria-label="First">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+        </li>
+        <li>
+            <a href="?page={{ p1tasks.previous_page_number }}&filter={{ filter_type }}" class="{% if not p1tasks.has_previous %}disabled{% endif %}" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+    {% else %}
+<!--         <li class="disabled">
+            <a href="#" aria-label="First">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+        </li>
+        <li class="disabled">
+            <a href="#" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li> -->
+    {% endif %}
+
+    {% for page_num in ptasks.paginator.page_range %}
+        <li class="{% if ptasks.number == page_num %}active{% endif %}">
+            <a href="?page={{ page_num }}&filter={{ filter_type }}">{{ page_num }}</a>
+        </li>
+    {% endfor %}
+
+    {% if ptasks.has_next %}
+        <li>
+            <a href="?page={{ ptasks.next_page_number }}&filter={{ filter_type }}" class="{% if not ptasks.has_next %}disabled{% endif %}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+        <li>
+            <a href="?page={{ ptasks.paginator.num_pages }}&filter={{ filter_type }}" class="{% if ptasks.number == ptasks.paginator.num_pages %}disabled{% endif %}" aria-label="Last">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+        </li>
+    {% else %}
+<!--         <li class="disabled">
+            <a href="#" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+        <li class="disabled">
+            <a href="#" aria-label="Last">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+        </li> -->                 
+    {% endif %}
+        {% endif %}
+</ul>
+                  </div>
+                </div><!-- /.box-header -->
+                <div class="box-body">
+<ul class="todo-list">
+    <!-- If the authenticated user is the project leader -->
+    {% if project.leader_id == auth_user.id %}
+        {% for task in p1tasks %}
+<li title="Right Click Me To Edit...">
+    <!-- Task View Mode (non-editable) -->
+    <div class="task-view-mode">
+        <span class="text">{{ task.task_name }} assigned to 
+            {% for member in task.member.all %}
+                {{ member.first_name }} ({{ member.profile.user_type }}){% if not forloop.last %}, {% endif %}
+            {% endfor %} - {{ task.task_details }}
+        </span>
+        <span class="text">Due Date: {{ task.task_due_date }}</span>
+
+        <!-- Days to complete or overdue -->
+        {% if task.days_to_complete >= 0 %}
+        <small class="label label-danger"><i class="fa fa-clock-o"></i> {{ task.days_to_complete }} days left</small>
+        {% else %}
+        <small class="label label-danger"><i class="fa fa-clock-o"></i> {{ task.days_overdue }} days overdue</small>
+        {% endif %}
+        
+        <!-- Edit/Delete Tools -->
+        <div class="tools">
+            <a href="{% url 'delete_task' project.project_id task.task_id %}" 
+               onclick="return confirm('Are You Sure You Want To Remove This Task?')" 
+               class="btn btn-primary btn-xs pull-right">
+                <i class="fa fa-trash-o"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Task Edit Mode (editable inputs, initially hidden) -->
+    <form id="task-{{ task.task_id }}" action="{% url 'update_task' task.task_id %}" method="post" class="task-edit-mode" style="display: none;">
+        {% csrf_token %}
+        
+        <!-- Editable Task Name -->
+        <input type="text" name="task_name" value="{{ task.task_name }}" class="form-control" />
+
+        <!-- Editable Task Details -->
+        <input type="text" name="task_details" value="{{ task.task_details }}" class="form-control" />
+
+        <!-- Editable Due Date -->
+        <input type="date" min="{{ day|date:'Y-m-d' }}" name="task_due_date" value="{{ task.task_due_date }}" class="form-control" />
+        
+        <!-- Save Button -->
+        <button type="submit" class="btn btn-success btn-sm">Save</button>
+
+        <!-- Exit Button -->
+        <button type="button" class="btn btn-secondary btn-sm exit-edit-mode">Exit</button>
+    </form>
+</li>
+
+        {% endfor %}
+    {% endif %}
+
+    <!-- If the authenticated user is NOT the project leader -->
+    {% if project.leader_id != auth_user.id %}
+        {% for task in ptasks %}
+        <li>
+            <!-- Task Name and Task Details -->
+            <span class="text">{{ task.task_name }} - {{ task.task_details }}</span>
+            <!-- Days to complete or overdue -->
+            {% if task.days_to_complete >= 0 %}
+            <small class="label label-danger"><i class="fa fa-clock-o"></i> {{ task.days_to_complete }} days left</small>
+            {% else %}
+            <small class="label label-danger"><i class="fa fa-clock-o"></i> {{ task.days_overdue }} days overdue</small>
+            {% endif %}
+            <!-- Option to Complete Task -->
+            <div class="tools">
+                <a href="{% url 'complete_task' project.project_id task.task_id %}" 
+                   onclick="return confirm('Are You Sure You Want To Complete This Task?')" 
+                   class="btn btn-primary btn-xs pull-right">
+                    <i class="fa fa-check"></i>
+                </a>
+            </div>
+        </li>
+        {% endfor %}
+    {% endif %}
+</ul>
+                </div><!-- /.box-body -->
+              </div><!-- /.box -->
+                            <div class="box box-primary">
+                <div class="box-header">
+                  <i class="ion ion-clipboard"></i>
+                  <h3 class="box-title">Completed Project Tasks</h3>
+                  {% if project.leader_id == auth_user.id %}
+                  <h5>Completed - ({{ completed_tasks1 }})</h5>
+                  {% endif %}
+                  {% if project.leader_id != auth_user.id %}
+                  <h5>Completed - ({{ completed_tasks }})</h5>
+                  {% endif %}
+                  <div class="box-tools pull-right">
+                    <ul class="pagination pagination-sm inline">
+                                    {% if project.leader_id == auth_user.id %}
+    {% if c1tasks.has_previous %}
+        <li>
+            <a href="?page=1&filter={{ filter_type }}" class="{% if c1tasks.number == 1 %}disabled{% endif %}" aria-label="First">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+        </li>
+        <li>
+            <a href="?page={{ c1tasks.previous_page_number }}&filter={{ filter_type }}" class="{% if not c1tasks.has_previous %}disabled{% endif %}" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+    {% else %}
+<!--         <li class="disabled">
+            <a href="#" aria-label="First">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+        </li>
+        <li class="disabled">
+            <a href="#" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li> -->
+    {% endif %}
+
+    {% for page_num in c1tasks.paginator.page_range %}
+        <li class="{% if c1tasks.number == page_num %}active{% endif %}">
+            <a href="?page={{ page_num }}&filter={{ filter_type }}">{{ page_num }}</a>
+        </li>
+    {% endfor %}
+
+    {% if c1tasks.has_next %}
+        <li>
+            <a href="?page={{ c1tasks.next_page_number }}&filter={{ filter_type }}" class="{% if not c1tasks.has_next %}disabled{% endif %}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+        <li>
+            <a href="?page={{ c1tasks.paginator.num_pages }}&filter={{ filter_type }}" class="{% if c1tasks.number == c1tasks.paginator.num_pages %}disabled{% endif %}" aria-label="Last">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+        </li>
+    {% else %}
+<!--         <li class="disabled">
+            <a href="#" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+        <li class="disabled">
+            <a href="#" aria-label="Last">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+        </li> -->
+        {% endif %}
+        {% endif %}
+                      {% if project.leader_id != auth_user.id %}
+    {% if c1tasks.has_previous %}
+        <li>
+            <a href="?page=1&filter={{ filter_type }}" class="{% if c1tasks.number == 1 %}disabled{% endif %}" aria-label="First">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+        </li>
+        <li>
+            <a href="?page={{ c1tasks.previous_page_number }}&filter={{ filter_type }}" class="{% if not c1tasks.has_previous %}disabled{% endif %}" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+    {% else %}
+<!--         <li class="disabled">
+            <a href="#" aria-label="First">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+        </li>
+        <li class="disabled">
+            <a href="#" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li> -->
+    {% endif %}
+
+    {% for page_num in ctasks.paginator.page_range %}
+        <li class="{% if ctasks.number == page_num %}active{% endif %}">
+            <a href="?page={{ page_num }}&filter={{ filter_type }}">{{ page_num }}</a>
+        </li>
+    {% endfor %}
+
+    {% if ctasks.has_next %}
+        <li>
+            <a href="?page={{ ctasks.next_page_number }}&filter={{ filter_type }}" class="{% if not ctasks.has_next %}disabled{% endif %}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+        <li>
+            <a href="?page={{ ctasks.paginator.num_pages }}&filter={{ filter_type }}" class="{% if ctasks.number == ctasks.paginator.num_pages %}disabled{% endif %}" aria-label="Last">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+        </li>
+    {% else %}
+<!--         <li class="disabled">
+            <a href="#" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+        <li class="disabled">
+            <a href="#" aria-label="Last">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+        </li> -->                 
+    {% endif %}
+        {% endif %}
+</ul>
+                  </div>
+                </div><!-- /.box-header -->
+                <div class="box-body">
+                  <ul class="todo-list">
+                    {% if project.leader_id == auth_user.id %}
+                    {% for task in c1tasks %}
+                    <li>
+                      <!-- drag handle -->
+                      <!-- checkbox -->
+                      <!-- <input type="checkbox" value="" name=""/> -->
+                      <!-- todo text -->
+            <span class="text">{{ task.task_name }} assigned to 
+                {% for member_info in members_with_completed_tasks %}
+                    {{ member_info.member.first_name }} ({{ member_info.member.user_type }}){% if not forloop.last %}, {% endif %}
+                {% endfor %} - {{ task.task_details }}; {{ task.task_status }}.
+            </span>
+                      <!-- Emphasis label -->
+                      <small class="label label-danger"><i class="fa fa-clock-o"></i> Completed At: {{ task.task_completed_date }}</small>
+                    </li>
+                    {% endfor %}
+                    {% endif %}
+                    {% if project.leader_id != auth_user.id %}
+                    {% for task in ctasks %}
+                    <li>
+                      <!-- drag handle -->
+                      <!-- checkbox -->
+                      <!-- <input type="checkbox" value="" name=""/> -->
+                      <!-- todo text -->
+                      <span class="text">
+                                        {% for member_info in members_with_completed_tasks %}
+                    {{ member_info.member.first_name }} ({{ member_info.member.user_type }}){% if not forloop.last %}, {% endif %}
+                {% endfor %} - {{ task.task_details }}; {{ task.task_status }}.
+                      </span>
+                      <!-- Emphasis label -->
+                      <small class="label label-danger"><i class="fa fa-clock-o"></i> Completed At: {{ task.task_completed_date }}</small>
+                    </li>
+                    {% endfor %}
+                    {% endif %}
+                  </ul>
+                </div><!-- /.box-body -->
+              </div><!-- /.box -->
+                            <!-- Calendar -->
+<!--               <div class="box box-solid bg-green-gradient" style="background-color: #ff3300;">
+                <div class="box-header">
+                  <i class="fa fa-calendar"></i>
+                  <h3 class="box-title">Calendar</h3>
+
+                  <div class="pull-right box-tools">
+                    <div class="btn-group">
+                      <button class="btn btn-success btn-sm dropdown-toggle" data-toggle="dropdown"><i class="fa fa-bars"></i></button>
+                      <ul class="dropdown-menu pull-right" role="menu">
+                        <li><a href="#">Add new event</a></li>
+                        <li><a href="#">Clear events</a></li>
+                        <li class="divider"></li>
+                        <li><a href="#">View calendar</a></li>
+                      </ul>
+                    </div>
+                    <button class="btn btn-success btn-sm" data-widget="collapse"><i class="fa fa-minus"></i></button>
+                    <button class="btn btn-success btn-sm" data-widget="remove"><i class="fa fa-times"></i></button>
+                  </div>
+                </div>
+                <div class="box-body no-padding">
+                  <div id="calendar" style="width: 100%"></div>
+                </div>
+              </div>-->
+            </div>
+                                      </div>
+                                                    <div class="box box-primary" id="myForm">
+                              <div class="box-header">
+                                <h3 class="box-title">Add An Event</h3>
+                                <button type="button" style="position: relative;" onclick="closeForm();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
+                              </div><!-- /.box-header -->
+                              <!-- form start -->
+<form action="{% url 'add_event' project.pk %}" method="POST">
+    {% csrf_token %}
+    <div class="box-body">
+        <div class="form-group col-md-6">
+            <label for="event_name">Event Name</label>
+            <input type="text" class="form-control" id="event_name" name="event_name"placeholder="Event Name"  required>
+        </div>
+        <div class="form-group col-md-6">
+            <label for="event_date">Event Date</label>
+            <input type="date" min="{{ day }}" class="form-control" id="event_date" placeholder="Event Date"  name="event_date" required>
+        </div>
+        <div class="form-group col-md-6">
+            <label for="event_start_time">Start Time</label>
+            <input type="time" class="form-control" id="event_start_time"placeholder="Event Start Time"  name="event_start_time" required>
+        </div>
+        <div class="form-group col-md-6">
+            <label for="event_end_time">End Time</label>
+            <input type="time" class="form-control" id="event_end_time"placeholder="Event End Time"  name="event_end_time" required>
+        </div>
+        <div class="form-group">
+            <label for="event_details">Event Details</label>
+            <textarea class="form-control" rows="4" id="event_details"placeholder="Event Details..."  name="event_details" required placeholder="Enter Event Details..."></textarea>
+        </div>
+        <div class="form-group col-md-6">
+            <label for="event_location">Event Location (optional)</label>
+            <input type="text" class="form-control" id="event_location"placeholder="Event Location"  name="event_location">
+        </div>
+        <div class="form-group col-md-6">
+            <label for="event_link">Event Link (optional)</label>
+            <input type="url" class="form-control" id="event_link" placeholder="Event Link" name="event_link">
+        </div>
+    </div>
+    <div class="box-footer">
+        <button type="submit" class="btn btn-primary">Add Event</button>
+        <button type="reset" class="btn btn-primary">Reset</button>
+    </div>
+</form>
+                            </div><!-- /.box -->
+{% if project.leader_id == auth_user.id %}
+                                        <div class="box box-primary" id="myForm1">
+                              <div class="box-header">
+                                <h3 class="box-title">Add A Task</h3>
+                                <button type="button" style="position: relative;" onclick="closeForm1();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
+                              </div><!-- /.box-header -->
+                              <!-- form start -->
+
+<form action="{% url 'add_task' project.pk %}" method="POST">
+    {% csrf_token %}
+    <div class="box-body">
+        <div class="form-group">
+            <label for="task_name">Task Name</label>
+            <input type="text" class="form-control" id="task_name" name="task_name" placeholder="Task Name" required>
+        </div>
+        <div class="form-group">
+            <label for="task_details">Task Details</label>
+            <textarea class="form-control" id="task_details" name="task_details" placeholder="Task Details" required></textarea>
+        </div>
+
+        <!-- User Assignment Section -->
+        <div id="user-assignments">
+            <div class="form-group">
+                <label for="members">Assign To</label>
+                <select class="form-control" id="members" name="members[]" required>
+                    <option value="" selected disabled>Select a User</option>
+{% for member in project_members %}
+    <option value="{{ member.id }}">
+        {{ member.first_name }} ({{ member.user_type }})
+    </option>
+{% endfor %}
+                </select>
+            </div>
+        </div>
+        <button type="button" class="btn btn-secondary" onclick="addUserField()">Add Another User</button>
+
+        <!-- Other fields remain the same -->
+        <div class="form-group">
+            <label for="due_date">Due Date</label>
+            <input type="date" min="{{ day|date:'Y-m-d' }}" class="form-control" id="due_date" name="due_date" required>
+        </div>
+        <div class="form-group">
+            <label for="dependent_task">Dependent Task (optional)</label>
+            <select class="form-control" id="dependent_task" name="dependent_task">
+                <option value="">Select a Dependent Task (if any)</option>
+                {% for task in tasks %}
+                    <option value="{{ task.task_id }}">{{ task.task_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="box-footer">
+        <button type="submit" class="btn btn-primary">Add Task</button>
+        <button type="reset" onclick="removeUserField();" class="btn btn-primary">Reset</button>
+    </div>
+</form>
+
+<script>
+    function addUserField() {
+        const userSelectHtml = `
+            <div class="form-group user-group">
+                <label for="members">Assign To</label>
+                <select class="form-control" name="members[]" required>
+                    <option value="" selected disabled>Select a User</option>
+                    {% for member in project_members %}
+                        <option value="{{ member.id }}">{{ member.first_name }} ({{ member.user_type }})</option>
+                    {% endfor %}
+                </select>
+                <button type="button" class="btn btn-danger remove-btn" onclick="removeUserField(this)">Remove</button>
+            </div>
+        `;
+        document.getElementById('user-assignments').insertAdjacentHTML('beforeend', userSelectHtml);
+    }
+
+    function removeUserField(button) {
+        const userFieldGroup = button.parentElement; // Find the parent element containing the select and button
+        userFieldGroup.remove(); // Remove the entire group
+    }
+</script>
+</div><!-- /.box -->
+{% endif %}                            
+
+            </div><!-- /.col -->
+          </div><!-- /.row -->
+
+        </section><!-- /.content -->
+      </div><!-- /.content-wrapper -->
+      <footer class="main-footer">
+        <strong>Copyright <span id="year"></span>. <a href="">The Bengal Tigers 🐅</a>.</strong>
+      </footer>
+    </div><!-- ./wrapper -->
+<script type="text/javascript">
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('li').forEach(function(taskItem) {
+        taskItem.addEventListener('contextmenu', function(e) {
+            e.preventDefault();  // Prevent default right-click menu
+    
+            // Hide the view mode
+            let viewMode = this.querySelector('.task-view-mode');
+            viewMode.style.display = 'none';
+    
+            // Show the edit mode
+            let editMode = this.querySelector('.task-edit-mode');
+            editMode.style.display = 'block';
+        });
+
+        // Handle the Exit button click
+        let exitButton = taskItem.querySelector('.exit-edit-mode');
+        if (exitButton) {
+            exitButton.addEventListener('click', function() {
+                // Show the view mode
+                let viewMode = taskItem.querySelector('.task-view-mode');
+                viewMode.style.display = 'block';
+    
+                // Hide the edit mode
+                let editMode = taskItem.querySelector('.task-edit-mode');
+                editMode.style.display = 'none';
+            });
+        }
+    });
+});
+
+
+</script>
+<script>
+  document.getElementById("myForm").style.display = "none";
+  document.getElementById("myForm1").style.display = "none";
+function openForm() {
+  document.getElementById("myForm").style.display = "block";
+  document.getElementById("myTable").style.display = "none";
+  document.getElementById("btnmyForm").style.display = "none";
+}
+
+function closeForm() {
+  document.getElementById("myForm").style.display = "none";
+  document.getElementById("myTable").style.display = "block";
+  document.getElementById("btnmyForm").style.display = "block";
+}
+
+function openForm1() {
+  document.getElementById("myForm1").style.display = "block";
+  document.getElementById("myTable").style.display = "none";
+  document.getElementById("myForm").style.display = "none";
+  document.getElementById("btnmyForm").style.display = "block";
+  // document.getElementById("btnmyForm").style.display = "none";
+}
+
+function closeForm1() {
+  document.getElementById("myForm1").style.display = "none";
+  document.getElementById("myTable").style.display = "block";
+  // document.getElementById("btnmyForm").style.display = "block";
+}
+
+
+function searchTable() {
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("myInput");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("events");
+  tr = table.getElementsByTagName("tr");
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[0];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }       
+  }
+}
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var checkAllButton = document.querySelector('.checkbox-toggle');
+    var projectCheckboxes = document.querySelectorAll('.events-checkbox');
+
+    checkAllButton.addEventListener('click', function() {
+        var isChecked = this.classList.toggle('checked');
+        console.log(2);
+        projectCheckboxes.forEach(function(checkbox) {
+            checkbox.checked = isChecked;
+        });
+
+        this.innerHTML = isChecked ? '<i class="fa fa-check-square-o"></i>' : '<i class="fa fa-square-o"></i>';
+    });
+            function showAlert(type, message) {
+            if (type === 'success') {
+                alert('Success: ' + message);
+            } else if (type === 'error') {
+                alert('Error: ' + message);
+            }
+        }
+        const successMessages = "{{ messages.success|safe }}";
+        const errorMessages = "{{ messages.error|safe }}";
+        if (successMessages) {
+            successMessages.split(',').forEach(message => showAlert('success', message));
+        }
+        if (errorMessages) {
+            errorMessages.split(',').forEach(message => showAlert('error', message));
+        }
+});
+// Function to submit form
+function submitForm(action) {
+    document.getElementById('form-action').value = action;
+    document.getElementById('events-action-form').submit();
+}
+</script>
+
+    <!-- jQuery 2.1.3 -->
+    <script src="{% static 'dashboard/plugins/jQuery/jQuery-2.1.3.min.js' %}"></script>
+    <!-- jQuery UI 1.11.2 -->
+    <script src="http://code.jquery.com/ui/1.11.2/jquery-ui.min.js" type="text/javascript"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
+    <script>
+      $.widget.bridge('uibutton', $.ui.button);
+    </script>
+    <!-- Bootstrap 3.3.2 JS -->
+    <script src="{% static 'dashboard/bootstrap/js/bootstrap.min.js' %}" type="text/javascript"></script>    
+    <!-- Morris.js charts -->
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js"></script>
+    <script src="{% static 'dashboard/plugins/morris/morris.min.js' %}" type="text/javascript"></script>
+    <!-- Sparkline -->
+    <script src="{% static 'dashboard/plugins/sparkline/jquery.sparkline.min.js' %}" type="text/javascript"></script>
+    <!-- jvectormap -->
+    <script src="{% static 'dashboard/plugins/jvectormap/jquery-jvectormap-1.2.2.min.js' %}" type="text/javascript"></script>
+    <script src="{% static 'dashboard/plugins/jvectormap/jquery-jvectormap-world-mill-en.js' %}" type="text/javascript"></script>
+    <!-- jQuery Knob Chart -->
+    <script src="{% static 'dashboard/plugins/knob/jquery.knob.js' %}" type="text/javascript"></script>
+    <!-- daterangepicker -->
+    <script src="{% static 'dashboard/plugins/daterangepicker/daterangepicker.js' %}" type="text/javascript"></script>
+    <!-- datepicker -->
+    <script src="{% static 'dashboard/plugins/datepicker/bootstrap-datepicker.js' %}" type="text/javascript"></script>
+    <!-- Bootstrap WYSIHTML5 -->
+    <script src="{% static 'dashboard/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.all.min.js' %}" type="text/javascript"></script>
+    <!-- iCheck -->
+    <script src="{% static 'dashboard/plugins/iCheck/icheck.min.js' %}" type="text/javascript"></script>
+    <!-- Slimscroll -->
+    <script src="{% static 'dashboard/plugins/slimScroll/jquery.slimscroll.min.js' %}" type="text/javascript"></script>
+    <!-- FastClick -->
+    <script src="{% static 'dashboard/plugins/fastclick/fastclick.min.js' %}"></script>
+    <!-- Site Sync App -->
+    <script src="{% static 'dashboard/dist/js/app.min.js' %}" type="text/javascript"></script>
+
+    <!-- Site Sync for demo purposes -->
+    <!-- <script src="{% static 'dashboard/dist/js/demo.js' %}" type="text/javascript"></script> -->
+
+      <script type="text/javascript">
+         new Date().getFullYear()
+document.getElementById("year").innerHTML = new Date().getFullYear();
+      </script>
+
+      <script type="text/javascript">
+        function cool() {
+          alert("Hold on, we are making something cool! Kindly visit later ;)")
+        }
+      </script>
+  </body>
+</html>

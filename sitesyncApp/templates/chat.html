@@ -82,35 +82,78 @@
         margin-left: 5px;
     }
 </style>
+    <style>
+        /* Modal (Widget) Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4); /* Black background with opacity */
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        let currentVisibleButton = null;
+        let currentVisibleForms = [];
+
         document.querySelectorAll('.direct-chat-msg').forEach(function(msg) {
             msg.addEventListener('contextmenu', function(e) {
                 e.preventDefault();
-                const deleteButton = msg.querySelector('form[id^="deletemessage_"]');
-                const editButton = msg.querySelector('form[id^="editmessage_"]');
-                if (deleteButton && editButton) {
-                    if (currentVisibleButton === deleteButton || currentVisibleButton === editButton) {
-                        hideAllButtons();
-                        currentVisibleButton = null;
-                    } else {
-                        hideAllButtons();
-                        deleteButton.style.display = 'block';
-                        editButton.style.display = 'block';
-                        currentVisibleButton = deleteButton;
-                    }
+
+                // Select all action buttons within the message
+                const actionForms = msg.querySelectorAll('form[id^="deletemessage_"], form[id^="editmessage_"], form[id^="pinmessage_"], form[id^="pinmessage1_"], form[id^="starmessage_"], form[id^="starmessage1_"]');
+                
+                // If any forms are visible, hide them, else show all for this message
+                if (Array.from(actionForms).some(form => form.style.display === 'block')) {
+                    hideAllButtons();
+                    currentVisibleForms = [];
+                } else {
+                    hideAllButtons();
+                    actionForms.forEach(form => form.style.display = 'block');
+                    currentVisibleForms = actionForms;
                 }
             });
         });
+
+        // Hide buttons when clicking outside
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.direct-chat-msg')) {
                 hideAllButtons();
-                currentVisibleButton = null;
+                currentVisibleForms = [];
             }
         });
+
         function hideAllButtons() {
-            document.querySelectorAll('form[id^="deletemessage_"], form[id^="editmessage_"]').forEach(function(form) {
+            document.querySelectorAll('form[id^="deletemessage_"], form[id^="editmessage_"], form[id^="pinmessage_"], form[id^="pinmessage1_"], form[id^="starmessage_"], form[id^="starmessage1_"]').forEach(function(form) {
                 form.style.display = 'none';
             });
         }
@@ -130,94 +173,7 @@
           </a>
           <div class="navbar-custom-menu">
                         <ul class="nav navbar-nav">
-              <!-- Messages: style can be found in dropdown.less-->
-              <li class="dropdown messages-menu">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                  <i class="fa fa-envelope-o"></i>
-                  <span class="label label-success">1</span>
-                </a>
-                <ul class="dropdown-menu">
-                  <li class="header">You have 1 messages</li>
-                  <li>
-                    <!-- inner menu: contains the actual data -->
-                    <ul class="menu">
-                      <li><!-- start message -->
-                        <a href="#">
-                          <div class="pull-left">
-                            <img src="{% static 'dashboard/dist/img/site.jpg' %}" class="img-circle" alt="User Image"/>
-                          </div>
-                          <h4>
-                            Madaraka
-                            <small><i class="fa fa-clock-o"></i> 5 mins</small>
-                          </h4>
-                          <p>Hey! What's up?</p>
-                        </a>
-                      </li><!-- end message -->
-                    </ul>
-                  </li>
-                  <li class="footer"><a href="#">See All Messages</a></li>
-                </ul>
-              </li>
-            <ul class="nav navbar-nav">
-              <!-- Notifications: style can be found in dropdown.less -->
-              <li class="dropdown notifications-menu">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                  <i class="fa fa-bell-o"></i>
-                  <span class="label label-waring">2</span>
-                </a>
-                <ul class="dropdown-menu">
-                  <li class="header">You have 2 notifications</li>
-                  <li>
-                    <!-- inner menu: contains the actual data -->
-                    <ul class="menu">
-                      <li>
-                        <a href="#">
-                          <i class="fa fa-users text-aqua"></i> 5 new members joined today
-                        </a>
-                      </li>
-                      <li>
-                        <a href="#">
-                          <i class="fa fa-warning text-yellow"></i> A task is pending...
-                        </a>
-                      </li>
-                    </ul>
-                  </li>
-                  <!-- <li class="footer"><a href="pro.html">View all</a></li> -->
-                </ul>
-              </li>
-              <!-- Tasks: style can be found in dropdown.less -->
-              <li class="dropdown tasks-menu">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                  <i class="fa fa-flag-o"></i>
-                  <span class="label label-danger">1</span>
-                </a>
-                <ul class="dropdown-menu">
-                  <li class="header">You have 1 pending task(s)</li>
-                  <li>
-                    <!-- inner menu: contains the actual data -->
-                      <ul class="menu">
-                      <li> Madaraka
-                        <a href="#">
-                          <h3>
-                            Buy some timber.
-                            <small class="pull-right">20%</small>
-                          </h3>
-                        </a>
-                      </li>
-                      <!-- end task item -->
-                     </ul>
-                  </li>
-                  <li class="footer">
-                    <a href="#">View all tasks</a>
-                  </li>
-                </ul>
-              </li> 
-              <!-- Settings -->
-              <li class="dropdown tasks-menu">
-                <a href="#" class="dropdown-toggle">
-                  <i class="fa fa-gear"></i>
-                </a>
-              </li>
+{% include 'notifications.html' %}
               <!-- User Account: style can be found in dropdown.less -->
               <li class="dropdown user user-menu">
                 <a href="{% url 'profile' %}" class="dropdown-toggle">
@@ -228,7 +184,7 @@
               <!-- Sign Out  -->
               <li class="dropdown tasks-menu">
                 <a href="{% url 'logout' %}" class="dropdown-toggle">
-                  <i class="fa fa-mail-forward"></i>
+                  <i class="fa fa-power-off"></i>
                 </a>
               </li> 
             </ul>
@@ -237,39 +193,7 @@
       </header>
       <!-- Left side column. contains the logo and sidebar -->
       <aside class="main-sidebar">
-        <!-- sidebar: style can be found in sidebar.less -->
-        <section class="sidebar">
-          <!-- Sidebar user panel -->
-          <div class="user-panel">
-            <div class="pull-left image">
-              <img src="{% static 'dashboard/dist/img/support.png' %}" style="border-radius: 10px;" class="img-circle" alt="User Image" />
-            </div>
-            <div class="pull-left info">
-              <p>SiteSync Assistant</p>
-              <a href=""><i class="fa fa-circle text-success"></i> </a>
-              <a href="#">Active</a>
-            </div>
-          </div>
-          <!-- search form -->
-<!--           <form action="#" method="get" class="sidebar-form">
-            <div class="input-group">
-              <input type="text" name="q" class="form-control" placeholder="Search..."/>
-              <span class="input-group-btn">
-                <button type='submit' name='search' id='search-btn' class="btn btn-flat"><i class="fa fa-search"></i></button>
-              </span>
-            </div>
-          </form> -->
-          <!-- /.search form -->
-          <!-- sidebar menu: : style can be found in sidebar.less -->
-          <ul class="sidebar-menu">
-            <li class="header">NEED HELP ? </li>
-          </ul>
-                              <div class="form-group">
-                      <label>No conversations yet...</label>
-                      <input type="text" class="form-control" placeholder="Enter Prompt..."/>
-                    </div>
-        </section>
-        <!-- /.sidebar -->
+{% include 'chatbot.html' %}
       </aside>
 
       <!-- Right side column. Contains the navbar and content of the page -->
@@ -292,13 +216,24 @@
             <div class="col-md-3">
               <div class="box box-solid">
                 <div class="box-header with-border">
+        <!-- New search form -->
+        <form method="get" action="{% url 'chat' project.pk %}" class="form-inline" style="width: 100%;">
+            <div class="input-group">
+                <input type="text" class="form-control input-sm" name="search" placeholder="Search Chat Message(s)..." value="{{ request.GET.search }}">
+                <span class="input-group-btn">
+                    <button type="submit" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-search"></span></button>
+                </span>
+            </div>
+        </form>
+                </div>
+                <div class="box-header with-border">
                   <h3 class="box-title">List of Project Members</h3>
                 </div>
                 <div class="box-body no-padding">
                   <ul class="nav nav-pills nav-stacked">
                     <li>              <!-- DIRECT CHAT -->
               <div id="myDirectChat" class="box box-warning direct-chat direct-chat-warning">
-                <div class="box-body">
+                <div class="box-body"  style="overflow-y: auto; box-sizing: border-box; max-height: 400px;">
                   <!-- Conversations are loaded here -->
                   <div style="margin-bottom: 10px;" class="direct-chat-messages">
                     <!-- Message. Default to the left -->
@@ -315,11 +250,11 @@
                       <img class="direct-chat-img" src="{{ member.image }}" alt="message user image" /><!-- /.direct-chat-img --><span class='direct-chat-name pull-left'>{{ member.first_name }}</span>
                       {% if project.leader_id == auth_user.id %}
                       {% if member_status == "Accepted" %}
-                      <form method="POST" name="remove_project_member_form" action="{% url 'remove_project_member' project.pk %}" enctype="multipart/form-data">
+ <!--                      <form method="POST" name="remove_project_member_form" action="{% url 'remove_project_member' project.pk %}" enctype="multipart/form-data">
                               {% csrf_token %}
                               <input type="hidden" value="{{ member.id }}" name="uid" required>
                               <button type="submit" onclick="return confirm('Are You Sure You Want To Remove This Project Member ?')" class="btn btn-primary"style="font-size:12px;"><i class="fa fa-remove" ></i></button>
-                            </form>
+                            </form> -->
                         {% else %}
                         <span class='direct-chat-name pull-left' style="color: orange;">Pending Invitation Acceptance</span>
                         {% endif %}
@@ -329,7 +264,8 @@
                   </div><!-- /.direct-chat-pane -->
                 </div><!-- /.box-body -->
               </div><!--/.direct-chat --></li>
-                    <li><a href="#"><i class="fa fa-star"></i> Bookmarked Chats</a></li>
+                    <li class="{% if filter_type == 'all' %}active{% endif %}"><a href="?filter=all"><i class="fa fa-comment"></i> All Chats</a></li>
+                    <li class="{% if filter_type == 'bookmarked' %}active{% endif %}"><a href="?filter=bookmarked"><i class="fa fa-star"></i> Starred Chats</a></li>
                     <li><a href="{% url 'project_detail' project.project_id %}"><i class="fa fa-mail-reply"></i> Back</a></li>
                   </ul>
                 </div><!-- /.box-body -->
@@ -341,26 +277,77 @@
             </div><!-- /.col -->
             <div class="col-md-9">
               <!-- DIRECT CHAT -->
+            {% load tz %} 
               <div id="myDirectChat" class="box box-warning direct-chat direct-chat-warning">
 <div class="chat-box">
-    <div class="chat-messages" >
-        {% for message in chat_messages %}
+
+
+<!-- Pinned Messages Section -->
+<div style="max-height: 100px; overflow-y: auto;border-bottom: 1px solid #ddd;">
+    <h4><b>Pinned Messages</b></h4>  
+    {% for pinned_message in pinned_messages %}  
+<div class="pinned-messages" style=" padding-bottom: 10px; margin-bottom: 10px;">
+        <div class="pinned-message">
+            <span>{{ pinned_message.sender_user.first_name }}: {{ pinned_message.message }}</span>
+            <button class="btn btn-primary" 
+                    onclick="document.getElementById('unpinmessage_{{ pinned_message.chat_id }}').submit();" title="Unpin A Message">
+                <span class="glyphicon glyphicon-pushpin"></span>
+            </button>
+            <form id="unpinmessage_{{ pinned_message.chat_id }}" method="POST" action="{% url 'unpin_message' project.pk %}" style="display: none;">
+                {% csrf_token %}
+                <input type="hidden" name="chat_id" value="{{ pinned_message.chat_id }}">
+            </form>
+        </div>
+</div>
+    {% endfor %}
+</div>
+
+<!-- Chat Messages Section -->
+<div class="chat-messages" style="overflow-y: auto; box-sizing: border-box; max-height: 450px;">
+    {% for date, messages in grouped_messages.items %}
+    <br>
+        <div class="date-section" style="text-align: center; color: red;">
+            <strong>{{ date }}</strong>
+        </div>
+            {% for message in messages %}
+            {% if message.timestamp|localtime <= now %}
             {% if message.sender_user == auth_user %}
                 <!-- Message to the right -->
-               <div class="direct-chat-msg right" style="width: 92%;">
+                <div class="direct-chat-msg right" style="width: 92%;" title="Right Click Me to Edit!">
                     <div class='direct-chat-info clearfix'>
                         <br>
                         <span class='direct-chat-name pull-right'>Me</span>
-                        <span class='direct-chat-timestamp pull-right' style="position: relative; right: 30px;">{{ message.timestamp|date:"d M h:i a" }}</span>
+                        <span class='direct-chat-timestamp pull-right' style="position: relative; right: 30px;">
+                            {{ message.timestamp|date:"h:i a" }}
+                        </span>
                     </div>
-                    <img class="direct-chat-img" src="{{MEDIA_URL}}{{ auth_user.profile.profile_picture }}" alt="message user image" />
+<img class="direct-chat-img" src="{{MEDIA_URL}}{{ auth_user.profile.profile_picture }}" alt="message user image" />
                     <div class="direct-chat-text pull-right">
+                        {% if message.reply %}
+                            <div class="reply-preview" style="background-color: #f1f1f1; padding: 5px; margin-bottom: 5px; color: black;">
+                                <strong>Replying to:</strong> {{ message.reply|safe }}
+                            </div>
+                        {% endif %}
                         {{ message.message|safe }}
-
                         {% if message.file %}
-                        <hr>                        
+                            <hr>
                             <a href="{{MEDIA_URL}}{{ message.file }}" style="color: white; font-weight: bold;" download>View Attachment</a>
                         {% endif %}
+                        <br>
+                        {% if message.updated_at %}
+                            <span class='direct-chat-timestamp pull-right' style="color: white; font-size: 8px;">
+                                Edited At: {{ message.updated_at|date:"h:i a" }}
+                            </span>
+                        {% endif %}
+                                                {% if message.chat_id in bookmarked_chat_ids %}
+        <form method="post" action="{% url 'unbookmark_message' project.pk %}">
+          {% csrf_token %}
+        <button type="submit" class="btn btn-link" style="padding: 0; border: none; background: none;">
+        <input type="hidden" name="chat_id" value="{{ message.chat_id }}">
+        <i style="color: black;" class="fa fa-star"></i>
+    </button>
+  </form>
+  {% endif %}
                     </div>
 <div class="message-actions">
   <form method="POST" name="update_project_member_form" action="{% url 'delete_message' project.pk %}" enctype="multipart/form-data" id="deletemessage_{{ message.chat_id }}" style="display: none; position: relative; right: 20px;" class="pull-right">
@@ -374,45 +361,127 @@
     <input type="text" name="edited_message" value="{{ message.message }}" required>
     <button type="submit" class="btn btn-primary"><i class="fa fa-edit"></i></button>
 </form>
+  <form id="pinmessage_{{ message.chat_id }}" method="POST" action="{% url 'pin_message' project.pk %}" style="display: none; position: relative; right: 20px;" class="pull-right">
+                            {% csrf_token %}
+                            <input type="hidden" name="chat_id" value="{{ message.chat_id }}">
+<button class="btn btn-primary" onclick="document.getElementById('pinmessage_{{ message.chat_id }}').submit();" title="Pin A Message">
+                            <span class="glyphicon glyphicon-pushpin"></span>
+                        </button>
+                        </form>
+  <form id="starmessage_{{ message.chat_id }}" method="POST" action="{% url 'bookmark_message' project.pk %}" style="display: none; position: relative; right: 20px;" class="pull-right">
+                            {% csrf_token %}
+                            <input type="hidden" name="chat_id" value="{{ message.chat_id }}">
+<button class="btn btn-primary" onclick="document.getElementById('starmessage_{{ message.chat_id }}').submit();" title="Star A Message">
+                            <i class="fa fa-star"></i>
+                        </button>
+                        </form>
+ <button class="btn btn-secondary btn-sm" onclick="replyToMessage({{ message.chat_id }}, '{{ message.message|escapejs }}')">Reply</button>
 </div>
-        </div>
+                </div>
             {% else %}
+                <!-- Message to the left -->
                 <div class="direct-chat-msg" style="width: 45%; position: relative; left: 12px;">
                     <div class='direct-chat-info clearfix'>
                         <span class='direct-chat-name pull-left'>{{ message.sender_user.first_name }}</span>
-                        <span class='direct-chat-timestamp pull-right'>{{ message.timestamp|date:"d M h:i a" }}</span>
+                        <span class='direct-chat-timestamp pull-right'>{{ message.timestamp|date:"h:i a" }}</span>
                     </div>
                     <img class="direct-chat-img" src="{{MEDIA_URL}}{{ message.sender_user.profile.profile_picture }}" alt="message user image" />
                     <div class="direct-chat-text">
+                        {% if message.reply %}
+                            <div class="reply-preview" style="background-color: #f1f1f1; padding: 5px; margin-bottom: 5px; color: black;">
+                                <strong>Replying to:</strong> {{ message.reply|safe }}
+                            </div>
+                        {% endif %}
                         {{ message.message|safe }}
                         {% if message.file %}
                             <hr>
                             <a href="{{MEDIA_URL}}{{ message.file }}" style="color: orange; font-weight: bold;" download>View Attachment</a>
                         {% endif %}
+                        <br>
+                        {% if message.updated_at %}
+                            <span class='direct-chat-timestamp pull-right' style="color: black; font-size: 8px;">
+                                Edited At: {{ message.updated_at|date:"h:i a" }}
+                            </span>
+                            <br>
+                        {% endif %}
+                        {% if message.chat_id in bookmarked_chat_ids %}
+        <form method="post" action="{% url 'unbookmark_message' project.pk %}">
+          {% csrf_token %}
+        <button type="submit" class="btn btn-link" style="padding: 0; border: none; background: none;">
+        <input type="hidden" name="chat_id" value="{{ message.chat_id }}">
+        <i class="fa fa-star" style="color: red;"></i>
+    </button>
+  </form>
+  {% endif %}
                     </div>
+<div class="message-actions">
+  <form id="pinmessage1_{{ message.chat_id }}" method="POST" action="{% url 'pin_message' project.pk %}" style="display: none; position: relative; left: 90px; top: -45px;" class="pull-right">
+                            {% csrf_token %}
+                            <input type="hidden" name="chat_id" value="{{ message.chat_id }}">
+<button class="btn btn-primary" onclick="document.getElementById('pinmessage1_{{ message.chat_id }}').submit();" title="Pin A Message">
+                            <span class="glyphicon glyphicon-pushpin"></span>
+                        </button>
+                        </form>
+  <form id="starmessage1_{{ message.chat_id }}" method="POST" action="{% url 'bookmark_message' project.pk %}" style="display: none; position: relative; left: 100px; top: -45px;" class="pull-right">
+                            {% csrf_token %}
+                            <input type="hidden" name="chat_id" value="{{ message.chat_id }}">
+<button class="btn btn-primary" onclick="document.getElementById('starmessage1_{{ message.chat_id }}').submit();" title="Star A Message">
+                            <i class="fa fa-star"></i>
+                        </button>
+                        </form>
+ <button class="btn btn-secondary btn-sm" onclick="replyToMessage({{ message.chat_id }}, '{{ message.message|escapejs }}')">Reply</button>
+</div>
                 </div>
             {% endif %}
+            {% endif %}
         {% endfor %}
-    </div>
+    {% endfor %}
+</div>
+
 
     <div class="box-footer">
-        <form method="POST" name="send_message_form" action="{% url 'send_message' project.pk %}" enctype="multipart/form-data" accept-charset="UTF-8">
-            {% csrf_token %}
-            <div class="input-group" id="replySection">
-                <span class="input-group-btn">
-                    <label for="files" class="btn btn-warning btn-flat"><i class="fa fa-paperclip"></i></label>
-                    <div style="display: none;">
-                        <input type="file" id="files" name="file" style="visibility:hidden;" class="btn btn-warning btn-flat">
-                    </div>
-                </span>
-                <input class="form-control chat-input chatMessage" required id="message" name="message" placeholder="Type message..."/>
-                <input type="hidden" value="{{ auth_user.id }}" name="uid" required>
-                <span class="input-group-btn">
-                    <button type="submit" class="btn btn-warning btn-flat"><i class="fa fa-send-o"></i></button>
-                </span>
+<form method="POST" name="send_message_form" action="{% url 'send_message' project.pk %}" enctype="multipart/form-data" accept-charset="UTF-8">
+
+<div id="replySection" style="display: none; margin-bottom: 10px; padding: 10px; border-top: 1px solid #ddd;">
+    <strong>Replying to: <span id="replyMessageContent"></span></strong>
+    <button type="button" class="btn btn-secondary btn-sm" onclick="cancelReply()">Cancel Reply</button>
+    <input type="hidden" id="replyMessageId" name="reply_message_id" value="">
+</div>
+
+    {% csrf_token %}
+    <div class="input-group">
+        <span class="input-group-btn">
+            <label for="files" class="btn btn-warning btn-flat"><i class="fa fa-paperclip"></i></label>
+            <div style="display: none;">
+                <input type="file" id="files" name="file" style="visibility:hidden;" class="btn btn-warning btn-flat">
             </div>
-        </form>
+        </span>
+
+        <input class="form-control chat-input chatMessage" required id="message" name="message" placeholder="Type message..."/>
+        <input type="hidden" value="{{ auth_user.id }}" name="uid" required>
+        <span class="input-group-btn">
+            <button type="submit" class="btn btn-warning btn-flat"><i class="fa fa-send-o"></i></button>
+        </span>
+        <!-- Schedule Message Button -->
+        <span class="input-group-btn">
+            <button type="button" class="btn btn-warning btn-flat" title="Schedule A Message" onclick="toggleSchedule()"><i class="fa fa-clock-o"></i></button>
+        </span>
     </div>
+
+    <div id="scheduleFields" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="toggleSchedule()">&times;</span>
+            <h2>Schedule Details</h2>
+            <label for="date">Date:</label>
+            <input type="date" min="{{ day }}" id="date" name="scheduled_date"><br><br>
+            <label for="time">Time:</label>
+            <input type="time" id="time" name="scheduled_time"><br><br>
+            <button type="button" class="btn btn-primary" onclick="toggleSchedule()">Done</button>
+        </div>
+    </div>
+</form>
+    </div>
+
 </div>
             </div><!-- /.col -->
           </div><!-- /.row -->
@@ -435,6 +504,19 @@
             tonesStyle: "bullet"
     });
   });
+</script>
+<script type="text/javascript">
+function replyToMessage(messageId, messageContent) {
+    document.getElementById('replySection').style.display = 'block';
+    document.getElementById('replyMessageId').value = messageId;
+    document.getElementById('replyMessageContent').innerText = messageContent;
+}
+
+function cancelReply() {
+    document.getElementById('replySection').style.display = 'none';
+    document.getElementById('replyMessageId').value = '';
+    document.getElementById('replyMessageContent').innerText = '';
+}
 </script>
     <!-- Bootstrap 3.3.2 JS -->
     <script src="{% static 'dashboard/bootstrap/js/bootstrap.min.js' %}" type="text/javascript"></script>    
@@ -467,7 +549,7 @@
     <script src="{% static 'dashboard/dist/js/pages/dashboard.js' %}" type="text/javascript"></script>
 
     <!-- Site Sync for demo purposes -->
-    <script src="{% static 'dashboard/dist/js/demo.js' %}" type="text/javascript"></script>
+    <!-- <script src="{% static 'dashboard/dist/js/demo.js' %}" type="text/javascript"></script> -->
 
       <script type="text/javascript">
          new Date().getFullYear()
@@ -479,7 +561,16 @@ $("#files").change(function() {
 });
 
 </script>
-
+<script>
+    function toggleSchedule() {
+        var scheduleFields = document.getElementById('scheduleFields');
+        if (scheduleFields.style.display === 'none') {
+            scheduleFields.style.display = 'block';
+        } else {
+            scheduleFields.style.display = 'none';
+        }
+    }
+</script>
   </body>
 </html>
 

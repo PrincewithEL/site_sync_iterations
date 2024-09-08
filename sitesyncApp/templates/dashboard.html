@@ -91,27 +91,27 @@
       
       <header class="main-header">
         <!-- Logo -->
-        <a href="#" class="logo" style="color: orange;"><img src="{% static 'dashboard/dist/img/site_sync_logo.png' %}" style="width: 120px; position: relative; top: -8px;"></a>
+        <a href="{% url 'client' %}" title="Site Sync" class="logo" style="color: orange;"><img src="{% static 'dashboard/dist/img/site_sync_logo.png' %}" style="width: 120px; position: relative; top: -8px;"></a>
         <!-- Header Navbar: style can be found in header.less -->
         <nav class="navbar navbar-static-top" role="navigation">
           <!-- Sidebar toggle button-->
-          <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button">
+          <a href="#" title="Hide the Site Sync Assistant" class="sidebar-toggle" data-toggle="offcanvas" role="button">
             <span class="sr-only">Toggle navigation</span>
           </a>
           <div class="navbar-custom-menu">
               <ul class="nav navbar-nav">
   {% include 'notifications.html' %}
                 <!-- User Account: style can be found in dropdown.less -->
-              <li class="dropdown user user-menu">
+              <li class="dropdown user user-menu" title="My Profile">
                 <a href="{% url 'profile' %}" class="dropdown-toggle">
                   <img src="{{ image }}" class="user-image" alt="User Image"/>
                   <span class="hidden-xs">{{ fname }}</span>
                 </a>
               </li>
               <!-- Sign Out  -->
-              <li class="dropdown tasks-menu">
+              <li class="dropdown tasks-menu" title="Logout">
                 <a href="{% url 'logout' %}" class="dropdown-toggle">
-                  <i class="fa fa-mail-forward"></i>
+                  <i class="fa fa-power-off"></i>
                 </a>
               </li> 
             </ul>
@@ -159,8 +159,8 @@
             </a>
         </li>
         <li id="pendingProjNavItem"><a href="#" onclick="openPendingProj();"><i class="fa fa-folder-o"></i> Project Invitations <span class="label label-waring pull-right">{{ pending_project_count }}</span></a></li>
-        <li class="{% if filter_type == 'completed' %}active{% endif %}">
-            <a href="?filter=bookmarked"><i class="fa fa-bookmark"></i> Bookmarked 
+        <li class="{% if filter_type == 'bookmarked' %}active{% endif %}">
+            <a href="?filter=bookmarked"><i class="fa fa-star"></i> Starred 
                 <span class="label label-info pull-right">{{ bookmark_projects_count }}</span>
             </a>
         </li>        
@@ -246,17 +246,17 @@
                       </thead>
                       <tbody>
 {% for pending_project in pending_projects %}
-    <tr>
-        <td class="mailbox-name" title="{{ pending_project.created_at }}"><a href="#">{{ pending_project.project_name }}</a></td>
+    <tr title="Created At: {{ pending_project.created_at }}">
+        <td class="mailbox-name" title="{{ pending_project.created_at }}">{{ pending_project.project_name }}</td>
         <td class="mailbox-name"><img src="{{ MEDIA_URL }}{{ pending_project.project_image }}" style="width: 100px;"></td> 
 {% for user in users %}
     {% if user.id == pending_project.leader_id %}
         <td class="mailbox-name" title="{{ pending_project.created_at }}">
-            <a href="#">{{ user.first_name }}</a>
+            <a href="mailto:{{ user.email }}">{{ user.first_name }}</a>
         </td>
     {% endif %}
 {% endfor %}
-        <td class="mailbox-name" title="5 mins ago"><a href="#">{{ pending_project.project_details }}</a></td>
+        <td class="mailbox-name">{{ pending_project.project_details }}</td>
                                   <td class="mailbox-attachment">
                             <form method="POST" name="update_project_member_form" action="{% url 'update_project_member' %}" enctype="multipart/form-data">
                               {% csrf_token %}
@@ -293,14 +293,15 @@
                   </div><!-- /.box-tools -->
                 </div><!-- /.box-header -->
                 <div class="mailbox-controls">
-    <div class="btn-group">
+<!--     <div class="btn-group">
 <button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Restore This Project(s) ?')) { submitForm('restore'); }">
     <i class="fa fa-save"></i> Restore
 </button>
 <button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Permanently Delete This Project(s) ?')) { submitForm('delete1'); }">
     <i class="fa fa-trash-o"></i> Delete
 </button>
-    </div><!-- /.btn-group -->
+    </div> -->
+    <!-- /.btn-group -->
 </div><!-- /.mailbox-controls -->
                 <div class="box-body no-padding">
                   <div class="table-responsive mailbox-messages">
@@ -310,15 +311,18 @@
                         <th>Name</th>
                         <th>Project Image</th>
                         <th>Project Details</th>
+                        <th>Days Until Permanent Deletion</th>
                         <th></th>
                         <th></th>
                       </thead>
                       <tbody>
 {% for trash_project in trash_projects %}
-    <tr>
-        <td class="mailbox-name" title="{{ trash_project.created_at }}"><a href="#">{{ trash_project.project_name }}</a></td>
+{% if trash_project.days_until_permanent_deletion > 0 %}
+    <tr title="Created At: {{ trash_project.created_at }}">
+        <td class="mailbox-name"><a href="#">{{ trash_project.project_name }}</a></td>
         <td class="mailbox-name"><img src="{{ MEDIA_URL }}{{ trash_project.project_image }}" style="width: 100px;"></td> 
-        <td class="mailbox-name" title="{{ trash_project.created_at }}"><a href="#">{{ trash_project.project_details }}</a></td>
+        <td class="mailbox-name"><a href="#">{{ trash_project.project_details }}</a></td>
+        <td class="mailbox-name"><a href="#">{{ trash_project.days_until_permanent_deletion }}</a></td>
                             <td class="mailbox-attachment">
                             <form method="POST" name="update_project_member_form" action="{% url 'restore_project' trash_project.project_id %}" enctype="multipart/form-data">
                               {% csrf_token %}
@@ -332,6 +336,7 @@
                             </form>
                         </td>
     </tr>
+    {% endif %}
 {% endfor %}
                       </tbody>
                     </table><!-- /.table -->
@@ -376,11 +381,11 @@
         <button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Delete This Project(s) ?')) { submitForm('delete'); }">
           <i class="fa fa-trash-o"></i> Delete
         </button>
-        <button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Bookmark This Project(s) ?')) { submitForm('bookmark'); }">
-          <i class="fa fa-bookmark"></i> Bookmark
+        <button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Star This Project(s) ?')) { submitForm('bookmark'); }">
+          <i class="fa fa-star"></i> Star
         </button>
-        <button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Remove This Bookmark(s) ?')) { submitForm('unbookmark'); }">
-          <i class="fa fa-bookmark-o"></i> Unbookmark
+        <button type="button" class="btn btn-default btn-sm" onclick="if(confirm('Are You Sure You Want To Remove This Star(s) ?')) { submitForm('unbookmark'); }">
+          <i class="fa fa-star-o"></i> Not Star
         </button>
       </div><!-- /.btn-group -->
       <div class="btn-group">
@@ -402,7 +407,7 @@
               <option value="all" {% if current_status_filter == 'all' %}selected{% endif %}>All Projects</option>
               <option value="active" {% if current_status_filter == 'active' %}selected{% endif %}>Active Projects</option>
               <option value="completed" {% if current_status_filter == 'completed' %}selected{% endif %}>Completed Projects</option>
-              <option value="bookmarked" {% if current_status_filter == 'bookmarked' %}selected{% endif %}>Bookmarked Projects</option>
+              <option value="bookmarked" {% if current_status_filter == 'bookmarked' %}selected{% endif %}>Starred Projects</option>
             </select>
           </div>
           <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
@@ -439,25 +444,27 @@
         <table class="table table-hover table-striped" id="projects">
             <thead>
                 <tr>
-                    <th>#</th>
+                    <th></th>
                     <th></th>
                     <th>Name</th>
                     <th>Pending Tasks</th>
                     <th>Unread Messages</th>
-                    <th>Progress</th>
+                    <th>Expected Progress</th>
+                    <th>Actual Progress</th>                    
                     <th>Actions</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
                 {% for project in projects %}
-                <tr>
+                <tr title="Created At: {{ project.created_at }}">
                     <td>
                         <input type="checkbox" id="project-{{ project.project_id }}" name="selected_projects" value="{{ project.project_id }}" class="project-checkbox">
                         <label for="project-{{ project.project_id }}"></label>
                     </td>
 <td class="mailbox-star">
     <button type="submit" class="btn btn-link" style="padding: 0; border: none; background: none;"
-        onclick="return confirm('Are You Sure You Want To {% if project.project_id in bookmarked_project_ids %}Remove The Bookmark For{% else %}Bookmark{% endif %} This Project?')">
+        onclick="return confirm('Are You Sure You Want To {% if project.project_id in bookmarked_project_ids %}Remove The Star For{% else %}Star{% endif %} This Project?')">
         <input type="hidden" name="selected_project" value="{{ project.project_id }}">
         <input type="hidden" name="action1" value="{% if project.project_id in bookmarked_project_ids %}unbookmark1{% else %}bookmark1{% endif %}">
         <i class="fa {% if project.project_id in bookmarked_project_ids %}fa-star{% else %}fa-star-o{% endif %} text-yellow"></i>
@@ -472,22 +479,31 @@
                     <td class="mailbox-name">
                         <b>({{ unread_chat_counts|get_item:project.project_id|default:"0" }})</b>
                     </td>
-                    <td class="mailbox-attachment">
-                        {% with progress=progress_percentages|get_item:project.project_id %}
-                {% if progress > 0 %}                        
-                        <div class="progress">
-                            <div class="progress-bar" role="progressbar" style="width: {{ progress|default:0|floatformat:2 }}%" aria-valuenow="{{ progress|default:0|floatformat:2 }}" aria-valuemin="0" aria-valuemax="100">
-                                {{ progress|default:0|floatformat:2 }}% Complete
-                            </div>
-                        </div>
-                {% else %}
-                        <div class="progress">
-                            <div class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0%" aria-valuemin="0" aria-valuemax="100">
-                               0% Complete
-                            </div>
-                        </div>  
-                {% endif %}                                                              
-                        {% endwith %}
+                    <td class="mailbox-attachment" title="Based on Project Start & End Dates.">
+{% with progress=progress_percentages|get_item:project.project_id %}
+    <div class="progress">
+            {% if project.project_status == 'Completed' %}
+        <div class="progress-bar" role="progressbar" style="width: 100%" aria-valuenow="{{ progress|default:0|floatformat:2 }}" aria-valuemin="0" aria-valuemax="100">100%!!!
+            {% elif progress > 100 %}
+        <div class="progress-bar" role="progressbar" style="width: 100%" aria-valuenow="{{ progress|default:0|floatformat:2 }}" aria-valuemin="0" aria-valuemax="100">100%!!!
+            {% else %}
+        <div class="progress-bar" role="progressbar" style="width: {{ progress|default:0|floatformat:2 }}%" aria-valuenow="{{ progress|default:0|floatformat:2 }}" aria-valuemin="0" aria-valuemax="100">{{ progress|default:0|floatformat:2 }}% Complete
+            {% endif %}
+        </div>
+    </div>
+{% endwith %}
+                    </td>
+                    <td class="mailbox-attachment" title="Based on All Project Tasks & All Pending">
+{% with progress=total_progress_percentages|get_item:project.project_id %}
+    <div class="progress">
+            {% if progress >= 100 %}
+        <div class="progress-bar" role="progressbar" style="width: 100%" aria-valuenow="{{ progress|default:0|floatformat:2 }}" aria-valuemin="0" aria-valuemax="100">100%!!!
+            {% else %}
+        <div class="progress-bar" role="progressbar" style="width: {{ progress|default:0|floatformat:2 }}%" aria-valuenow="{{ progress|default:0|floatformat:2 }}" aria-valuemin="0" aria-valuemax="100">{{ progress|default:0|floatformat:2 }}% Complete
+            {% endif %}
+        </div>
+    </div>
+{% endwith %}
                     </td>
                     <td class="mailbox-attachment">
                         <div class="dropdown">
@@ -495,12 +511,26 @@
                             <div class="dropdown-content">
                                 <a href="{% url 'chat' project.project_id %}">Chat Room</a>
                                 <a href="{% url 'resources' project.project_id %}">View Resources</a>
+                                {% if  type == 'Client' or type == 'Quantity Surveyor' %} 
                                 <a href="{% url 'transactions' project.project_id %}">View Transactions</a>
-                                <a href="#" onclick="cool();">View Dashboard</a>
-                                <a href="{% url 'tasks_events' project.project_id %}">View Tasks & Events</a>
+                                <a href="{% url 'dashboard' project.project_id %}">View Dashboard</a>
+                                {% endif %}
+                                <a href="{% url 'tasks' project.project_id %}">View Tasks & Events</a>
+
+
                             </div>
                         </div>
                     </td>
+<!--                     <td class="mailbox-attachment">
+
+    <form action="{% url 'delete_project' pk=project.project_id %}" method="POST" style="display: inline;">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger btn-xs pull-right" onclick="return confirm('Are You Sure You Want To Delete This Project ?'); deleteP();">
+        <i class="fa fa-trash-o"></i>
+      </button>
+    </form>
+                       
+                    </td> -->
                 </tr>
                 {% endfor %}
             </tbody>
@@ -522,6 +552,9 @@
       </footer>
     </div><!-- ./wrapper -->
 <script>
+    function deleteP() {
+  document.getElementByName("action1").value = "";
+}
   document.getElementById("myForm").style.display = "none";
   document.getElementById("myForm1").style.display = "none";
   document.getElementById("myForm2").style.display = "none";    
@@ -726,7 +759,7 @@ function submitForm(action) {
     <!-- Site Sync App -->
     <script src="{% static 'dashboard/dist/js/app.min.js' %}" type="text/javascript"></script>
     <!-- Site Sync for demo purposes -->
-    <script src="{% static 'dashboard/dist/js/demo.js' %}" type="text/javascript"></script>
+    <!-- <script src="{% static 'dashboard/dist/js/demo.js' %}" type="text/javascript"></script> -->
     <link rel="stylesheet" href="{% static 'dashboard/dist/plugins/iCheck/flat/blue.css' %}">
 <script src="{% static 'dashboard/dist/plugins/iCheck/icheck.min.js' %}"></script>
       <script type="text/javascript">
