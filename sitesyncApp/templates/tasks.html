@@ -194,11 +194,11 @@
               <div class="col-md-4">
               <a href="{% url 'client' %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Home</a>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
               <a href="{% url 'project_detail' project.project_id %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Back</a>
               </div> 
                {% if project.leader_id == auth_user.id %}
-              <div class="col-md-4">
+              <div class="col-md-6">
               <a href="#" onclick="openForm1();" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Add A Task</a>
             </div>
                 {% endif %}
