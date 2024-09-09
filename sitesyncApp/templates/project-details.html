@@ -115,7 +115,7 @@
               <div id="myDirectChat" class="box box-warning direct-chat direct-chat-warning">
                 <div class="box-body">
                   <!-- Conversations are loaded here -->
-                  <div style="margin-bottom: 10px;" class="direct-chat-messages">
+                  <div style="margin-bottom: 10px;" class="direct-chat-messages" style="overflow-y: auto; box-sizing: border-box; max-height: 450px;">
                     <!-- Message. Default to the left -->
                     <div class="direct-chat-msg">
 {% if project.leader_id != auth_user.id %}
@@ -319,8 +319,10 @@
                             <div class="box box-solid">
                 <div class="box-header with-border">
                   <h3 class="box-title">Project Progress</h3>
-                  {% if  type == 'Client' or type == 'Quantity Surveyor' %} 
+                  {% if  type == 'Client' or type == 'Quantity Surveyor' or type == 'Contractor' %} 
                   <button class="btn btn-default pull-right" style="background-color: #ff3300; color: black; font-weight: bold;"> <a href="{% url 'dashboard' project.pk %}" style="color: black;">View Dashboard</a></button>
+                  {% elif type == 'Contractor' and project.leader_id == user_id %}
+                  <button class="btn btn-default pull-right" style="background-color: #ff3300; color: black; font-weight: bold;"> <a href="{% url 'dashboard' project.pk %}" style="color: black;">View Dashboard</a></button>                  
                   {% endif %}
                 </div><!-- /.box-header -->
                 <div class="">
@@ -373,6 +375,8 @@
                   <p><b>Details: {{ project.project_details }}</b></p>
                   <br>
                                     {% if  type == 'Client' or type == 'Quantity Surveyor' %} 
+                  <p><b>Project Finances: {{ project.actual_expenditure }} kshs. / {{ project.estimated_budget }} kshs. </b></p>
+                                                  {% elif type == 'Contractor' and project.leader_id == user_id %} 
                   <p><b>Project Finances: {{ project.actual_expenditure }} kshs. / {{ project.estimated_budget }} kshs. </b></p>
                                      {% endif %}
                   <br>                                    
@@ -577,7 +581,7 @@
     </div><!-- /.box-header -->
     <div class="box-body">
         <!-- Conversations are loaded here -->
-        <div class="direct-chat-messages">
+        <div class="direct-chat-messages" style="overflow-y: auto; box-sizing: border-box; max-height: 450px;">
             <!-- Loop through unread messages -->
             {% if unread_messages %}
                 {% for chat_status in unread_messages %}

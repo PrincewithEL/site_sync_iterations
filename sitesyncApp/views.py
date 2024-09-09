@@ -2152,6 +2152,7 @@ def chat(request, pk):
     today = now.strftime('%Y-%m-%d')
     project = get_object_or_404(Projects, pk=pk)
     leader_profile = Profile.objects.get(user_id=project.leader_id)
+    leader_user = Users.objects.get(user_id=project.leader_id)
 
     # Update chat status from 1 to 0 for the logged-in user
     ChatStatus.objects.filter(user_id=user.id, group=project.groupchat, status=1).update(status=0)
@@ -2163,19 +2164,25 @@ def chat(request, pk):
     project_member_details = []
     for member in project_members:
         member_profile = Profile.objects.get(user_id=member.user_id)
+        member_user = Users.objects.get(user_id=member.user_id)
         member_info = {
             'first_name': member_profile.user.first_name,
             'last_name': member_profile.user.last_name,
             'phone_number': member_profile.phone_number,
             'image': member_profile.profile_picture.url if member_profile.profile_picture else None,
             'id': member_profile.user.id,
-            'role': 'client' if member_profile.user_type == 'client' else 'contractor'
+            'role': 'client' if member_profile.user_type == 'client' else 'contractor',
+            'online': member_user.online,
+            'user_type': member_profile.user_type,
+            'logged_in': member_user.logged_in,
+            'logged_out': member_user.logged_out, 
         }
         project_member_details.append(member_info)
 
     # Fetch chat messages for the current project
     messages = Chat.objects.filter(group=project.groupchat, is_deleted=0).order_by('timestamp')
     pinned_messages = Chat.objects.filter(group_id=project.groupchat, is_pinned=1, is_deleted=0).order_by('timestamp')
+
 
     bookmarks = Bookmarks.objects.filter(is_deleted=0, item_type='Chat', user_id=request.user.id)
     bookmarked_chat_ids = bookmarks.values_list('item_id', flat=True)
@@ -2250,6 +2257,12 @@ def chat(request, pk):
 
     # Update chat status from 1 to 0 for the logged-in user
     ChatStatus.objects.filter(user_id=user.id, group=project.groupchat, status=1).update(status=0)
+
+    for message in chat_messages:
+        if message.file:
+            message.file_extension = os.path.splitext(message.file)[1].lower().strip('.')
+        else:
+            message.file_extension = ''
 
     context = {
         'auth_user': request.user,
@@ -2454,6 +2467,10 @@ def project_detail(request, pk):
         days_passed = (now - project.start_date).days
         if total_project_days > 0:
             progress_percentage = (days_passed / total_project_days) * 100
+            if progress_percentage > 0: 
+                progress_percentage = progress_percentage  
+            else:
+                progress_percentage = 0   
         else:
             progress_percentage = 0
     else:
@@ -3281,11 +3298,18 @@ def client(request):
             unread_chat_counts[project.project_id] = 0  
             unread_count = 0                    
 
+        all_pending_tasks1 = Tasks.objects.filter(
+            project=project,
+            is_deleted=0,   
+        ).exclude(
+            task_status='Ongoing',  
+        )
+        pending_tasks_counts1[project.project_id] = all_pending_tasks1.count()
+
         all_pending_tasks = Tasks.objects.filter(
             project=project,
             is_deleted=0,
-        ).exclude(
-            task_status='Ongoing',
+            task_status='Ongoing',            
         )
         pending_tasks_counts[project.project_id] = all_pending_tasks.count()
 
@@ -3299,15 +3323,20 @@ def client(request):
         # Calculate progress value
         total_days = (project.end_date - project.start_date).days
         days_left = (project.end_date - now).days
-        progress_percentage = ((total_days - days_left) / total_days) * 100 if total_days > 0 else 0      
-        progress_percentages[project.project_id] = progress_percentage      
+        progress_percentage = ((total_days - days_left) / total_days) * 100 if total_days > 0 else 0   
+        if progress_percentage > 0: 
+            progress_percentages[project.project_id] = progress_percentage  
+        else:
+            progress_percentages[project.project_id] = 0      
         # Calculate progress percentage, handle division by zero
         if all_tasks_counts[project.project_id] > 0:
             total_progress_percentage = (
-                pending_tasks_counts[project.project_id] / all_tasks_counts[project.project_id]
+                pending_tasks_counts1[project.project_id] / all_tasks_counts[project.project_id]
             ) * 100
-        elif pending_tasks_counts[project.project_id] == 0:
-            total_progress_percentage = 100
+        elif all_tasks_counts[project.project_id] == 0:
+            total_progress_percentage = 0
+        elif pending_tasks_counts1[project.project_id] == 0:
+            total_progress_percentage = 100            
         else:
             total_progress_percentage = 0
 
@@ -3733,13 +3762,18 @@ def profile(request):
     )
     projects = (leader_projects | member_projects).distinct()
 
+    unread_count = 0
     unread_chat_counts = {}
     pending_tasks_counts = {}
+    pending_tasks_counts1 = {}
+    all_tasks_counts = {}
+    progress_percentages = {}
+    total_progress_percentages = {}
 
     all_unread_chats = []
     all_pending_tasks = []
+    all_tasks = []
 
-    # Calculate unread chat statuses and pending tasks for each project
   # Calculate unread chat statuses and pending tasks for each project
     for project in projects:
         try:
@@ -3756,17 +3790,19 @@ def profile(request):
                 timestamp__in=chats.values_list('timestamp', flat=True),
             )            
             all_unread_chats1 = chatstatus
-            unread_count = all_unread_chats.count()
+            unread_chat_counts[project.project_id] = all_unread_chats1.count()     
+            unread_count = all_unread_chats1.count() 
         except GroupChat.DoesNotExist:
-            unread_count = 0
+            unread_chat_counts[project.project_id] = 0  
+            unread_count = 0                    
 
-        # Count pending tasks
         all_pending_tasks = Tasks.objects.filter(
             project=project,
             is_deleted=0,
+        ).exclude(
             task_status='Ongoing',
         )
-        pending_tasks_counts = all_pending_tasks.count()
+        pending_tasks_counts[project.project_id] = all_pending_tasks.count()
 
     if request.method == "POST":
         email = request.POST.get('email')

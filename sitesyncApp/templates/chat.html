@@ -243,23 +243,39 @@
     border-radius: 50%;
     padding: 3px;" />
     <span class='direct-chat-name pull-left'>{{ leader_profile.user.first_name }} (Project Leader)</span>
+{% if leader_user.online == 0 %}
+<a id="status" href="" title="Offline"><i class="fa fa-circle" style="color: red;"></i> </a>
+{% else %}
+<a id="status" href="" title="Online"><i class="fa fa-circle text-success"></i> </a>
+{% endif %}
 {% endif %}                  
                     </div><!-- /.direct-chat-msg -->
                     <div class="direct-chat-msg">
                     {% for member in project_member_details %}                      
-                      <img class="direct-chat-img" src="{{ member.image }}" alt="message user image" /><!-- /.direct-chat-img --><span class='direct-chat-name pull-left'>{{ member.first_name }}</span>
+                      <img class="direct-chat-img" src="{{ member.image }}" alt="message user image" /><!-- /.direct-chat-img --><span class='direct-chat-name pull-left'>{{ member.first_name }} ({{ member.user_type }})</span>
+                      {% if member.online == 1 %}
+<a id="status" href="" title="Online Since: {{ member.logged_in }}">  <i class="fa fa-circle text-success"></i> </a>
+{% else %}
+<a id="status" href="" title="Last Online At: {{ member.logged_out }}">  <i class="fa fa-circle" style="color: black;"></i> </a>
+{% endif %}
                       {% if project.leader_id == auth_user.id %}
                       {% if member_status == "Accepted" %}
- <!--                      <form method="POST" name="remove_project_member_form" action="{% url 'remove_project_member' project.pk %}" enctype="multipart/form-data">
+                      <form method="POST" name="remove_project_member_form" action="{% url 'remove_project_member' project.pk %}" enctype="multipart/form-data">
                               {% csrf_token %}
                               <input type="hidden" value="{{ member.id }}" name="uid" required>
-                              <button type="submit" onclick="return confirm('Are You Sure You Want To Remove This Project Member ?')" class="btn btn-primary"style="font-size:12px;"><i class="fa fa-remove" ></i></button>
-                            </form> -->
+                              <button type="submit" onclick="return confirm('Are You Sure You Want To Remove This Project Member ?')" class="btn btn-primary"style="font-size:12px;" title="Remove From Project"><i class="fa fa-remove" ></i></button>
+                            </form>
                         {% else %}
                         <span class='direct-chat-name pull-left' style="color: orange;">Pending Invitation Acceptance</span>
                         {% endif %}
+                        {% else %}
+                      <form method="POST" name="remove_project_member_form" action="{% url 'exit_project' project.pk %}" enctype="multipart/form-data">
+                              {% csrf_token %}
+                              <input type="hidden" value="{{ member.id }}" name="uid" required>
+                              <button type="submit" onclick="return confirm('Are You Sure You Want To Exit This Project ?')" class="btn btn-primary"style="font-size:12px;" title="Exit Project"><i class="fa fa-sign-out" ></i></button>
+                            </form>                        
                         {% endif %}
-{% endfor %}  
+{% endfor %}                      
                     </div><!-- /.direct-chat-msg -->
                   </div><!-- /.direct-chat-pane -->
                 </div><!-- /.box-body -->
@@ -329,10 +345,31 @@
                             </div>
                         {% endif %}
                         {{ message.message|safe }}
-                        {% if message.file %}
-                            <hr>
-                            <a href="{{MEDIA_URL}}{{ message.file }}" style="color: white; font-weight: bold;" download>View Attachment</a>
-                        {% endif %}
+{% if message.file %}
+    <hr>
+    <div style="display: flex; align-items: center;" title="Click To Download Me!">
+        <a href="{{ MEDIA_URL }}{{ message.file }}" style="color: white; font-weight: bold;" download>
+        {% if message.file_extension in "png jpg jpeg" %}
+            <!-- Image Preview -->
+            <img src="{{ MEDIA_URL }}{{ message.file }}" alt="Image preview" style="max-width: 100px; max-height: 100px; margin-right: 10px;">
+        {% elif message.file_extension == "pdf" %}
+            <!-- PDF Icon -->
+            <i class="fa fa-file-pdf-o" style="font-size: 24px; margin-right: 10px;"></i>
+        {% elif message.file_extension in "doc docx" %}
+            <!-- Word Icon -->
+            <i class="fa fa-file-word-o" style="font-size: 24px; margin-right: 10px;"></i>
+        {% elif message.file_extension in "xls xlsx" %}
+            <!-- Excel Icon -->
+            <i class="fa fa-file-excel-o" style="font-size: 24px; margin-right: 10px;"></i>
+        {% else %}
+            <!-- Default File Icon -->
+            <i class="fa fa-file-o" style="font-size: 24px; margin-right: 10px;"></i>
+        {% endif %}
+        <!-- File download link -->
+</a>
+    </div>
+{% endif %}
+
                         <br>
                         {% if message.updated_at %}
                             <span class='direct-chat-timestamp pull-right' style="color: white; font-size: 8px;">
@@ -393,10 +430,31 @@
                             </div>
                         {% endif %}
                         {{ message.message|safe }}
-                        {% if message.file %}
-                            <hr>
-                            <a href="{{MEDIA_URL}}{{ message.file }}" style="color: orange; font-weight: bold;" download>View Attachment</a>
-                        {% endif %}
+{% if message.file %}
+    <hr>
+    <div style="display: flex; align-items: center;" title="Click To Download Me!">
+        <a href="{{ MEDIA_URL }}{{ message.file }}" style="color: white; font-weight: bold;" download>        
+        {% if message.file_extension in "png jpg jpeg" %}
+            <!-- Image Preview -->
+            <img src="{{ MEDIA_URL }}{{ message.file }}" alt="Image preview" style="max-width: 100px; max-height: 100px; margin-right: 10px;">
+        {% elif message.file_extension == "pdf" %}
+            <!-- PDF Icon -->
+            <i class="fa fa-file-pdf-o" style="font-size: 24px; margin-right: 10px;"></i>
+        {% elif message.file_extension in "doc docx" %}
+            <!-- Word Icon -->
+            <i class="fa fa-file-word-o" style="font-size: 24px; margin-right: 10px;"></i>
+        {% elif message.file_extension in "xls xlsx" %}
+            <!-- Excel Icon -->
+            <i class="fa fa-file-excel-o" style="font-size: 24px; margin-right: 10px;"></i>
+        {% else %}
+            <!-- Default File Icon -->
+            <i class="fa fa-file-o" style="font-size: 24px; margin-right: 10px;"></i>
+        {% endif %}
+        <!-- File download link -->
+</a>
+    </div>
+{% endif %}
+
                         <br>
                         {% if message.updated_at %}
                             <span class='direct-chat-timestamp pull-right' style="color: black; font-size: 8px;">

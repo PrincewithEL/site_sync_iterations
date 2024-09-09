@@ -131,6 +131,7 @@
           <div class="row">
             <div class="col-md-3">
               <a href="{% url 'client' %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Home</a>
+              <a href="#" onclick="printData();" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Generate Report</a> 
               <a href="#" onclick="openForm();" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Add An Event</a>              
               <div class="box box-solid">
                 <div class="box-header with-border">
@@ -506,7 +507,16 @@ function searchTable() {
 }
 
 </script>
-
+            <script type="text/javascript">
+function printData()
+{
+   var divToPrint=document.getElementById("events");
+   newWin= window.open("");
+   newWin.document.write(divToPrint.outerHTML);
+   newWin.print();
+   newWin.close();
+}
+</script>
       <script type="text/javascript">
         function cool() {
           alert("Hold on, we are making something cool! Kindly visit later ;)")

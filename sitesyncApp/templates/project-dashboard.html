@@ -31,8 +31,7 @@
     <link href="{% static 'plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.min.css' %}" rel="stylesheet" type="text/css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.0/dist/html2canvas.min.js"></script>
-    <!-- Ensure you use a compatible version of jsPDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.6.0/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ionicons/2.0.1/css/ionicons.min.css">
   </head>
 <body class="skin-black">
@@ -148,7 +147,7 @@
                 <div class="row">
                     <div class="col-md-6">
                                     <a href="{% url 'client' %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Home</a>
-                                    <!-- <button id="generatePdf" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Generate PDF</button>                           -->
+                                    <button id="downloadPdf" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Generate Report</button>                          
               <a href="{% url 'project_detail' project.project_id %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Back</a>
 
                         <!-- Bar Chart for Unread Messages -->
@@ -513,35 +512,71 @@ new Chart(document.getElementById('eventsTimelineChart').getContext('2d'), {
 
 </script>
 <script>
-    // Initialize Date Range Picker (using a library like daterangepicker)
-    // $(function() {
-    //     $('#start_date, #end_date').daterangepicker({
-    //         singleDatePicker: true,
-    //         locale: { format: 'YYYY-MM-DD' }
-    //     });
-    // });
-
-        // Convert the chart to an image and send it to the server
-        document.getElementById('generatePdf').addEventListener('click', function() {
-            var imgData = myChart.toBase64Image(); // Get the chart image as Base64
-
-            fetch('/generate_pdf/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value // CSRF Token if needed
-                },
-                body: JSON.stringify({ image: imgData })
-            })
-            .then(response => response.blob())
-            .then(blob => {
-                var link = document.createElement('a');
-                link.href = window.URL.createObjectURL(blob);
-                link.download = 'report.pdf';
-                link.click();
-            });
-        });
-    </script>
+document.getElementById('downloadPdf').addEventListener('click', function() {
+  // Create a new instance of jsPDF
+  const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
+  
+  // Get current date and time for the filename
+  const now = new Date();
+  const dateTime = now.toISOString().replace(/[:.]/g, '-').slice(0, -5); // Format: YYYY-MM-DDTHH-mm
+  
+  // List of chart IDs to capture
+  const chartIds = [
+    'onlineActivityChart',
+    'unreadMessagesChart',
+    'taskStatusChart',
+    'workLoadChart',
+    'transactionTypeChart',
+    'eventsTimelineChart',
+    'monthToDateChart'
+  ];
+  
+  // Function to capture charts and add them to the PDF
+  function addChartToPdf(chartId, pageIndex) {
+    return html2canvas(document.getElementById(chartId), {
+      scale: 2 // Increase scale for better quality
+    }).then(canvas => {
+      if (pageIndex > 0) {
+        pdf.addPage();
+      }
+      
+      const imgData = canvas.toDataURL('image/png');
+      
+      // Calculate dimensions to fit the page while maintaining aspect ratio
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const aspectRatio = canvas.width / canvas.height;
+      
+      let imgWidth = pageWidth - 20; // 10mm margin on each side
+      let imgHeight = imgWidth / aspectRatio;
+      
+      // If height exceeds page height, scale it down
+      if (imgHeight > pageHeight - 20) {
+        imgHeight = pageHeight - 20;
+        imgWidth = imgHeight * aspectRatio;
+      }
+      
+      // Center the image on the page
+      const x = (pageWidth - imgWidth) / 2;
+      const y = (pageHeight - imgHeight) / 2;
+      
+      pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+      
+      // Add chart title
+      pdf.setFontSize(16);
+      pdf.text(chartId, pageWidth / 2, 10, { align: 'center' });
+    });
+  }
+  
+  // Capture each chart and add to the PDF
+  let promiseArray = chartIds.map((chartId, index) => addChartToPdf(chartId, index));
+  
+  // Once all charts are added to the PDF, save it
+  Promise.all(promiseArray).then(() => {
+    pdf.save(`charts_${dateTime}.pdf`);
+  });
+});
+</script>
 <script>
     console.log("Work Load Labels:", {{ work_load_labels|safe }});
     console.log("Work Load Data:", {{ work_load_data|safe }});

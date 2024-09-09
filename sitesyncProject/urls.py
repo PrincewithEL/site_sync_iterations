@@ -33,6 +33,7 @@ urlpatterns = [
     path('signup/', views.signup, name='signup'),
     path('prototype/', views.prototype, name='prototype'),
     path('signin/', views.signin, name='signin'),
+    path('projects/<int:project_id>/signin/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='signin'),
     path('verify_otp/', views.verify_otp, name='verify_otp'),
     path('home1/', views.home1, name='home1'),
     path('client/', views.client, name='client'),

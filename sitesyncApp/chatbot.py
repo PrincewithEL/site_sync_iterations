@@ -3,6 +3,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 # Sample Predefined Questions and Answers
 questions = [
+    "Hi", "Hello", "Hey",
     "How do I reset my password?", 
     "Where can I view my tasks?", 
     "How do I contact support?", 
@@ -75,6 +76,7 @@ questions = [
 ]
 
 answers = [
+    "Hello, I am doing well, hope you are too. How can I help?", "Hey there, I am doing well, hope you are too. Where can I be of assistance...", "Hi, I am doing well, hope you are too. I am a virtual assistant. Feel free to ask me for help!",
     "To reset your password, go to settings...", 
     "You can view your tasks in the Tasks section...", 
     "Contact support via email at support@example.com...", 

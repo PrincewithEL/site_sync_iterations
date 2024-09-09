@@ -209,6 +209,8 @@ USE_L10N = True
 
 CSRF_COOKIE_SECURE = True
 
+LOGIN_URL = 'signin/'
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'  # Gmail SMTP server address
 EMAIL_PORT = 587  # SMTP port for TLS

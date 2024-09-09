@@ -192,7 +192,7 @@
         </div>
         <div class="form-group col-md-6">
             <label for="exampleInputEmail1">Project Image:</label>
-            <input type="file" accept=".jpg, .png, .jpeg" class="form-control" name="image" id="exampleInputFile" placeholder="Enter email">
+            <input type="file" accept=".jpg, .png, .jpeg" required class="form-control" name="image" id="exampleInputFile" placeholder="Enter email">
         </div>
         <div class="form-group col-md-6">
             <label for="exampleInputEmail1">Start Date:</label>
@@ -511,13 +511,14 @@
                             <div class="dropdown-content">
                                 <a href="{% url 'chat' project.project_id %}">Chat Room</a>
                                 <a href="{% url 'resources' project.project_id %}">View Resources</a>
-                                {% if  type == 'Client' or type == 'Quantity Surveyor' %} 
+                                {% if  type == 'Client' or type == 'Quantity Surveyor' %}
+                                <a href="{% url 'transactions' project.project_id %}">View Transactions</a>
+                                <a href="{% url 'dashboard' project.project_id %}">View Dashboard</a>
+                                {% elif type == 'Contractor' and project.leader_id == user_id %} 
                                 <a href="{% url 'transactions' project.project_id %}">View Transactions</a>
                                 <a href="{% url 'dashboard' project.project_id %}">View Dashboard</a>
                                 {% endif %}
                                 <a href="{% url 'tasks' project.project_id %}">View Tasks & Events</a>
-
-
                             </div>
                         </div>
                     </td>
