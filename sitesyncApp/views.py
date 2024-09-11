@@ -51,6 +51,7 @@ from .serializers import SignInSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.views.decorators.csrf import csrf_exempt
 
 logger = logging.getLogger(__name__)
 
@@ -156,17 +157,6 @@ class SignUpView(APIView):
                 phone_number=profile.phone_number  
             )
 
-            # Create the entry in the Users model
-            Users.objects.create(
-                fullname=fullname,
-                email_address=email,
-                phone_number=phone_number,
-                password=make_password(password),
-                online=0,  
-                created_at=timezone.now(),
-                is_deleted=0  
-            )
-
             return Response({
                 "message": "User registered successfully",
                 "email_address": email
@@ -176,36 +166,87 @@ class SignUpView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class CompleteProfileView(APIView):
-    parser_classes = [MultiPartParser, FormParser]
-    
+    parser_classes = [MultiPartParser, FormParser]  # Add these parsers to handle form data and file uploads
+
     def post(self, request):
         user = request.user
-        profile_picture = request.data.get('profile_picture')
         user_type = request.data.get('user_type')
+        profile_picture = request.FILES.get('profile_picture')  # Use request.FILES to get uploaded file
 
-        if not user_type:
-            return Response({"error": "User type is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not user_type or not profile_picture:
+            return Response({"error": "Both user_type and profile_picture are required."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Update the user's profile with profile picture and user type
-            Users.objects.filter(email_address=user.email).update(
-                profile_picture=profile_picture,
-                user_type=user_type,
-                updated_at=timezone.now()
-            )
-            Profile.objects.filter(user_id=user.id).update(
-                profile_picture = profile_picture,
-                user_type = user_type                
-            )
-            return Response({
-                "message": "Profile updated successfully",
-                "email_address": user.email,
-                "user_type": user_type
-            }, status=status.HTTP_200_OK)
-        
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            profile = Profile.objects.get(user=user)
+            profile.user_type = user_type
+            profile.profile_picture = profile_picture
+            profile.updated_at = timezone.now()
+            profile.save()
 
+            # Generate OTP
+            otp, created = OTP.objects.get_or_create(user=user)
+            otp.generate_otp()
+
+            # Send OTP to user's email
+            send_mail(
+                'Site Sync: OTP Code',
+                f'Your OTP code is {otp.otp_code}. \n\n Thank you for choosing Site Sync.',
+                'sitesync2024@gmail.com',  # Replace with your email
+                [user.email],
+                fail_silently=False,
+            )
+
+            return Response({"message": "Profile updated successfully."}, status=status.HTTP_200_OK)
+
+        except Profile.DoesNotExist:
+            return Response({"error": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+class VerifyOtpView(APIView):
+    def post(self, request):
+        otp_code = request.data.get('otp_code')
+        user_id = request.session.get('user_id')
+        
+        if not otp_code or not user_id:
+            return Response({"error": "OTP code or user ID not provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            otp = OTP.objects.get(user_id=user_id, otp_code=otp_code, used=False)
+
+            # Optional: Check if the OTP is still valid (within a time frame)
+            # if otp.created_at >= timezone.now() - timedelta(minutes=15):
+            if otp:
+                otp.used = True  # Mark the OTP as used
+                otp.save()
+
+                user = otp.user
+
+                # Log the user in
+                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+
+                # Mark the user as online
+                Users.objects.filter(email_address=user.email).update(online=1)
+
+                # Redirect based on user type
+                if hasattr(user, 'profile'):
+                    profile = user.profile
+                    user_details = {
+                        'fullname': user.first_name,
+                        'email_address': user.username,
+                        'profile_picture': request.build_absolute_uri(profile.profile_picture.url) if profile.profile_picture else None,
+                        'user_type': profile.user_type,
+                    }
+
+                    return Response({
+                        'message': f'Welcome {user.first_name}',
+                        'user_details': user_details,
+                    }, status=status.HTTP_200_OK)
+                else:
+                    return Response({"message": "OTP verified successfully", "redirect_url": "/home"}, status=status.HTTP_200_OK)
+            
+        except OTP.DoesNotExist:
+            return Response({"error": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"error": "OTP has expired. Please request a new one."}, status=status.HTTP_400_BAD_REQUEST)
 
 def tasks1(request, project_id):
     # Retrieve tasks for the specific project
