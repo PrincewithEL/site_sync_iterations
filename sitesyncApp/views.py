@@ -43,10 +43,169 @@ from django.db.models.functions import Concat
 from django.http import HttpResponseBadRequest
 import json
 from django.http import JsonResponse
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from django.contrib.auth import authenticate, login
+from .serializers import SignInSerializer
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
+from rest_framework.parsers import MultiPartParser, FormParser
 
 logger = logging.getLogger(__name__)
 
 # Create your views here.
+
+class SignInView(APIView):
+    def post(self, request, *args, **kwargs):
+        serializer = SignInSerializer(data=request.data)
+        if serializer.is_valid():
+            identifier = serializer.validated_data['identifier']
+            password = serializer.validated_data['password']
+            
+            # Authenticate the user
+            user = authenticate(request, username=identifier, password=password)
+            
+            if user is not None:
+                # Log in the user
+                login(request, user)
+                
+                # Set the user as online
+                Users.objects.filter(email_address=user.email).update(
+                    online=1,
+                    logged_in=timezone.now()
+                )
+
+                # Fetch user profile and details
+                profile = user.profile
+                user_details = {
+                    'fullname': user.first_name,
+                    'email_address': user.username,
+                    'profile_picture': request.build_absolute_uri(profile.profile_picture.url) if profile.profile_picture else None,
+                    'user_type': profile.user_type,
+                }
+
+                return Response({
+                    'message': f'Welcome {user.first_name}',
+                    'user_details': user_details,
+                }, status=status.HTTP_200_OK)
+
+            else:
+                return Response({'error': 'Invalid email or password.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class LogOutView(APIView):
+    permission_classes = [IsAuthenticated] 
+    def post(self, request):
+        user = request.user
+
+        try:
+            # Update user's online status and logged_out time
+            Users.objects.filter(email_address=user.email).update(online=0, logged_out=timezone.now())
+            
+            # Get the user details from the Users model
+            user_data = Users.objects.get(email_address=user.email)
+            
+            # Log out the user
+            logout(request)
+
+            # Prepare response data with user details
+            response_data = {
+                'message': 'Logout successful',
+                'email_address': user_data.email_address,
+                'user_type': user_data.user_type,
+            }
+
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        except Users.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+class SignUpView(APIView):
+    def post(self, request):
+        fullname = request.data.get('fullname')
+        email = request.data.get('email_address')
+        password = request.data.get('password')
+        phone_number = request.data.get('phone_number')
+
+        if User.objects.filter(email=email).exists():
+            return Response({"error": "Email already exists."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.create(
+                username=email,
+                first_name=fullname,
+                email=email,
+                password=make_password(password)  
+            )
+
+            profile = Profile.objects.get(user=user)
+            profile.phone_number = phone_number
+            profile.created_at = timezone.now()
+            profile.updated_at = None
+            profile.save()
+
+            Users.objects.create(
+                user_id=profile.user_id,
+                email_address=email,
+                created_at=timezone.now(),
+                user_type=profile.user_type,
+                is_deleted=0,
+                online=0,
+                phone_number=profile.phone_number  
+            )
+
+            # Create the entry in the Users model
+            Users.objects.create(
+                fullname=fullname,
+                email_address=email,
+                phone_number=phone_number,
+                password=make_password(password),
+                online=0,  
+                created_at=timezone.now(),
+                is_deleted=0  
+            )
+
+            return Response({
+                "message": "User registered successfully",
+                "email_address": email
+            }, status=status.HTTP_201_CREATED)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CompleteProfileView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+    
+    def post(self, request):
+        user = request.user
+        profile_picture = request.data.get('profile_picture')
+        user_type = request.data.get('user_type')
+
+        if not user_type:
+            return Response({"error": "User type is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Update the user's profile with profile picture and user type
+            Users.objects.filter(email_address=user.email).update(
+                profile_picture=profile_picture,
+                user_type=user_type,
+                updated_at=timezone.now()
+            )
+            Profile.objects.filter(user_id=user.id).update(
+                profile_picture = profile_picture,
+                user_type = user_type                
+            )
+            return Response({
+                "message": "Profile updated successfully",
+                "email_address": user.email,
+                "user_type": user_type
+            }, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 def tasks1(request, project_id):
     # Retrieve tasks for the specific project
@@ -3682,6 +3841,7 @@ def signup(request):
 
         profile.save()
         Users.objects.create(
+            fullname=request.POST.get('fname'),
             user_id=profile.user_id,
             email_address=email,
             created_at=timezone.now(),

@@ -21,6 +21,7 @@ from django.conf.urls.static import static
 from sitesyncApp import views
 from django.conf import settings
 from sitesyncApp.views import get_chatbot_response
+from sitesyncApp.views import *
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -88,6 +89,14 @@ urlpatterns = [
     path('project/<int:project_id>/bookmark_message/', views.bookmark_message, name='bookmark_message'),
     path('project/<int:project_id>/unbookmark_message/', views.unbookmark_message, name='unbookmark_message'),
     path('reply/<int:pk>/', views.reply_message, name='reply_message'),
+
+    #APIs
+
+    path('api/signin/', SignInView.as_view(), name='signin_api'),
+    path('api/logout/', LogOutView.as_view(), name='logout_api'),
+    path('api/signup/', SignUpView.as_view(), name='signup_api'),
+    path('api/completeprofile/', CompleteProfileView.as_view(), name='complete_profile_api'),            
+
  ]
 
 if settings.DEBUG:
