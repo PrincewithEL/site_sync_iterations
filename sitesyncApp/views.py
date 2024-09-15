@@ -47,11 +47,12 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.contrib.auth import authenticate, login
-from .serializers import SignInSerializer
+from .serializers import *
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view
 
 logger = logging.getLogger(__name__)
 
@@ -247,6 +248,132 @@ class VerifyOtpView(APIView):
             return Response({"error": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"error": "OTP has expired. Please request a new one."}, status=status.HTTP_400_BAD_REQUEST)
+
+class ClientProjectsAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        profile = user.profile
+        now = timezone.now().date()
+        user_id = profile.user_id
+
+        # Fetch all active projects where user is leader or member
+        leader_projects = Projects.objects.filter(leader_id=user_id, is_deleted=0, project_status='Active')
+        member_projects = Projects.objects.filter(
+            project_id__in=ProjectMembers.objects.filter(user_id=user_id, is_deleted=0, status='Accepted').values_list('project_id', flat=True),
+            is_deleted=0
+        )
+        
+        # Remove distinct() since union() automatically removes duplicates
+        all_projects = leader_projects.union(member_projects)
+        active_projects_count = all_projects.count()
+
+        # Unread chats and pending tasks
+        unread_chat_counts = {}
+        pending_tasks_counts = {}
+        progress_percentages = {}
+
+        for project in all_projects:
+            try:
+                group_chat = GroupChat.objects.get(project=project)
+                unread_chats = Chat.objects.filter(group_id=group_chat.group_id).exclude(sender_user_id=user_id)
+                unread_status = ChatStatus.objects.filter(status=1, user_id=user_id)
+                unread_chat_counts[project.project_id] = unread_status.count()
+
+                # Calculate pending tasks
+                ongoing_tasks = Tasks.objects.filter(project=project, task_status='Ongoing', is_deleted=0)
+                pending_tasks_counts[project.project_id] = ongoing_tasks.count()
+
+                # Calculate progress based on start/end date
+                total_days = (project.end_date - project.start_date).days
+                days_left = (project.end_date - now).days
+                progress_percentage = ((total_days - days_left) / total_days) * 100 if total_days > 0 else 0
+                progress_percentages[project.project_id] = progress_percentage if progress_percentage > 0 else 0
+            except GroupChat.DoesNotExist:
+                unread_chat_counts[project.project_id] = 0
+                pending_tasks_counts[project.project_id] = 0
+                progress_percentages[project.project_id] = 0
+
+        response_data = {
+            'user': ProfileSerializer(profile).data,
+            'active_projects': ProjectSerializer(all_projects, many=True).data,
+            'unread_chats': unread_chat_counts,
+            'pending_tasks': pending_tasks_counts,
+            'progress_percentages': progress_percentages,
+            'active_projects_count': active_projects_count,
+        }
+
+        return Response(response_data)
+
+
+@api_view(['POST'])
+def create_project(request):
+    # Deserialize the incoming request data
+    serializer = ProjectSerializer(data=request.data)
+    
+    # Validate the request data
+    if serializer.is_valid():
+        try:
+            user = request.user
+            project_data = serializer.validated_data
+            
+            # Check required fields are present
+            pname = project_data.get('project_name')
+            sdate = project_data.get('start_date')
+            edate = project_data.get('end_date')
+            ebug = project_data.get('estimated_budget')
+            pdet = project_data.get('project_details')
+            image = request.FILES.get('project_image')
+
+            if not all([pname, sdate, edate, ebug, pdet]):
+                return Response({'error': 'Please fill in all required fields.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Calculate total days and initial balances
+            total_days = (edate - sdate).days
+            actual_expenditure = 0
+            balance = float(ebug)
+            project_status = 'Active'
+            leader_id = user.id  # Use the logged-in user's ID
+            is_deleted = 0
+
+            # Handle project image if provided
+            project_image = None
+            if image:
+                unique_filename = str(uuid.uuid4()) + os.path.splitext(image.name)[1]
+                profile_picture_path = default_storage.save(unique_filename, image)
+                project_image = 'project_images/' + unique_filename
+
+            # Create the new project
+            new_project = Projects.objects.create(
+                leader_id=leader_id,
+                project_name=pname,
+                project_details=pdet,
+                project_image=project_image,
+                created_at=timezone.now(),
+                start_date=sdate,
+                end_date=edate,
+                total_days=total_days,
+                estimated_budget=balance,
+                actual_expenditure=actual_expenditure,
+                balance=balance,
+                project_status=project_status,
+                is_deleted=is_deleted
+            )
+
+            # Return a success response
+            return Response(
+                {
+                    'message': 'Project created successfully!',
+                    'project': ProjectSerializer(new_project).data
+                }, 
+                status=status.HTTP_201_CREATED
+            )
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else:
+        # Return validation errors
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 def tasks1(request, project_id):
     # Retrieve tasks for the specific project
