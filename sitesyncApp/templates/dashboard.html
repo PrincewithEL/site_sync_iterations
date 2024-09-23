@@ -95,10 +95,6 @@
         <a href="{% url 'client' %}" title="Site Sync" class="logo" style="color: orange;"><img src="{% static 'dashboard/dist/img/site_sync_logo.png' %}" style="width: 120px; position: relative; top: -8px;"></a>
         <!-- Header Navbar: style can be found in header.less -->
         <nav class="navbar navbar-static-top" role="navigation">
-          <!-- Sidebar toggle button-->
-          <a href="#" title="Hide the Site Sync Assistant" class="sidebar-toggle" data-toggle="offcanvas" role="button">
-            <span class="sr-only">Toggle navigation</span>
-          </a>
           <div class="navbar-custom-menu">
               <ul class="nav navbar-nav">
   {% include 'notifications.html' %}
@@ -119,15 +115,10 @@
           </div>
         </nav>
       </header>
-      <!-- Left side column. contains the logo and sidebar -->
-<aside class="main-sidebar">
-
-  <!-- /.sidebar -->
-</aside>
       <!-- Right side column. Contains the navbar and content of the page -->
       <div class="content-wrapper">
         <!-- Content Header (Page header) -->
-        <section class="content-header">
+        <section class="content-header" style="text-align: right;">
           <h1>
             <small></small>
           </h1>
