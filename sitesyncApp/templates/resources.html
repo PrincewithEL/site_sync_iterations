@@ -2,10 +2,11 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>Site Sync - {{ type }} Module - Resources Page</title>
+    <title>Site Sync - {{ type }} Module - Files Page</title>
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
     {% load static %}
     {% load custom_filters %}
+      {% include 'chatbot.html' %}
     <!-- Bootstrap 3.3.2 -->
     <link href="{% static 'dashboard/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css" />   
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">   
@@ -81,9 +82,9 @@
         <!-- Header Navbar: style can be found in header.less -->
         <nav class="navbar navbar-static-top" role="navigation">
           <!-- Sidebar toggle button-->
-          <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button" title="Toggle Site Sync Assistant">
+<!--           <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button" title="Toggle Site Sync Assistant">
             <span class="sr-only">Toggle navigation</span>
-          </a>
+          </a> -->
           <div class="navbar-custom-menu">
                         <ul class="nav navbar-nav">
 {% include 'notifications.html' %}
@@ -106,13 +107,13 @@
       </header>
       <!-- Left side column. contains the logo and sidebar -->
       <aside class="main-sidebar">
-  {% include 'chatbot.html' %}
+
       </aside>
 
       <!-- Right side column. Contains the navbar and content of the page -->
       <div class="content-wrapper">
         <!-- Content Header (Page header) -->
-        <section class="content-header">
+        <section class="content-header" style="position: relative; left: -690px;">
           <h1>
             <small></small>
           </h1>
@@ -120,7 +121,7 @@
             <li><a href="{% url 'client' %}"><i class="fa fa-dashboard"></i> Home</a></li>
             <li><a href="{% url 'client' %}">My Projects</a></li>
             <li><a href="{% url 'project_detail' project.pk %}">{{ project.project_name }}</a></li>
-            <li class="active">My Resources</li>
+            <li class="active">My Files</li>
           </ol>
         </section>
 
@@ -129,20 +130,20 @@
           <div class="row">
             <div class="col-md-3">
               <a href="{% url 'client' %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Home</a>
-              <a href="#" onclick="openForm();" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Add A Resource</a>    
+              <a href="#" onclick="openForm();" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Add A Files</a>    
               <div class="box box-solid">
                 <div class="box-header with-border">
-                  <h3 class="box-title">List of Project Resources</h3>
+                  <h3 class="box-title">List of Project Files</h3>
                 </div>
                 <div class="box-body no-padding">
                   <ul class="nav nav-pills nav-stacked">
-                    <li class="active"><a href="?filter=all"><i class="fa fa-inbox"></i> All Resources <span class="label label-primary pull-right">{{ resource_count }}</span></a></li>
+                    <li class="active"><a href="?filter=all"><i class="fa fa-inbox"></i> All Files <span class="label label-primary pull-right">{{ resource_count }}</span></a></li>
                     <li class="{% if filter_type == 'Document' %}active{% endif %}"><a href="?filter=Document"><i class="fa fa-newspaper-o"></i> Document <span class="label label-waring pull-right">{{ document_count }}</span></a></li>
                     <li class="{% if filter_type == 'Video' %}active{% endif %}"><a href="?filter=Video"><i class="fa fa-file-video-o"></i> Videos <span class="label label-waring pull-right">{{ video_count }}</span></a></li>
                     <li class="{% if filter_type == 'Image' %}active{% endif %}"><a href="?filter=Image"><i class="fa fa-file-photo-o"></i> Photos <span class="label label-waring pull-right">{{ image_count }}</span></a></li>
                     <li class="{% if filter_type == 'Audio' %}active{% endif %}"><a href="?filter=Audio"><i class="fa fa-file-audio-o"></i> Audio <span class="label label-waring pull-right">{{ audio_count }}</span></a></li>
                     <li id="trashResourcesNavItem"><a href="#" onclick="opentrashResources();"><i class="fa fa-file-archive-o"></i> Trash <span class="label label-waring pull-right">{{ trash_resources_count }}</span></a></li>
-                    <li class="{% if filter_type == 'bookmarked' %}active{% endif %}"><a href="?filter=bookmarked"><i class="fa fa-star"></i> Starred Resources <span class="label label-waring pull-right">{{ bookmark_resources_count }}</span></a></li>
+                    <li class="{% if filter_type == 'bookmarked' %}active{% endif %}"><a href="?filter=bookmarked"><i class="fa fa-star"></i> Starred Files <span class="label label-waring pull-right">{{ bookmark_resources_count }}</span></a></li>
                     <li><a href="{% url 'project_detail' project.project_id %}"><i class="fa fa-mail-reply"></i> Back</a></li>
                   </ul>
                 </div><!-- /.box-body -->
@@ -165,8 +166,8 @@
             <div class="col-md-9">
               <div class="box box-primary" id="myTable">
                 <div class="box-header with-border">
-                  <h3 class="box-title">My Resources</h3>
-    {% if status_filter_display != 'All Resources' or date_filter_display != 'All Time' %}    
+                  <h3 class="box-title">My Files</h3>
+    {% if status_filter_display != 'All Files' or date_filter_display != 'All Time' %}    
     <div class="filter-info">
       <p><strong>Current Filters:</strong> {{ status_filter_display }} - {{ date_filter_display }}</p>
     </div>
@@ -222,7 +223,7 @@
           <div class="form-group">
             <label for="filter" class="sr-only">Status Filter:</label>
             <select name="filter" id="filter" class="form-control input-sm">
-              <option value="all" {% if current_status_filter == 'all' %}selected{% endif %}>All Resources</option>
+              <option value="all" {% if current_status_filter == 'all' %}selected{% endif %}>All Files</option>
               <option value="audio" {% if current_status_filter == 'audio' %}selected{% endif %}>Audio</option>
               <option value="document" {% if current_status_filter == 'documents' %}selected{% endif %}>Documents</option>
               <option value="image" {% if current_status_filter == 'image' %}selected{% endif %}>Photos</option>
@@ -319,11 +320,11 @@
 
               <div class="box box-primary" id="myForm1">
                 <div class="box-header with-border">
-                  <h3 class="box-title">My Trash Resources</h3>
+                  <h3 class="box-title">My Trash Files</h3>
                   <button type="button" style="position: relative;" onclick="closetrashResources();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
                   <div class="box-tools pull-right">
                     <div class="has-feedback">
-                      <input type="text" class="form-control input-sm" id="myInput" onkeyup="searchTable();"  placeholder="Search My Resources..."/>
+                      <input type="text" class="form-control input-sm" id="myInput" onkeyup="searchTable();"  placeholder="Search My Files..."/>
                       <span class="glyphicon glyphicon-search form-control-feedback"></span>
                     </div>
                   </div><!-- /.box-tools -->
@@ -410,7 +411,7 @@
 
               <div class="box box-primary" id="myForm">
                 <div class="box-header">
-                  <h3 class="box-title">Add A Resource</h3>
+                  <h3 class="box-title">Add A Files</h3>
                   <button type="button" style="position: relative;" onclick="closeForm();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
                 </div><!-- /.box-header -->
                 <!-- form start -->
@@ -418,11 +419,11 @@
     {% csrf_token %}
     <div class="box-body">
       <div class="form-group col-md-12">
-        <label for="resource_name">Resource Name</label>
+        <label for="resource_name">Files Name</label>
         <input type="text" class="form-control" id="resource_name" name="resource_name" required>
       </div>
             <div class="form-group col-md-6" style="display: none;">
-        <label for="resource_type">Resource Type</label>
+        <label for="resource_type">Files Type</label>
         <select class="form-control" id="resource_type" name="resource_type" required >
           <option value="" disabled selected>Kindly Select A Resource Type</option>
           <option value="Image">Image</option>
@@ -432,7 +433,7 @@
         </select>
       </div>
       <div class="form-group">
-        <label for="resource_details">Resource Details</label>
+        <label for="resource_details">Files Details</label>
         <textarea class="form-control" id="resource_details" name="resource_details" required></textarea>
       </div>
       <div class="form-group">
@@ -693,6 +694,9 @@ function submitForm1(action) {
       <script type="text/javascript">
          new Date().getFullYear()
 document.getElementById("year").innerHTML = new Date().getFullYear();
+          $(document).ready(function() {
+    $("body").addClass('sidebar-collapse'); // Add collapse class on page load
+  });
       </script>
   </body>
 </html>

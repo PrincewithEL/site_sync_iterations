@@ -6,6 +6,7 @@
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
        {% load static %}
        {% load custom_filters %}
+         {% include 'chatbot.html' %}
     <!-- Bootstrap 3.3.2 -->
     <link href="{% static 'dashboard/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css" />
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
@@ -83,9 +84,9 @@
         <!-- Header Navbar: style can be found in header.less -->
         <nav class="navbar navbar-static-top" role="navigation">
           <!-- Sidebar toggle button-->
-          <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button" title="Toggle Site Sync Assistant">
+<!--           <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button" title="Toggle Site Sync Assistant">
             <span class="sr-only">Toggle navigation</span>
-          </a>
+          </a> -->
           <div class="navbar-custom-menu">
                         <ul class="nav navbar-nav">
 {% include 'notifications.html' %}
@@ -108,13 +109,13 @@
       </header>
       <!-- Left side column. contains the logo and sidebar -->
       <aside class="main-sidebar">
-{% include 'chatbot.html' %}
+
       </aside>
 
       <!-- Right side column. Contains the navbar and content of the page -->
       <div class="content-wrapper">
         <!-- Content Header (Page header) -->
-        <section class="content-header">
+        <section class="content-header" style="position: relative; left: -650px;">
           <h1>
             <small></small>
           </h1>
@@ -626,6 +627,9 @@ function submitForm(action) {
       <script type="text/javascript">
          new Date().getFullYear()
 document.getElementById("year").innerHTML = new Date().getFullYear();
+          $(document).ready(function() {
+    $("body").addClass('sidebar-collapse'); // Add collapse class on page load
+  });
       </script>
 
   </body>
