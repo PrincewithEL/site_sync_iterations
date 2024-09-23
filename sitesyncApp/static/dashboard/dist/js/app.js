@@ -41,34 +41,16 @@ $.AdminLTE.options = {
   navbarMenuSlimscroll: true,
   navbarMenuSlimscrollWidth: "3px", //The width of the scroll bar
   navbarMenuHeight: "200px", //The height of the inner menu
-$.AdminLTE.pushMenu = function (toggleBtn) {
-  // Check if the sidebar should be collapsed on page load
-  if (localStorage.getItem('sidebar-collapse') === 'true') {
-    $("body").addClass('sidebar-collapse');
-  }
-
-  // Enable sidebar toggle
-  $(toggleBtn).click(function (e) {
-    e.preventDefault();
-    // Enable sidebar push menu
-    $("body").toggleClass('sidebar-collapse');
-    $("body").toggleClass('sidebar-open');
-    
-    // Store the sidebar state in local storage
-    localStorage.setItem('sidebar-collapse', $("body").hasClass('sidebar-collapse'));
-  });
-
-  $(".content-wrapper").click(function () {
-    // Enable hide menu when clicking on the content-wrapper on small screens    
-    if ($(window).width() <= 767 && $("body").hasClass("sidebar-open")) {
-      $("body").removeClass('sidebar-open');
-    }
-  });
-};
-
-// Initial call to pushMenu
-$.AdminLTE.pushMenu("[data-toggle='offcanvas']");
-
+  //Sidebar push menu toggle button selector
+  sidebarToggleSelector: "[data-toggle='offcanvas']",
+  //Activate sidebar push menu
+  sidebarPushMenu: true,
+  //Activate sidebar slimscroll if the fixed layout is set (requires SlimScroll Plugin)
+  sidebarSlimScroll: true,
+  //BoxRefresh Plugin
+  enableBoxRefresh: true,
+  //Bootstrap.js tooltip
+  enableBSToppltip: true,
   BSTooltipSelector: "[data-toggle='tooltip']",
   //Enable Fast Click. Fastclick.js creates a more
   //native touch ecperience with touch devices. If you
@@ -251,6 +233,33 @@ $.AdminLTE.layout = {
  * @type Function
  * @usage: $.AdminLTE.pushMenu("[data-toggle='offcanvas']")
  */
+$.AdminLTE.pushMenu = function (toggleBtn) {
+  // Check if the sidebar should be collapsed on page load
+  if (localStorage.getItem('sidebar-collapse') === 'true') {
+    $("body").addClass('sidebar-collapse');
+  }
+
+  // Enable sidebar toggle
+  $(toggleBtn).click(function (e) {
+    e.preventDefault();
+    // Enable sidebar push menu
+    $("body").toggleClass('sidebar-collapse');
+    $("body").toggleClass('sidebar-open');
+    
+    // Store the sidebar state in local storage
+    localStorage.setItem('sidebar-collapse', $("body").hasClass('sidebar-collapse'));
+  });
+
+  $(".content-wrapper").click(function () {
+    // Enable hide menu when clicking on the content-wrapper on small screens    
+    if ($(window).width() <= 767 && $("body").hasClass("sidebar-open")) {
+      $("body").removeClass('sidebar-open');
+    }
+  });
+};
+
+// Initial call to pushMenu
+$.AdminLTE.pushMenu("[data-toggle='offcanvas']");
 
 
 /* Tree()

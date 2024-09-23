@@ -159,56 +159,45 @@ body {
   </div>
 </div>
 <script type="text/javascript">
+document.getElementById('toggle-chatbot').addEventListener('click', function() {
+  document.getElementById('chatbot-popup').style.display = 'block';
+});
+
+document.getElementById('close-popup').addEventListener('click', function() {
+  document.getElementById('chatbot-popup').style.display = 'none';
+});
+
 document.getElementById('submit-btn').addEventListener('click', function() {
-    var prompt = document.getElementById('assistant-prompt').value;
-    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  var prompt = document.getElementById('assistant-prompt').value;
+  var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-    // Update the status text and image
-    document.getElementById('status-text').innerText = 'Working on it...';
-    document.getElementById('status').innerHTML = '<i class="fa fa-circle text-warning"></i>';
-    document.getElementById('assistant-image').style.display = 'block';
-    document.getElementById('loading-dots').style.display = 'block';
-    document.getElementById('response-text').innerText = ''; 
+  // Update status and UI
+  document.getElementById('response-text').innerText = '';
+  document.getElementById('loading-dots').style.display = 'block';
 
-    // Simulate a lag time of 5 seconds
-    setTimeout(() => {
-        fetch('/get-response/', {
-            method: 'POST',
-            body: JSON.stringify({ 'prompt': prompt }),
-            headers: { 
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            // Handle the typing effect
-            typeResponse(data.response);
+  // Simulate lag time of 2 seconds before sending request
+  setTimeout(() => {
+    fetch('/get-response/', {
+      method: 'POST',
+      body: JSON.stringify({ 'prompt': prompt }),
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      typeResponse(data.response);
 
-            // Restore the UI state
-            setTimeout(() => {
-                document.getElementById('status-text').innerText = 'Active';
-                document.getElementById('status').innerHTML = '<i class="fa fa-circle text-success"></i>';
-                document.getElementById('assistant-image').style.display = 'block';
-                document.getElementById('loading-dots').style.display = 'none';
-            }, data.response.length * 50 + 2000); // Adjust timeout as needed
-        })
-        .catch(error => {
-            console.error('Error:', error);
-
-            // Handle errors and restore UI state
-            document.getElementById('response-text').innerText = 'An error occurred. Please try again later.';
-            document.getElementById('status-text').innerText = 'Active';
-            document.getElementById('status').innerHTML = '<i class="fa fa-circle text-success"></i>';
-            document.getElementById('assistant-image').style.display = 'block';
-            document.getElementById('loading-dots').style.display = 'none';
-        });
-    }, 2000); // 2 seconds delay
+      // Hide loading dots
+      document.getElementById('loading-dots').style.display = 'none';
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      document.getElementById('response-text').innerText = 'An error occurred. Please try again.';
+      document.getElementById('loading-dots').style.display = 'none';
+    });
+  }, 2000); // 2-second delay
 });
 
 // Function to handle typing effect
