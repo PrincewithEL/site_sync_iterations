@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
                 ('is_deleted', models.IntegerField()),
             ],
             options={
-                'db_table': 'bookmark_chat',
+                'db_table': 'bookmarks',
                 'db_table_comment': 'This Table Is Used To Store The Bookmarked Items On the System',
                 'managed': True,
             },

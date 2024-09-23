@@ -11,21 +11,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='Bookmarks',
-            fields=[
-                ('bookmark_id', models.AutoField(primary_key=True, serialize=False)),
-                ('item_id', models.IntegerField()),
-                ('item_type', models.TextField(blank=True, null=True)),
-                ('timestamp', models.DateTimeField(default=datetime.datetime(2024, 9, 1, 7, 27, 41, 246991, tzinfo=datetime.timezone.utc))),
-                ('is_deleted', models.IntegerField()),
-            ],
-            options={
-                'db_table': 'bookmarks',
-                'db_table_comment': 'This Table Is Used To Store The Bookmarked Items On the System',
-                'managed': True,
-            },
-        ),
         migrations.AlterModelTableComment(
             name='bookmarks',
             table_comment='This Table Is Used To Store The Bookmarked Items On the System',
