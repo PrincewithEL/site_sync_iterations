@@ -6,6 +6,7 @@
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
     {% load static %}
     {% load custom_filters %}
+      {% include 'chatbot.html' %}
     <!-- Bootstrap 3.3.2 -->
     <link href="{% static 'dashboard/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css" />  
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">  
@@ -118,11 +119,6 @@
           </div>
         </nav>
       </header>
-<!-- Left side column. contains the logo and sidebar -->
-<aside class="main-sidebar">
-  {% include 'chatbot.html' %}
-  <!-- /.sidebar -->
-</aside>
       <!-- Right side column. Contains the navbar and content of the page -->
       <div class="content-wrapper">
         <!-- Content Header (Page header) -->
