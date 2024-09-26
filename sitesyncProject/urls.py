@@ -22,6 +22,9 @@ from sitesyncApp import views
 from django.conf import settings
 from sitesyncApp.views import get_chatbot_response
 from sitesyncApp.views import *
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -99,7 +102,37 @@ urlpatterns = [
     path('api/verifyotp/', VerifyOtpView.as_view(), name='verify_otp_api'), 
     path('api/client-projects/', ClientProjectsAPI.as_view(), name='client-projects-api'),     
     path('api/create-project/', create_project, name='create_project'),
-
+    path('api/forgot-password/', ForgotPasswordAPI.as_view(), name='forgot_password_api'),
+    path('api/verify-otp/', VerifyOtpAPI.as_view(), name='verify_otp_api'),
+    path('api/verify-otp1/', VerifyOtp1API.as_view(), name='verify_otp1_api'),
+    path('api/reset-password/', ResetPasswordAPI.as_view(), name='reset_password_api'),
+    path('api/add-project-member/<int:pk>/', add_project_member_api, name='add_project_member_api'),
+    path('api/project/<int:pk>/remove_member/', remove_project_member_api, name='remove_project_member_api'),
+    path('api/project/<int:pk>/exit/', exit_project_api, name='exit_project_api'),
+    path('api/profile/', api_view_profile, name='api_view_profile'),
+    path('api/profile/update/', api_update_profile, name='api_update_profile'),
+    path('api/chat/<int:pk>/', chat_room_view, name='chat_room_view'),
+    path('api/send-message/<int:pk>/', send_message_api, name='send_message_api'),
+    path('api/edit-message/<int:pk>/', EditMessageAPIView.as_view(), name='edit_message_api'),
+    path('api/delete-message/<int:pk>/', DeleteMessageAPIView.as_view(), name='delete_message_api'),
+    path('api/projects/<int:pk>/resources/', ResourceListView.as_view(), name='resource-list'),
+    path('api/projects/<int:pk>/resources/add/', AddResourceView.as_view(), name='api_add_resource'),
+    path('api/projects/<int:pk>/resources/delete/<int:resource_id>/', DeleteResourceView.as_view(), name='api_delete_resource'),
+    path('api/projects/<int:pk>/tasks/', TaskListView.as_view(), name='tasks-list'),
+    path('api/projects/<int:pk>/tasks/add/', AddTaskAPIView.as_view(), name='add_task_api'),
+    path('api/projects/<int:pk>/tasks/<int:task_id>/delete/', DeleteTaskAPIView.as_view(), name='delete_task_api'),
+    path('api/projects/<int:pk>/tasks/<int:task_id>/complete/', CompleteTaskAPIView.as_view(), name='complete_task_api'),
+    path('api/projects/<int:pk>/resources/<int:resource_id>/restore/', RestoreResourceAPI.as_view(), name='restore_resource'),
+    path('api/projects/<int:pk>/resources/<int:resource_id>/hide/', HideResourceAPI.as_view(), name='hide_resource'),
+    path('api/projects/<int:pk>/delete/', DeleteProjectAPI.as_view(), name='delete_project'),
+    path('api/projects/<int:pk>/restore/', RestoreProjectAPI.as_view(), name='restore_project'),
+    path('api/projects/<int:pk>/hide/', HideProjectAPI.as_view(), name='hide_project'),
+    path('api/projects/<int:pk>/tasks/<int:task_id>/restore/', RestoreTaskAPI.as_view(), name='restore_task'),
+    path('api/projects/<int:pk>/tasks/<int:task_id>/hide/', HideTaskAPI.as_view(), name='hide_task'),
+    path('api/projects/<int:pk>/transactions/', TransactionViewSet.as_view({'get': 'list', 'post': 'create'}), name='project-transactions'),
+    path('api/projects/<int:pk>/transactions/<int:event_id>/', TransactionViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}), name='project-transaction-detail'),
+    path('api/projects/<int:pk>/events/', EventViewSet.as_view({'get': 'list', 'post': 'add'}), name='project-events'),
+    path('api/projects/<int:pk>/events/<int:event_id>/', EventViewSet.as_view({'delete': 'delete'}), name='project-event-detail'),
  ]
 
 if settings.DEBUG:

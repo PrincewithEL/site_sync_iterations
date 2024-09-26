@@ -43,7 +43,7 @@ from django.db.models.functions import Concat
 from django.http import HttpResponseBadRequest
 import json
 from django.http import JsonResponse
-from rest_framework import status
+from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.contrib.auth import authenticate, login
@@ -52,11 +52,17 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework import generics
+from rest_framework.generics import DestroyAPIView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views import View
 
 logger = logging.getLogger(__name__)
 
 # Create your views here.
+
+# API Classes
 
 class SignInView(APIView):
     def post(self, request, *args, **kwargs):
@@ -259,15 +265,21 @@ class ClientProjectsAPI(APIView):
         user_id = profile.user_id
 
         # Fetch all active projects where user is leader or member
-        leader_projects = Projects.objects.filter(leader_id=user_id, is_deleted=0, project_status='Active')
+        leader_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=0, project_status='Active')
+        current_date = timezone.now().date()
+        # leader_projects.filter(end_date__lt=current_date, project_status__in=['Active']).update(project_status='Completed')
+        trash_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=1)
         member_projects = Projects.objects.filter(
-            project_id__in=ProjectMembers.objects.filter(user_id=user_id, is_deleted=0, status='Accepted').values_list('project_id', flat=True),
+            project_id__in=ProjectMembers.objects.filter(user_id=user.id, is_deleted=0, status='Accepted').values_list('project_id', flat=True),
             is_deleted=0
         )
+        bookmarks = Bookmarks.objects.filter(is_deleted=0, item_type='Project', user_id=request.user.id)
+        bookmarked_project_ids = bookmarks.values_list('item_id', flat=True)
+        bookmarked_projects = Projects.objects.filter(project_id__in=bookmarked_project_ids)
+        all_projects = (leader_projects | member_projects | bookmarked_projects).distinct()
         
         # Remove distinct() since union() automatically removes duplicates
-        all_projects = leader_projects.union(member_projects)
-        active_projects_count = all_projects.count()
+        all_projects_count = all_projects.count()
 
         # Unread chats and pending tasks
         unread_chat_counts = {}
@@ -297,17 +309,17 @@ class ClientProjectsAPI(APIView):
 
         response_data = {
             'user': ProfileSerializer(profile).data,
-            'active_projects': ProjectSerializer(all_projects, many=True).data,
+            'all_projects': ProjectSerializer(all_projects, many=True).data,
             'unread_chats': unread_chat_counts,
             'pending_tasks': pending_tasks_counts,
             'progress_percentages': progress_percentages,
-            'active_projects_count': active_projects_count,
+            'all_projects_count': all_projects_count,
         }
 
         return Response(response_data)
 
-
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def create_project(request):
     # Deserialize the incoming request data
     serializer = ProjectSerializer(data=request.data)
@@ -374,6 +386,898 @@ def create_project(request):
     else:
         # Return validation errors
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ForgotPasswordAPI(APIView):
+
+    def post(self, request):
+        serializer = ForgotPasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data.get('email')
+            user = User.objects.filter(email=email).first()
+
+            if user:
+                # Generate OTP and save it in the database
+                otp = generate_otp()
+                otp_entry, created = OTP.objects.get_or_create(user=user)
+                otp_entry.otp_code = otp
+                otp_entry.save()
+
+                # Send OTP via email
+                send_mail(
+                    'Site Sync: Alert - Password Reset OTP',
+                    f'Your OTP code is {otp}. \n\n Thank you for choosing, Site Sync.',
+                    'sitesync2024@gmail.com',  # Replace with your email
+                    [user.email],
+                    fail_silently=False,
+                )
+
+                # Return success response
+                request.session['user_id'] = user.id
+                return Response({'message': 'OTP has been sent to your email.'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': 'No account found with this email address.'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class VerifyOtpAPI(APIView):
+    
+    def post(self, request):
+        serializer = VerifyOtpSerializer(data=request.data)
+        if serializer.is_valid():
+            otp_code = serializer.validated_data.get('otp_code')
+            user_id = request.session.get('user_id')
+
+            if user_id:
+                try:
+                    otp = OTP.objects.get(user_id=user_id, otp_code=otp_code, used=False)
+
+                    if otp:
+                        otp.used = True
+                        otp.save()
+
+                        user = otp.user
+                        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+
+                        Users.objects.filter(email_address=user.email).update(online=1)
+
+                        # Redirect based on user type
+                        profile = user.profile
+                        if profile.user_type == 'Admin':
+                            return Response({'redirect_url': 'admin1',
+                    'message': 'Correct OTP.'}, status=status.HTTP_200_OK)
+                        elif profile.user_type == 'Client':
+                            return Response({'redirect_url': 'client',
+                    'message': 'Correct OTP.'}, status=status.HTTP_200_OK)
+                        elif profile.user_type == 'Contractor':
+                            return Response({'redirect_url': 'contractor',
+                    'message': 'Correct OTP.'}, status=status.HTTP_200_OK)
+                        else:
+                            return Response({'redirect_url': 'home',
+                    'message': 'Correct OTP.'}, status=status.HTTP_200_OK)
+
+                except OTP.DoesNotExist:
+                    return Response({'error': 'Invalid OTP.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response({'error': 'Session expired or invalid.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class VerifyOtp1API(APIView):
+
+    def post(self, request):
+        serializer = VerifyOtp1Serializer(data=request.data)
+        if serializer.is_valid():
+            otp_code = serializer.validated_data.get('otp_code')
+            user_id = request.session.get('user_id')
+            user = get_object_or_404(User, pk=user_id)
+            otp = OTP.objects.filter(user=user, otp_code=otp_code).first()
+
+            if otp:
+                uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+                token = default_token_generator.make_token(user)
+                return Response({
+                    'redirect_url': f'/reset-password/{uidb64}/{token}/',
+                    'message': 'Correct OTP.'
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': 'Invalid OTP.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ResetPasswordAPI(APIView):
+    def post(self, request):
+        email = request.data.get('email')
+        password = request.data.get('password')
+        confirm_password = request.data.get('confirm_password')
+
+        if not email:
+            return Response({"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Fetch user by email
+        user = User.objects.filter(email=email).first()
+
+        if user is None:
+            return Response({"error": "Invalid email."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if password != confirm_password:
+            return Response({"error": "Passwords do not match."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate password
+        try:
+            validate_password(password)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update the user's password
+        user.set_password(password)
+        user.save()
+
+        return Response({"message": "Your password has been reset successfully."}, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def add_project_member_api(request, pk):
+    user = request.user
+    project = get_object_or_404(Projects, pk=pk)
+    leader_profile = Profile.objects.get(user_id=project.leader_id)
+
+    data = request.data  # Expecting a JSON payload with 'uid', 'lid', 'uname', 'lname', 'uemail'
+
+    # Ensure all required fields are present in the request data
+    required_fields = ['uid', 'lid', 'uname', 'lname', 'uemail']
+    for field in required_fields:
+        if field not in data:
+            return Response({'error': f'Missing field {field}'}, status=status.HTTP_400_BAD_REQUEST)
+
+    user_id = data['uid']
+    leader_id = data['lid']
+    user_name = data['uname']
+    leader_name = data['lname']
+    user_email = data['uemail']
+
+    # Save the project member to the database
+    projectM = ProjectMembers(
+        leader_id=leader_id,
+        user_name=user_name,
+        project_id=project.project_id,
+        user_id=user_id,
+        created_at=timezone.now(),
+        is_deleted=0,
+        status='Pending',
+    )
+    projectM.save()
+
+    # Send invitation email to the new project member
+    send_mail(
+        'Site Sync: Alert - Project Invitation Notification',
+        f'Dear {user_name},\n\n'
+        f'You have received a project invitation from {leader_name}, on the project {project.project_name}.\n'
+        f'Kindly login to your account to accept or reject the project invitation request.\n\n'
+        'Thank you for choosing Site Sync.',
+        'sitesync2024@gmail.com',  # Replace with your email
+        [user_email],
+        fail_silently=False,
+    )
+
+    # Return a success response
+    return Response({
+        'message': f'Project invitation sent to {user_name} ({user_email})',
+        'project_id': project.project_id,
+        'user_id': user_id,
+        'leader_id': leader_id,
+        'status': 'Pending'
+    }, status=status.HTTP_201_CREATED)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def remove_project_member_api(request, pk):
+    project_member = get_object_or_404(ProjectMembers, project_id=pk, is_deleted=0)
+
+    if request.method == 'POST':
+        user_id = request.data.get('uid')
+        
+        if project_member.user_id == user_id:
+            project_member.is_deleted = 1
+            project_member.save()
+            return Response({"message": "Project member removed successfully."}, status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response({"error": "Project member not found."}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def exit_project_api(request, pk):
+    project_member = get_object_or_404(ProjectMembers, project_id=pk, is_deleted=0)
+
+    if request.method == 'POST':
+        user_id = request.data.get('uid')
+        
+        if project_member.user_id == user_id:
+            project_member.is_deleted = 1
+            project_member.status = 'Exited'
+            project_member.save()
+            return Response({"message": "You have exited the project successfully."}, status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response({"error": "Project member not found."}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def api_view_profile(request):
+    user = request.user
+    profile = user.profile
+    user_type = profile.user_type
+    user_id = profile.user_id
+
+    # Retrieve projects related to the user
+    leader_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=0)
+    member_projects = Projects.objects.filter(
+        project_id__in=ProjectMembers.objects.filter(user_id=user.id, is_deleted=0, status='Accepted').values_list('project_id', flat=True),
+        is_deleted=0
+    )
+    projects = (leader_projects | member_projects).distinct()
+
+    # Prepare response data
+    project_data = []
+    for project in projects:
+        project_data.append({
+            'id': project.project_id,
+            'name': project.project_name,
+            'leader': project.leader_id,
+            'is_deleted': project.is_deleted,
+        })
+
+    response_data = {
+        'user_id': user_id,
+        'first_name': user.first_name,
+        'email': user.email,
+        'phone_number': profile.phone_number,
+        'profile_picture': profile.profile_picture.url if profile.profile_picture else None,
+        'user_type': user_type,
+        'projects': project_data,
+    }
+
+    return Response(response_data, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def api_update_profile(request):
+    user = request.user
+    profile = user.profile
+
+    email = request.data.get('email')
+    password = request.data.get('password')
+    phone_number = request.data.get('phone')
+    profile_picture = request.FILES.get('image')
+
+    # Check if the email is being changed and if it already exists
+    if email and email != user.email and User.objects.filter(email=email).exists():
+        return Response({"error": "Email address already in use."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Validate password
+    if password and not validate_password(password):
+        return Response({"error": "Password must be at least 8 characters long, contain uppercase and lowercase letters, numbers, and symbols."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Update user details
+    user.first_name = request.data.get('fname', user.first_name)
+    if email:
+        user.email = email
+    if password:
+        user.set_password(password)
+
+    user.save()
+
+    # Update profile information
+    profile.phone_number = phone_number
+    profile.updated_at = timezone.now()
+
+    if profile_picture:
+        unique_filename = str(uuid.uuid4()) + os.path.splitext(profile_picture.name)[1]
+        profile_picture_path = default_storage.save(unique_filename, profile_picture)
+        dest_path = os.path.join(settings.MEDIA_ROOT, 'profile_pictures', unique_filename)
+
+        try:
+            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+            os.rename(os.path.join(settings.MEDIA_ROOT, profile_picture_path), dest_path)
+            profile.profile_picture = 'profile_pictures/' + unique_filename
+        except Exception as e:
+            return Response({"error": f"Error saving profile picture: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    profile.save()
+
+    # If the password was changed, update the session to prevent logout
+    if password:
+        update_session_auth_hash(request, user)
+
+    return Response({"success": "Profile updated successfully."}, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@login_required
+def chat_room_view(request, pk):
+    user = request.user
+    profile = user.profile
+    project = get_object_or_404(Projects, pk=pk)
+
+    # Retrieve user_id and user_type from query parameters
+    user_id = request.GET.get('user_id', None)
+    user_type = request.GET.get('user_type', None)
+
+    # Filter project members based on user_id or user_type if provided
+    project_members = ProjectMembers.objects.filter(project=project, is_deleted=0)
+
+    # Retrieve member details
+    project_member_details = []
+    for member in project_members:
+        member_profile = Profile.objects.get(user_id=member.user_id)
+        member_user = Users.objects.get(user_id=member.user_id)
+        member_info = {
+            'first_name': member_profile.user.first_name,
+            'last_name': member_profile.user.last_name,
+            'phone_number': member_profile.phone_number,
+            'image': member_profile.profile_picture.url if member_profile.profile_picture else None,
+            'id': member_profile.user.id,
+            'role': 'client' if member_profile.user_type == 'client' else 'contractor',
+            'online': member_user.online,
+            'user_type': member_profile.user_type,
+            'logged_in': member_user.logged_in,
+            'logged_out': member_user.logged_out,
+        }
+        project_member_details.append(member_info)
+
+    # Fetch chat messages
+    messages = Chat.objects.filter(group=project.groupchat, is_deleted=0).order_by('timestamp')
+    
+    # Handle bookmarks for chat messages
+    bookmarks = Bookmarks.objects.filter(is_deleted=0, item_type='Chat', user_id=request.user.id)
+    bookmarked_chat_ids = bookmarks.values_list('item_id', flat=True)
+    bookmarked_chats = Chat.objects.filter(chat_id__in=bookmarked_chat_ids)
+    chat_messages = (messages | bookmarked_chats).distinct()
+
+    # Optionally filter chat messages by search term
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        chat_messages = chat_messages.filter(message__icontains=search_query)
+
+    # Create a list to store chat messages with read status
+    chat_messages_with_status = []
+    for message in chat_messages:
+        # Check the chat status for the current user
+        chat_status = ChatStatus.objects.filter(chat=message, group_id=pk, is_deleted=0).first()
+        
+        if chat_status:
+            is_read = chat_status.status == 0  # Message is unread if status is 0
+            receiver_user_id = chat_status.user_id  # Safely access user_id
+        else:
+            is_read = False  # Default to read if no status found
+            receiver_user_id = None  # No receiver found
+
+        # Ensure receiver_user_id is not None before trying to get the profile
+        if receiver_user_id:
+            receiver_profile = get_object_or_404(Profile, user_id=receiver_user_id)
+            receiver_user_type = receiver_profile.user_type  # Safely access user_type
+        else:
+            receiver_profile = None  # Handle the case where there's no receiver
+            receiver_user_type = None  # Handle the case where there's no user type
+
+        chat_messages_with_status.append({
+            'id': message.chat_id,
+            'message': message.message,
+            'timestamp': message.timestamp,
+            'sender': message.sender_user_id,
+            'receiver': receiver_user_id,  # Ensure you're using the correct variable
+            'receiver_type': receiver_user_type,  # Use the safely accessed user_type
+            'is_starred': message.chat_id in bookmarked_chat_ids,
+            'file': message.file.url if message.file else None,
+            'file_extension': os.path.splitext(message.file.name)[1].lower().strip('.') if message.file else '',
+            'is_read': is_read,  # Add read status here
+        })
+
+    if user_id:
+        project_members = project_members.filter(user_id=user_id)
+        project_member_details = [
+            member for member in project_member_details if member['id'] == user_id
+        ]
+        chat_messages_with_status = [
+            message for message in chat_messages_with_status if message['receiver'] == user_id
+        ]
+    elif user_type:
+        project_members = project_members.filter(user__profile__user_type=user_type)
+        project_member_details = [
+            member for member in project_member_details if member['user_type'] == user_type
+        ]
+        chat_messages_with_status = [
+            message for message in chat_messages_with_status if message['receiver_type'] == user_type
+        ]      
+
+    # Prepare the response data
+    response_data = {
+        'project': {
+            'id': project.project_id,
+            'name': project.project_name,
+            # add other relevant project details here
+        },
+        'project_member_details': project_member_details,
+        'chat_messages': chat_messages_with_status,
+    }
+    
+    return Response(response_data)
+
+@api_view(['POST'])
+@login_required
+def send_message_api(request, pk):
+    user = request.user
+    profile = user.profile
+    project = get_object_or_404(Projects, pk=pk)
+    message = request.data.get('message')
+    selected_users = request.data.get('selected_users')  # List of user IDs
+    file = request.FILES.get('file')
+    reply_message_id = request.POST.get('reply_message_id')
+    original_message = get_object_or_404(Chat, chat_id=reply_message_id)
+
+    # Create the chat message
+    new_chat = Chat.objects.create(
+        group=project.groupchat,
+        sender_user=user,
+        message=message,
+        timestamp=timezone.now(),
+        is_deleted=0,
+        reply=original_message.message, 
+        file=file
+    )
+
+    # Send to selected users only
+    for user_id in selected_users:
+        existing_status = ChatStatus.objects.filter(
+            user_id=user_id,
+            group=new_chat.group,
+            chat=new_chat
+        ).exists()
+
+        if not existing_status:
+            ChatStatus.objects.create(
+                chat=new_chat,
+                group=project.groupchat,
+                user_id=user_id,
+                status=1,
+                is_deleted=0 
+            )
+
+    return Response({'status': 'Message sent successfully'}, status=status.HTTP_201_CREATED)
+
+class EditMessageAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        message_id = request.data.get('mid')
+        new_message = request.data.get('edited_message')
+
+        # Fetch the chat message for the current user
+        chat = get_object_or_404(Chat, chat_id=message_id, sender_user=request.user)
+        
+        chat.message = new_message
+        chat.updated_at = timezone.now()
+        chat.save()
+
+        return Response({'success': True, 'message': 'Message edited successfully.'}, status=status.HTTP_200_OK)
+
+class DeleteMessageAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        message_id = request.data.get('mid')
+        chat_message = get_object_or_404(Chat, chat_id=message_id, sender_user=request.user)
+
+        # Set the is_deleted flag to 1 for the Chat message
+        chat_message.is_deleted = 1
+        chat_message.deleted_at = timezone.now()
+        chat_message.save()
+
+        # Set the is_deleted flag to 1 for related ChatStatus entries
+        chat_statuses = ChatStatus.objects.filter(chat=chat_message)
+        for chat_status in chat_statuses:
+            chat_status.is_deleted = 1
+            chat_status.deleted_at = timezone.now()
+            chat_status.status = 0
+            chat_status.save()
+
+        return Response({'success': True, 'message': 'Message deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+
+class ResourceListView(generics.ListAPIView):
+    serializer_class = ResourceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        project_id = self.kwargs['pk']
+        profile = user.profile
+        resources = Resources.objects.filter(project_id=project_id, is_deleted=0)
+
+        # Apply search functionality if a search query is provided
+        search_query = self.request.GET.get('search', '').strip()
+        if search_query:
+            resources = resources.filter(
+                Q(resource_name__icontains=search_query) | 
+                Q(resource_details__icontains=search_query)
+            )
+        
+        # Apply filtering by resource type if provided
+        resource_type = self.request.GET.get('filter')
+        if resource_type:
+            resources = resources.filter(resource_type=resource_type)
+
+        return resources
+
+class AddResourceView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        project = get_object_or_404(Projects, pk=pk)
+        file = request.FILES.get('resource_file')
+
+        if file:
+            file_extension = os.path.splitext(file.name)[1]
+            unique_filename = str(uuid.uuid4()) + file_extension
+            profile_picture_path = default_storage.save(unique_filename, file)
+
+            dest_path = os.path.join(settings.MEDIA_ROOT, 'project_resources', unique_filename)
+
+            try:
+                os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+                os.rename(os.path.join(settings.MEDIA_ROOT, profile_picture_path), dest_path)
+
+                chat_file = 'project_resources/' + unique_filename
+                file_size = file.size
+                file_size_str = (
+                    f"{file_size} B" if file_size < 1024 else
+                    f"{file_size / 1024:.2f} KB" if file_size < 1024 * 1024 else
+                    f"{file_size / (1024 * 1024):.2f} MB"
+                )
+
+                resource_name_with_extension = request.data['resource_name'] + file_extension
+
+                resource = Resources(
+                    user=request.user,
+                    project=project,
+                    resource_name=resource_name_with_extension,
+                    resource_details=request.data['resource_details'],
+                    resource_type=request.data['resource_type'],
+                    resource_directory=chat_file,
+                    resource_size=file_size_str,
+                    is_deleted=0,
+                    resource_status='Active',
+                    created_at=timezone.now()
+                )
+                resource.save()
+
+                return Response(ResourceSerializer(resource).data, status=status.HTTP_201_CREATED)
+
+            except Exception as e:
+                return Response({'error': f"Error saving project file: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({'error': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DeleteResourceView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk, resource_id):
+        resource = get_object_or_404(Resources, pk=resource_id, project__pk=pk)
+        resource.is_deleted = 1
+        resource.deleted_at = timezone.now()
+        resource.save()
+
+        Bookmarks.objects.filter(
+            item_id=resource_id,
+            item_type='Resource',
+            user_id=request.user.id
+        ).update(is_deleted=1)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+class TaskListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        # Get the project and user information
+        user = request.user
+        project = get_object_or_404(Projects, pk=pk, is_deleted=0)
+
+        # Fetch all tasks related to the project, filter by date if provided
+        tasks = Tasks.objects.filter(project_id=pk, is_deleted=0).distinct()
+
+        # Filter tasks by a specific date (if query param exists)
+        task_due_date = request.GET.get('due_date')
+        if task_due_date:
+            tasks = tasks.filter(task_due_date=task_due_date)
+
+        task_list = []
+        now = timezone.now()
+
+        # Loop through tasks to prepare data with countdown and assigned person
+        for task in tasks:
+            due_date = task.task_due_date
+            assigned_person = task.member.all()
+
+            # Calculate countdown (days left or overdue days)
+            if due_date:
+                days_left = (due_date - now.date()).days
+                countdown = days_left if days_left >= 0 else f"Overdue by {-days_left} days"
+            else:
+                countdown = "No due date"
+
+            task_list.append({
+                'task_name': task.task_name,
+                'due_date': task.task_due_date,
+                'countdown': countdown,
+                'status': task.task_status,
+                'assigned_to': [f"{person.first_name} {person.last_name}" for person in assigned_person]
+            })
+
+        return Response(task_list, status=status.HTTP_200_OK)
+class AddTaskAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk, format=None):
+        project = get_object_or_404(Projects, pk=pk)
+        
+        # Get the list of member IDs from the request
+        member_ids = request.data.get('members', [])
+        members = User.objects.filter(id__in=member_ids)
+
+        # Parse dates
+        task_given_date = timezone.now().date()
+        try:
+            task_due_date = datetime.strptime(request.data['due_date'], '%Y-%m-%d').date()
+        except (KeyError, ValueError):
+            return Response({"error": "Invalid date format. Expected YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Calculate days left
+        days_left = (task_due_date - task_given_date).days
+
+        # Create the task
+        task = Tasks(
+            leader=request.user,
+            project=project,
+            task_name=request.data.get('task_name'),
+            task_details=request.data.get('task_details'),
+            task_given_date=task_given_date,
+            task_due_date=task_due_date,
+            task_days_left=days_left,
+            task_days_overdue=0,
+            task_percentage_complete=0,
+            task_status='Ongoing',
+            created_at=timezone.now(),
+            is_deleted=False
+        )
+
+        # Handle dependent task if provided
+        dependent_task_id = request.data.get('dependent_task')
+        if dependent_task_id:
+            task.dependant_task_id = dependent_task_id
+
+        task.save()
+
+        # Add members to the task
+        task.member.set(members)
+        task.save()
+
+        serializer = TaskSerializer(task)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class DeleteTaskAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk, task_id, format=None):
+        task = get_object_or_404(Tasks, pk=task_id, project__pk=pk)
+        task.delete()
+        return Response({"message": "Task deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+
+
+class CompleteTaskAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk, task_id, format=None):
+        task = get_object_or_404(Tasks, pk=task_id, project__pk=pk)
+        
+        task.task_status = 'Completed Today'
+        if task.task_days_left > 0:
+            task.task_status = 'Completed Early'
+        elif task.task_days_left == 0:
+            task.task_status = 'Completed Today'
+        else:
+            task.task_status = f'Completed Late (by {abs(task.task_days_left)} days)'
+        
+        task.task_completed_date = timezone.now()
+        task.save()
+
+        serializer = TaskSerializer(task)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class HideTaskAPI(DestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = Tasks.objects.all()
+
+    def delete(self, request, pk, task_id):
+        task = get_object_or_404(Tasks, pk=task_id, project__pk=pk)
+        task.delete()
+        return Response({'message': 'Task hidden successfully.'}, status=204)
+
+class RestoreTaskAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, pk, task_id):
+        task = get_object_or_404(Tasks, pk=task_id, project_id=pk)
+        task.is_deleted = 0
+        task.save()
+        return Response({'message': 'Task restored successfully.'}, status=200)
+
+class HideProjectAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, pk):
+        project = get_object_or_404(Projects, pk=pk)
+        project.is_deleted = 2  # Assuming 2 is for 'hidden'
+        project.save()
+        return Response({'message': 'Project hidden successfully.'}, status=200)
+
+class RestoreProjectAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, pk):
+        project = get_object_or_404(Projects, pk=pk)
+        project.is_deleted = 0
+        project.save()
+        return Response({'message': 'Project restored successfully.'}, status=200)
+
+class DeleteProjectAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, pk):
+        project = get_object_or_404(Projects, pk=pk)
+
+        # Check if the logged-in user is the project leader
+        if project.project_leader != request.user:
+            return Response({'error': 'You do not have permission to delete this project.'}, status=403)
+
+        # Mark project as deleted
+        project.is_deleted = 1
+        project.deleted_at = timezone.now()
+        project.save()
+        return Response({'message': 'Project deleted successfully.'}, status=200)
+
+class HideResourceAPI(DestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = Resources.objects.all()
+
+    def delete(self, request, pk, resource_id):
+        resource = get_object_or_404(Resources, pk=resource_id, project__pk=pk)
+        resource.delete()
+        return Response({'message': 'Resource hidden successfully.'}, status=204)
+
+class RestoreResourceAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, pk, resource_id):
+        resource = get_object_or_404(Resources, pk=resource_id, project__pk=pk)
+        resource.is_deleted = 0
+        resource.save()
+        return Response({'message': 'Resource restored successfully.'}, status=200)
+
+class TransactionViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request, pk=None):
+        # List all transactions for a specific project
+        project = get_object_or_404(Projects, pk=pk)
+        transactions = Transactions.objects.filter(project_id=project.project_id, is_deleted=0)
+        serializer = TransactionSerializer(transactions, many=True)
+        return Response(serializer.data)
+
+    def retrieve(self, request, pk=None, transaction_id=None):
+        # Retrieve a specific transaction
+        transaction = get_object_or_404(Transactions, transaction_id=transaction_id)
+        serializer = TransactionSerializer(transaction)
+        return Response(serializer.data)
+
+    def create(self, request, pk=None):
+        # Create a new transaction
+        serializer = TransactionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, pk=None, transaction_id=None):
+        # Update an existing transaction
+        transaction = get_object_or_404(Transactions, transaction_id=transaction_id)
+        serializer = TransactionSerializer(transaction, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, pk=None, transaction_id=None):
+        # Soft delete a transaction
+        transaction = get_object_or_404(Transactions, transaction_id=transaction_id)
+        transaction.is_deleted = 1  # Mark as deleted
+        transaction.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def restore(self, request, pk=None, transaction_id=None):
+        # Restore a soft-deleted transaction
+        transaction = get_object_or_404(Transactions, transaction_id=transaction_id)
+        transaction.is_deleted = 0  # Mark as not deleted
+        transaction.save()
+        return Response(status=status.HTTP_200_OK)
+
+class EventViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request, pk=None):
+        # List all transactions for a specific project
+        project = get_object_or_404(Projects, pk=pk)
+        events = Events.objects.filter(project_id=project.project_id, is_deleted=0)
+        serializer = EventsSerializer(events, many=True)
+        return Response(serializer.data)
+
+    def restore(self, request, pk, event_id):
+        event = get_object_or_404(Events, event_id=event_id, project_id=pk)
+        event.is_deleted = 0
+        event.save()
+        messages.success(request, 'Event restored successfully.')
+        return redirect('events', pk=pk)
+
+    def hide(self, request, pk, event_id):
+        get_object_or_404(Events, pk=event_id, project__pk=pk).delete()
+        messages.success(request, 'Event deleted successfully.')
+        return redirect('events', pk=pk)
+
+    def add(self, request, pk):
+        if request.method == 'POST':
+            project = self.get_project(pk)
+
+            # Parse date and time
+            event_date = datetime.strptime(request.POST['event_date'], '%Y-%m-%d').date()
+            event_start_time = datetime.strptime(request.POST['event_start_time'], '%H:%M').time()
+            event_end_time = datetime.strptime(request.POST['event_end_time'], '%H:%M').time()
+
+            event = Events(
+                user=request.user,
+                project=project,
+                event_name=request.POST['event_name'],
+                event_details=request.POST['event_details'],
+                event_date=event_date,
+                event_start_time=event_start_time,
+                event_end_time=event_end_time,
+                event_location=request.POST.get('event_location', ''),
+                event_link=request.POST.get('event_link', ''),
+                event_status='Scheduled',  # Initial status
+                created_at=timezone.now(),
+                is_deleted=0
+            )
+
+            event.save()
+            messages.success(request, 'Event added successfully.')
+            return redirect('events', pk=pk)
+
+        return redirect('events', pk=pk)
+
+    def delete(self, request, pk, event_id):
+        event = get_object_or_404(Events, pk=event_id, project__pk=pk)
+        event.is_deleted = 1
+        event.deleted_at = timezone.now()
+        event.save()
+        
+        # Mark related bookmarks as deleted
+        Bookmarks.objects.filter(
+            item_id=event_id,
+            item_type='Event',
+            user_id=request.user.id
+        ).update(is_deleted=1)
+
+        messages.success(request, 'Event marked as deleted.')
+        return redirect('events', pk=pk)
+
+# Function Views
 
 def tasks1(request, project_id):
     # Retrieve tasks for the specific project
@@ -3265,8 +4169,6 @@ def send_message(request, pk):
         'user_details': user_details,
     }
     return render(request, 'chat.html', context)
-
-
 
 @login_required
 def add_project_member(request, pk):
