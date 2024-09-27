@@ -484,6 +484,38 @@ class VerifyOtp1API(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class ProjectDetailAPI(APIView):
+    def get(self, request, pk):
+        user = request.user
+        profile = user.profile
+        project = get_object_or_404(Projects, pk=pk)
+        
+        # Fetch project leader details
+        leader_profile = Profile.objects.get(user_id=project.leader_id)
+        
+        # Fetch unread messages and tasks
+        unread_messages = ChatStatus.objects.filter(user_id=user.id, group=project.groupchat, status=1, is_deleted=0)
+        unread_tasks = Tasks.objects.filter(
+            project=project,
+            member__in=[user],
+            is_deleted=0,
+            task_status='Ongoing'
+        ).distinct()
+
+        # Serialize data
+        project_data = ProjectSerializer(project).data
+        unread_tasks_data = TaskSerializer(unread_tasks, many=True).data
+        unread_messages_data = ChatStatusSerializer(unread_messages, many=True).data
+
+        # Prepare response data
+        response_data = {
+            'project': project_data,
+            'unread_tasks': unread_tasks_data,
+            'unread_messages': unread_messages_data
+        }
+        
+        return Response(response_data)
+
 class ResetPasswordAPI(APIView):
     def post(self, request):
         email = request.data.get('email')
