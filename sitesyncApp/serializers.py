@@ -10,6 +10,11 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = Profile
         fields = ['user_type', 'profile_picture']
 
+class ProfileSerializer1(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = '__all__'
+
 class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Projects

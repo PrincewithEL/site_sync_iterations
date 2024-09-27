@@ -369,7 +369,7 @@ def create_project(request):
                 estimated_budget=balance,
                 actual_expenditure=actual_expenditure,
                 balance=balance,
-                project_status=project_status,
+                project_status='Active',
                 is_deleted=is_deleted
             )
 
@@ -904,6 +904,49 @@ class ResourceListView(generics.ListAPIView):
             resources = resources.filter(resource_type=resource_type)
 
         return resources
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_potential_project_members(request, project_id):
+    user = request.user
+    try:
+        # Fetch the project object
+        project = Projects.objects.get(project_id=project_id, is_deleted=0)
+        
+        # Exclude users who are already members of the project
+        existing_members = ProjectMembers.objects.filter(project=project, is_deleted=0).values_list('user_id', flat=True)
+
+        # Get clients and contractors excluding existing members
+        clients_profiles = Profile.objects.filter(user_type='Client').exclude(user__id__in=existing_members).exclude(user_id=project.leader_id)
+        contractors_profiles = Profile.objects.filter(user_type='Contractor').exclude(user__id__in=existing_members).exclude(user_id=project.leader_id)
+
+        # Combine the two lists
+        users = list(clients_profiles) + list(contractors_profiles)
+
+        # Retrieve user details and prepare the response
+        user_details = []
+        for profile in users:
+            user_info = {
+                'id': profile.user.id,
+                'first_name': profile.user.first_name,
+                'last_name': profile.user.last_name,
+                'phone_number': profile.phone_number,
+                'email': profile.user.email,
+                'profile_picture': profile.profile_picture.url if profile.profile_picture else None,
+                'role': profile.user_type
+            }
+            user_details.append(user_info)
+
+        # Prepare the response
+        response_data = {
+            'project_id': project_id,
+            'potential_members': user_details
+        }
+        
+        return Response(response_data, status=status.HTTP_200_OK)
+
+    except Projects.DoesNotExist:
+        return Response({"error": "Project not found."}, status=status.HTTP_404_NOT_FOUND)
 
 class AddResourceView(APIView):
     permission_classes = [IsAuthenticated]
