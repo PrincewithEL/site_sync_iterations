@@ -70,3 +70,8 @@ class EventsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Events
         fields = '__all__'
+
+class ChatStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatStatus
+        fields = ['status', 'timestamp', 'user_id']
