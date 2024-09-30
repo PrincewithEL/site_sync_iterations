@@ -23,7 +23,7 @@ class ProjectSerializer(serializers.ModelSerializer):
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tasks
-        fields = ['task_name', 'task_status', 'project', 'start_date', 'end_date']
+        fields = ['task_name', 'task_status', 'project', 'start_date', 'end_date', 'task_transaction_price']
 
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)

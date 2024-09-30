@@ -243,6 +243,7 @@ class Tasks(models.Model):
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField(blank=True, null=True)
     is_deleted = models.IntegerField()
+    task_transaction_price = models.FloatField(default=0.0)
     deleted_at = models.DateTimeField(null=True, blank=True)
     objects = DeletableManager() 
 

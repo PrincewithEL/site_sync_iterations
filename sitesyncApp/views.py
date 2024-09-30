@@ -855,6 +855,28 @@ def send_message_api(request, pk):
         file=file
     )
 
+    # If a file is attached, create a resource entry
+    if file:
+        resource_name = file.name
+        resource_details = message[:80] if message else "No details provided"
+        resource_size = file.size
+        resource_directory = os.path.join('chat_files', file.name)
+
+        Resources.objects.create(
+            user=user,
+            project=project,
+            resource_name=resource_name,
+            resource_details=resource_details,
+            resource_directory=resource_directory,
+            created_at=timezone.now(),
+            updated_at=None,
+            resource_status="active",
+            resource_type="file",
+            resource_size=f"{resource_size} bytes",
+            is_deleted=0,
+            deleted_at=None
+        )
+
     # Send to selected users only
     for user_id in selected_users:
         existing_status = ChatStatus.objects.filter(
@@ -901,6 +923,13 @@ class DeleteMessageAPIView(APIView):
         chat_message.is_deleted = 1
         chat_message.deleted_at = timezone.now()
         chat_message.save()
+
+        # If the chat message has an attached file, mark the corresponding resource as deleted
+        if chat_message.file:
+            resource = get_object_or_404(Resources, resource_directory=chat_message.file, project=chat_message.group.project)
+            resource.is_deleted = 1
+            resource.deleted_at = timezone.now()
+            resource.save()
 
         # Set the is_deleted flag to 1 for related ChatStatus entries
         chat_statuses = ChatStatus.objects.filter(chat=chat_message)
@@ -1087,6 +1116,7 @@ class TaskListView(APIView):
             })
 
         return Response(task_list, status=status.HTTP_200_OK)
+
 class AddTaskAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -1107,32 +1137,41 @@ class AddTaskAPIView(APIView):
         # Calculate days left
         days_left = (task_due_date - task_given_date).days
 
-        # Create the task
-        task = Tasks(
-            leader=request.user,
-            project=project,
-            task_name=request.data.get('task_name'),
-            task_details=request.data.get('task_details'),
-            task_given_date=task_given_date,
-            task_due_date=task_due_date,
-            task_days_left=days_left,
-            task_days_overdue=0,
-            task_percentage_complete=0,
-            task_status='Ongoing',
-            created_at=timezone.now(),
-            is_deleted=False
-        )
+        # Get transaction price
+        task_transaction_price = float(request.data.get('transaction_price', 0.0))
 
-        # Handle dependent task if provided
-        dependent_task_id = request.data.get('dependent_task')
-        if dependent_task_id:
-            task.dependant_task_id = dependent_task_id
+        # Check if the task transaction price exceeds the project's balance
+        new_balance = project.balance - task_transaction_price
+        if new_balance >= 0:
+            # Create the task
+            task = Tasks(
+                leader=request.user,
+                project=project,
+                task_name=request.data.get('task_name'),
+                task_details=request.data.get('task_details'),
+                task_given_date=task_given_date,
+                task_due_date=task_due_date,
+                task_days_left=days_left,
+                task_days_overdue=0,
+                task_percentage_complete=0,
+                task_status='Ongoing',
+                task_transaction_price=task_transaction_price,
+                created_at=timezone.now(),
+                is_deleted=False
+            )
 
-        task.save()
+            # Handle dependent task if provided
+            dependent_task_id = request.data.get('dependent_task')
+            if dependent_task_id:
+                task.dependant_task_id = dependent_task_id
 
-        # Add members to the task
-        task.member.set(members)
-        task.save()
+            task.save()
+            task.member.set(members)
+
+            # Update project budget after adding task transaction
+            project.actual_expenditure += task_transaction_price
+            project.balance = project.estimated_budget - project.actual_expenditure
+            project.save()
 
         serializer = TaskSerializer(task)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -1143,9 +1182,21 @@ class DeleteTaskAPIView(APIView):
 
     def delete(self, request, pk, task_id, format=None):
         task = get_object_or_404(Tasks, pk=task_id, project__pk=pk)
-        task.delete()
-        return Response({"message": "Task deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
+        # Reverse the effect of each transaction and then delete it
+        for transaction in task.transactions.all():
+            # Reverse the transaction impact on project budget and balance
+            task.project.actual_expenditure -= transaction.total_transaction_price
+            task.project.balance += transaction.total_transaction_price
+            task.project.save()
+
+            # Delete the transaction
+            transaction.delete()
+
+        # Delete the task after reversing and deleting the transactions
+        task.delete()
+
+        return Response({"message": "Task and associated transactions deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
 class CompleteTaskAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -3343,31 +3394,46 @@ def add_task(request, pk):
         # Calculate days left
         days_left = (task_due_date - task_given_date).days
 
-        # Create a new task
-        task = Tasks(
-            leader=request.user,  # Assuming the current user is the leader
-            project=project,
-            task_name=request.POST['task_name'],
-            task_details=request.POST['task_details'],
-            task_given_date=task_given_date,
-            task_due_date=task_due_date,
-            task_days_left=days_left,
-            task_days_overdue=0,  # Initially 0
-            task_percentage_complete=0,  # Initially 0%
-            task_status='Ongoing',  # Initial status
-            created_at=timezone.now(),
-            is_deleted=0
-        )
+        # Get the task transaction price from the form
+        task_transaction_price = float(request.POST['transaction_price'])
 
-        # Handle dependent task if provided
-        dependent_task_id = request.POST.get('dependent_task')
-        if dependent_task_id:
-            task.dependant_task_id = dependent_task_id
+        # Check if the task transaction price exceeds the project's balance
+        new_balance = project.balance - task_transaction_price
+        if new_balance >= 0:
+            # Create a new task
+            task = Tasks(
+                leader=request.user,
+                project=project,
+                task_name=request.POST['task_name'],
+                task_details=request.POST['task_details'],
+                task_given_date=task_given_date,
+                task_due_date=task_due_date,
+                task_days_left=days_left,
+                task_days_overdue=0,
+                task_percentage_complete=0,
+                task_status='Ongoing',
+                task_transaction_price=task_transaction_price,  # Set the transaction price for the task
+                created_at=timezone.now(),
+                is_deleted=0
+            )
 
-        task.save()
-        
-        # Add members to the task
-        task.member.set(members)  # Use the set() method to assign multiple members
+            # Handle dependent task if provided
+            dependent_task_id = request.POST.get('dependent_task')
+            if dependent_task_id:
+                task.dependant_task_id = dependent_task_id
+
+            task.save()
+            task.member.set(members)
+
+            # Update project budget after adding task transaction
+            project.actual_expenditure += task_transaction_price
+            project.balance = project.estimated_budget - project.actual_expenditure
+            project.save()
+
+            messages.success(request, 'Task and transaction added successfully.')
+        else:
+            messages.error(request, 'Transaction price exceeds project budget.')
+            return redirect('transactions', pk=pk)
 
         messages.success(request, '')
         return redirect('tasks', pk=pk)  # Assuming you have a 'project_tasks' view
@@ -3378,7 +3444,22 @@ def add_task(request, pk):
 
 @login_required
 def delete_task(request, pk, task_id):
-    task = get_object_or_404(Tasks, pk=task_id, project__pk=pk).delete()
+    task = get_object_or_404(Tasks, pk=task_id, project__pk=pk)
+
+    # Reverse the effect of each transaction and then delete it
+    for transaction in task.transactions.all():
+        # Reverse the transaction impact on project budget and balance
+        task.project.actual_expenditure -= transaction.total_transaction_price
+        task.project.balance += transaction.total_transaction_price
+        task.project.save()
+
+        # Delete the transaction
+        transaction.delete()
+
+    # Delete the task after reversing and deleting the transactions
+    task.delete()
+
+    messages.success(request, 'Task and associated transactions deleted successfully.')
     return redirect('tasks', pk=pk)
 
 @login_required
@@ -4039,6 +4120,12 @@ def delete_message(request, pk):
             chat_message.deleted_at = timezone.now()
             chat_message.save()
             
+            # Delete associated resource if it exists
+            if chat_message.file:
+                resource = get_object_or_404(Resources, resource_directory=chat_message.file)
+                resource.is_deleted = 1
+                resource.deleted_at = timezone.now()
+                resource.save()
 
             # Set the is_deleted flag to 1 for related ChatStatus entries
             chat_statuses = ChatStatus.objects.filter(chat=chat_message)
@@ -4175,6 +4262,21 @@ def send_message(request, pk):
 
         new_chat.save()
 
+        # Add the uploaded file to the Resources model
+        if chat_file:
+            Resources.objects.create(
+                user=user,
+                project=project,
+                resource_name=file.name,
+                resource_details=message[:80],  # Use the first 80 characters of the message as resource details
+                resource_directory=chat_file,
+                created_at=timezone.now(),
+                updated_at=timezone.now(),
+                resource_status="active",
+                resource_type="file",
+                resource_size=str(file.size),
+                is_deleted=0
+            )
 
         # Implementing the trigger logic
         project_members = ProjectMembers.objects.filter(project=project, is_deleted=0).exclude(user=user)
