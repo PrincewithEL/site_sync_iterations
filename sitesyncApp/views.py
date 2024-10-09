@@ -836,13 +836,19 @@ def chat_room_view(request, pk):
 @login_required
 def send_message_api(request, pk):
     user = request.user
-    profile = user.profile
     project = get_object_or_404(Projects, pk=pk)
     message = request.data.get('message')
     selected_users = request.data.get('selected_users')  # List of user IDs
     file = request.FILES.get('file')
-    reply_message_id = request.POST.get('reply_message_id')
-    original_message = get_object_or_404(Chat, chat_id=reply_message_id)
+    reply_message_id = request.data.get('reply_message_id')
+
+    # Fetch original message only if reply_message_id is present
+    original_message = None
+    if reply_message_id:
+        try:
+            original_message = Chat.objects.get(chat_id=reply_message_id)
+        except Chat.DoesNotExist:
+            return Response({'detail': 'The message you are replying to does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
 
     # Create the chat message
     new_chat = Chat.objects.create(
@@ -851,11 +857,11 @@ def send_message_api(request, pk):
         message=message,
         timestamp=timezone.now(),
         is_deleted=0,
-        reply=original_message.message, 
+        reply=original_message.message if original_message else None,
         file=file
     )
 
-    # If a file is attached, create a resource entry
+    # Handle resource creation if file is attached
     if file:
         resource_name = file.name
         resource_details = message[:80] if message else "No details provided"
@@ -877,7 +883,7 @@ def send_message_api(request, pk):
             deleted_at=None
         )
 
-    # Send to selected users only
+    # Send to selected users
     for user_id in selected_users:
         existing_status = ChatStatus.objects.filter(
             user_id=user_id,
@@ -3903,7 +3909,8 @@ def project_detail(request, pk):
             'online': member_user.online,
             'user_type': member_profile.user_type,
             'logged_in': member_user.logged_in,
-            'logged_out': member_user.logged_out,            
+            'logged_out': member_user.logged_out,  
+            'member_status': member.status,          
         }
         project_member_details.append(member_info)
 

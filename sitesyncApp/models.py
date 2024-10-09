@@ -262,8 +262,8 @@ class Tasks(models.Model):
     @property
     def days_overdue(self):
         if self.task_due_date:
-            return (self.task_due_date + timezone.now().date()).days
-        return None  
+            return (timezone.now().date() - self.task_due_date).days
+        return None
 
     @property
     def completed_at(self):

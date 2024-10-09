@@ -263,33 +263,157 @@
         <ul class="mailbox-attachments clearfix" id="resources">
             {% for resource in resources %}
             <li>
-                <span class="mailbox-attachment-icon">
-{% if resource.resource_type == 'Video' %}
-    <i class="fa fa-file-video-o"></i>
-{% elif resource.resource_type == 'Audio' %}
-    <i class="fa fa-file-audio-o"></i>
-{% elif resource.resource_type == 'Image' %}
-    <img src="{{ MEDIA_URL }}{{ resource.resource_directory }}" alt="Attachment" style="width: 100px; height: 100px;" />
-{% elif resource.resource_type == 'Document' %}
-    {% if resource.resource_name|file_extension:'.pdf' %}
-        <i class="fa fa-file-pdf-o"></i>
-    {% elif resource.resource_name|file_extension:'.doc' or resource.resource_name|file_extension:'.docx' %}
-        <i class="fa fa-file-word-o"></i>
-    {% elif resource.resource_name|file_extension:'.xls' or resource.resource_name|file_extension:'.xlsx' %}
-        <i class="fa fa-file-excel-o"></i>
-    {% elif resource.resource_name|file_extension:'.ppt' or resource.resource_name|file_extension:'.pptx' %}
-        <i class="fa fa-file-powerpoint-o"></i>
-    {% elif resource.resource_name|file_extension:'.txt' %}
-        <i class="fa fa-file-text-o"></i>
-    {% elif resource.resource_name|file_extension:'.zip' or resource.resource_name|file_extension:'.rar' %}
-        <i class="fa fa-file-archive-o"></i>
+<!-- HTML Template -->
+<div class="file-preview-container">
+{% for resource in resources %}
+  <div class="file-preview-item" data-file-url="{{ MEDIA_URL }}{{ resource.resource_directory }}" data-file-type="{{ resource.resource_type }}" data-file-name="{{ resource.resource_name }}">
+    {% if resource.resource_type == 'Video' %}
+      <div class="preview-thumbnail" style="width: 100px; height: 100px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+        <i class="fa fa-file-video-o"></i>
+      </div>
+    {% elif resource.resource_type == 'Audio' %}
+      <div class="preview-thumbnail" style="width: 100px; height: 100px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+        <i class="fa fa-file-audio-o"></i>
+      </div>
+    {% elif resource.resource_type == 'Image' %}
+      <img src="{{ MEDIA_URL }}{{ resource.resource_directory }}" alt="{{ resource.resource_name }}" style="width: 100px; height: 100px; object-fit: cover;" />
+    {% elif resource.resource_type == 'Document' %}
+      <div class="preview-thumbnail" style="width: 100px; height: 100px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+        {% with extension=resource.resource_name|lower|split:'.'|last %}
+          {% if extension == 'pdf' %}
+            <i class="fa fa-file-pdf-o"></i>
+          {% elif extension == 'doc' or extension == 'docx' %}
+            <i class="fa fa-file-word-o"></i>
+          {% elif extension == 'xls' or extension == 'xlsx' %}
+            <i class="fa fa-file-excel-o"></i>
+          {% elif extension == 'ppt' or extension == 'pptx' %}
+            <i class="fa fa-file-powerpoint-o"></i>
+          {% else %}
+            <i class="fa fa-file-o"></i>
+          {% endif %}
+        {% endwith %}
+      </div>
     {% else %}
+      <div class="preview-thumbnail" style="width: 100px; height: 100px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;">
         <i class="fa fa-file-o"></i>
+      </div>
     {% endif %}
-{% else %}
-    <i class="fa fa-file-o"></i>
-{% endif %}
-                </span>
+    <p>{{ resource.resource_name }}</p>
+  </div>
+</div>
+
+<!-- Modal for file preview -->
+<div id="filePreviewModal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <div id="filePreviewContent"></div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const fileItems = document.querySelectorAll('.file-preview-item');
+  const modal = document.getElementById('filePreviewModal');
+  const modalContent = document.getElementById('filePreviewContent');
+  const closeBtn = document.querySelector('.close');
+
+  fileItems.forEach(item => {
+    item.addEventListener('click', function() {
+      const fileUrl = this.dataset.fileUrl;
+      const fileType = this.dataset.fileType;
+      const fileName = this.dataset.fileName;
+
+      modalContent.innerHTML = '';  // Clear previous content
+
+      if (fileType === 'Image') {
+        const img = document.createElement('img');
+        img.src = fileUrl;
+        img.style.maxWidth = '100%';
+        modalContent.appendChild(img);
+      } else if (fileType === 'Video') {
+        const video = document.createElement('video');
+        video.src = fileUrl;
+        video.controls = true;
+        video.style.maxWidth = '100%';
+        modalContent.appendChild(video);
+      } else if (fileType === 'Audio') {
+        const audio = document.createElement('audio');
+        audio.src = fileUrl;
+        audio.controls = true;
+        modalContent.appendChild(audio);
+      } else if (fileType === 'Document') {
+        const iframe = document.createElement('iframe');
+        iframe.src = fileUrl;
+        iframe.style.width = '100%';
+        iframe.style.height = '600px';
+        modalContent.appendChild(iframe);
+      } else {
+        modalContent.innerHTML = '<p>Preview not available for this file type. <a href="' + fileUrl + '" target="_blank">Download file</a></p>';
+      }
+
+      modal.style.display = 'block';
+    });
+  });
+
+  closeBtn.onclick = function() {
+    modal.style.display = 'none';
+  }
+
+  window.onclick = function(event) {
+    if (event.target == modal) {
+      modal.style.display = 'none';
+    }
+  }
+});
+</script>
+
+<style>
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.file-preview-item {
+  display: inline-block;
+  margin: 10px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.preview-thumbnail {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+</style>
                 <div class="mailbox-attachment-info">
     <input type="checkbox" id="resource-{{ resource.resource_id }}" name="selected_resources" value="{{ resource.resource_id }}" class="resources-checkbox">
     <label for="resource-{{ resource.resource_id }}"></label>
@@ -321,7 +445,7 @@
               <div class="box box-primary" id="myForm1">
                 <div class="box-header with-border">
                   <h3 class="box-title">My Trash Files</h3>
-                  <button type="button" style="position: relative;" onclick="closetrashResources();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
+                  <button type="button" style="position: relative; right: -500px;" onclick="closetrashResources();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
                   <div class="box-tools pull-right">
                     <div class="has-feedback">
                       <input type="text" class="form-control input-sm" id="myInput" onkeyup="searchTable();"  placeholder="Search My Files..."/>
@@ -412,7 +536,7 @@
               <div class="box box-primary" id="myForm">
                 <div class="box-header">
                   <h3 class="box-title">Add A Files</h3>
-                  <button type="button" style="position: relative;" onclick="closeForm();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
+                  <button type="button" style="position: relative; right: -750px;" onclick="closeForm();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
                 </div><!-- /.box-header -->
                 <!-- form start -->
 <form action="{% url 'add_resource' project.pk %}" method="POST" enctype="multipart/form-data">
@@ -439,6 +563,7 @@
       <div class="form-group">
         <label for="resource_file">File</label>
         <input type="file" id="resource_file" name="resource_file" accept=".pdf, .doc, .docx, .ppt, .zip, .png, .jpeg, .mp4, .wav, .mp3, .m4a, .mov" required>
+        <div id="file_preview" style="margin-top: 10px;"></div>
       </div>
     </div>
     <div class="box-footer">
@@ -552,44 +677,48 @@ function searchTable() {
 <script>
     document.getElementById("resource_file").addEventListener("change", function() {
         var fileInput = document.getElementById("resource_file");
-        var resourceTypeSelect = document.getElementById("resource_type");
-        var fileName = fileInput.value.split('.').pop().toLowerCase();
-        var resourceType = "";
+        var filePreview = document.getElementById("file_preview");
+        filePreview.innerHTML = ""; // Clear previous previews
+        
+        // Get the selected file
+        var file = fileInput.files[0];
+        if (file) {
+            var fileName = file.name;
+            var fileType = file.type;
+            var fileURL = URL.createObjectURL(file);
+            var resourceType = "";
 
-        switch (fileName) {
-            case 'png':
-            case 'jpeg':
+            // Determine the type of file and create a preview
+            if (fileType.startsWith("image/")) {
+                // For image files
+                filePreview.innerHTML = `<img src="${fileURL}" alt="${fileName}" style="max-width: 200px; max-height: 200px;"/>`;
                 resourceType = "Image";
-                break;
-            case 'mp4':
-            case 'mov':
+            } else if (fileType.startsWith("video/")) {
+                // For video files
+                filePreview.innerHTML = `<video controls style="max-width: 200px; max-height: 200px;"><source src="${fileURL}" type="${fileType}">Your browser does not support the video tag.</video>`;
                 resourceType = "Video";
-                break;
-            case 'mp3':
-            case 'wav':
-            case 'm4a':
+            } else if (fileType.startsWith("audio/")) {
+                // For audio files
+                filePreview.innerHTML = `<audio controls><source src="${fileURL}" type="${fileType}">Your browser does not support the audio element.</audio>`;
                 resourceType = "Audio";
-                break;
-            case 'pdf':
-            case 'doc':
-            case 'docx':
-            case 'ppt':
-            case 'zip':
-                resourceType = "Document";
-                break;
-            default:
-                resourceType = "";
-        }
+            } else {
+                filePreview.innerHTML = `<p>File type not supported for preview: ${fileName}</p>`;
+            }
 
-        // Set the value of the resource_type select element
-        for (var i = 0; i < resourceTypeSelect.options.length; i++) {
-            if (resourceTypeSelect.options[i].value === resourceType) {
-                resourceTypeSelect.selectedIndex = i;
-                break;
+            // Set the value of the resource_type select element (optional)
+            var resourceTypeSelect = document.getElementById("resource_type");
+            if (resourceType) {
+                for (var i = 0; i < resourceTypeSelect.options.length; i++) {
+                    if (resourceTypeSelect.options[i].value === resourceType) {
+                        resourceTypeSelect.selectedIndex = i;
+                        break;
+                    }
+                }
             }
         }
     });
 </script>
+
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     var checkAllButton = document.querySelector('.checkbox-toggle');

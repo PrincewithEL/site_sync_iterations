@@ -22,12 +22,36 @@
   </head>
       <style>
 .progress {
-    width: 100%;
-    background-color: black;
-    border-radius: 5px;
-    overflow: hidden;
-    height: 20px;
-    margin-bottom: 10px;
+  width: 75%;
+  height: 20px;
+  text-align: center;
+  font-weight: bold;
+  background-color: #e0e0e0;
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.15) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.15) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 40px 40px;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 20px auto;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+  animation: stripes 1s linear infinite;
+}
+
+@keyframes stripes {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 40px 0;
+  }
 }
 
 .progress-bar {
@@ -93,21 +117,30 @@
         <section class="content">
           <div class="row">
             <div class="col-md-3">
-              <a href="{% url 'client' %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Home</a> 
+              <a href="{% url 'client' %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Home <i class="fa fa-home"></i></a> 
               {% if project.leader_id == auth_user.id %}
-              <a href="#" onclick="openForm()" id="btnmyForm" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Edit Project</a>
+              <a href="#" onclick="openForm()" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" id="btnmyForm" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Edit Project <i class="fa fa-edit"></i></a>
               {% endif %}
-              <a href="{% url 'resources' project.pk %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">View Files</a>
+              <a href="{% url 'resources' project.pk %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">View Files <i class="fa fa-files-o"></i></a>
               {% if project.leader_id == auth_user.id %} 
-              <a href="{% url 'transactions' project.pk %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">View Transactions</a> 
+              <a href="{% url 'transactions' project.pk %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">View Transactions <i class="fa fa-money"></i></a> 
               {% elif  type == 'Client' or type == 'Quantity Surveyor' %} 
-              <a href="{% url 'transactions' project.pk %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">View Transactions</a>
+              <a href="{% url 'transactions' project.pk %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">View Transactions <i class="fa fa-money"></i></a>
+              {% elif type == 'Contractor' and project.leader_id == user_id %}              
+              <a href="{% url 'transactions' project.pk %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">View Transactions <i class="fa fa-money"></i></a>
               {% endif %} 
+              {% if project.leader_id == auth_user.id %} 
+              <a href="{% url 'dashboard' project.pk %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">View Analytics <i class="fa fa-bar-chart"></i></a>
+              {% elif  type == 'Client' or type == 'Quantity Surveyor' %} 
+              <a href="{% url 'dashboard' project.pk %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">View Analytics <i class="fa fa-bar-chart"></i></a>
+              {% elif type == 'Contractor' and project.leader_id == user_id %}              
+              <a href="{% url 'dashboard' project.pk %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">View Analytics <i class="fa fa-bar-chart"></i></a>
+              {% endif %}               
               <div class="box box-solid">
                 <div class="box-header with-border">
                   <h3 class="box-title">List of <br>Project Members</h3>
                   {% if project.leader_id == auth_user.id %}
-                  <button class="btn btn-default pull-right" onclick="openPMembers();" style="background-color: #ff3300; color: black; font-weight: bold;"><i class="fa fa-user-plus" style="font-size:24px"></i></button>
+                  <button class="btn btn-default pull-right" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" onclick="openPMembers();" style="background-color: #ff3300; color: white; font-weight: bold;"><i class="fa fa-user-plus" style="font-size:24px"></i></button>
                   {% endif %}
                 </div>
                 <div class="box-body no-padding">
@@ -132,31 +165,49 @@
 {% endif %}                  
                     </div><!-- /.direct-chat-msg -->
                     <div class="direct-chat-msg">
-                    {% for member in project_member_details %}                      
-                      <img class="direct-chat-img" src="{{ member.image }}" alt="message user image" /><!-- /.direct-chat-img --><span class='direct-chat-name pull-left'>{{ member.first_name }} ({{ member.user_type }})</span>
-                      {% if member.online == 1 %}
-<a id="status" href="" title="Online Since: {{ member.logged_in }}">  <i class="fa fa-circle text-success"></i> </a>
-{% else %}
-<a id="status" href="" title="Last Online At: {{ member.logged_out }}">  <i class="fa fa-circle" style="color: black;"></i> </a>
-{% endif %}
-                      {% if project.leader_id == auth_user.id %}
-                      {% if member_status == "Accepted" %}
-                      <form method="POST" name="remove_project_member_form" action="{% url 'remove_project_member' project.pk %}" enctype="multipart/form-data">
-                              {% csrf_token %}
-                              <input type="hidden" value="{{ member.id }}" name="uid" required>
-                              <button type="submit" onclick="return confirm('Are You Sure You Want To Remove This Project Member ?')" class="btn btn-primary"style="font-size:12px;" title="Remove From Project"><i class="fa fa-remove" ></i></button>
-                            </form>
-                        {% else %}
-                        <span class='direct-chat-name pull-left' style="color: orange;">Pending Invitation Acceptance</span>
-                        {% endif %}
-                        {% else %}
-                      <form method="POST" name="remove_project_member_form" action="{% url 'exit_project' project.pk %}" enctype="multipart/form-data">
-                              {% csrf_token %}
-                              <input type="hidden" value="{{ member.id }}" name="uid" required>
-                              <button type="submit" onclick="return confirm('Are You Sure You Want To Exit This Project ?')" class="btn btn-primary"style="font-size:12px;" title="Exit Project"><i class="fa fa-sign-out" ></i></button>
-                            </form>                        
-                        {% endif %}
-{% endfor %}                      
+{% for member in project_member_details %}
+  <div class="member-details">
+    <img class="direct-chat-img" src="{{ member.image }}" alt="{{ member.first_name }}'s profile picture" />
+    <span class="direct-chat-name pull-left">{{ member.first_name }} ({{ member.user_type }})</span>
+    
+    {% if member.online and member.member_status == "Accepted" %}
+      <a class="status-indicator" href="#" title="Online Since: {{ member.logged_in }}">
+         <i style="color: green;" class="fa fa-circle text-success"></i>
+      </a>
+    {% else %}
+      <a class="status-indicator" href="#" title="Last Online At: {{ member.logged_out }}">
+         <i style="color: red;" class="fa fa-circle text-muted"></i>
+      </a>
+    {% endif %}
+
+    {% if project.leader_id == auth_user.id %}
+      {% if member.member_status == "Accepted" %}
+        <form method="POST" action="{% url 'remove_project_member' project.pk %}" class="member-action-form">
+          {% csrf_token %}
+          <input type="hidden" value="{{ member.id }}" name="uid">
+          <button type="submit" class="btn btn-danger btn-sm" style="background-color: red;" title="Remove From Project"
+                  onclick="return confirm('Are you sure you want to remove this project member?')">
+            <i class="fa fa-remove"></i> Remove
+          </button>
+        </form>
+      {% endif %}  
+      {% if member.member_status == "Pending" %}
+        <span class="badge badge-warning">Pending Invitation</span>
+      {% endif %}
+      {% endif %}  
+    {% if member.id == auth_user.id  %}
+      <form method="POST" action="{% url 'exit_project' project.pk %}" class="member-action-form">
+        {% csrf_token %}
+        <input type="hidden" value="{{ member.id }}" name="uid">
+        <button type="submit" class="btn btn-warning btn-sm" style="background-color: red;" title="Exit Project"
+                onclick="return confirm('Are you sure you want to exit this project?')">
+          <i class="fa fa-sign-out"></i> Exit Project
+        </button>
+      </form>
+    {% endif %}
+    <br>
+  </div>
+{% endfor %}                     
                     </div><!-- /.direct-chat-msg -->
                   </div><!-- /.direct-chat-pane -->
                 </div><!-- /.box-body -->
@@ -172,7 +223,7 @@
                                         <div class="box box-primary" id="myForm">
                               <div class="box-header">
                                 <h3 class="box-title">Edit Project</h3>
-                                <button type="button" style="position: relative;" onclick="closeForm();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
+                                <button type="button" style="position: relative; right: -750px;" onclick="closeForm();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
                               </div><!-- /.box-header -->
                               <!-- form start -->
               <form name="update_project_form" action="{% url 'update_project' project.pk %}" method="POST" enctype="multipart/form-data">
@@ -222,7 +273,7 @@
               <div class="box box-primary" id="myForm1">
                 <div class="box-header with-border">
                   <h3 class="box-title">Add A Project Member</h3>
-                  <button type="button" style="position: relative;" onclick="closePMembers();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
+                  <button type="button" style="position: relative; right: -450px;" onclick="closePMembers();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
                   <div class="box-tools pull-right">
                     <div class="has-feedback">
         <form method="get" action="{% url 'project_detail' project.project_id %}" class="form-inline">
@@ -266,9 +317,9 @@
 <!--                         <th></th>
                         <th></th> -->
                         <th>Name</th>
-                        <th>Phone Number/Email Address</th>
+                        <th>Email Address</th>
                         <th>User Type</th>
-                        <th>Profile Picture</th>
+                        <!-- <th>Profile Picture</th> -->
                         <th></th>
                       </thead>
                       <tbody>
@@ -278,9 +329,9 @@
 <!-- <td><input type="checkbox" class="custom-checkbox" /></td>
 <td class="mailbox-star" style=""><a href="#"><i class="fa fa-star text-yellow"></i></a></td> -->
 <td class="mailbox-name" title="5 mins ago">{{ user.first_name }}</a></td>
-<td class="mailbox-name">{{ user.phone_number }} or <a href="mailto:{{ user.email_address }}">{{ user.email_address }}</a></td>
+<td class="mailbox-name"><!-- {{ user.phone_number }} or --><a href="mailto:{{ user.email_address }}">{{ user.email_address }}</a></td>
 <td class="mailbox-name">{{ user.role }}</td>
-<td class="mailbox-name"><img src="{{ PROJECT_URL }}{{ user.image }}" style="width: 100px;"></td>                        
+<!-- <td class="mailbox-name"><img src="{{ PROJECT_URL }}{{ user.image }}" style="width: 100px;"></td>                         -->
                           <td class="mailbox-attachment">
                             <form method="POST" name="add_project_member_form" action="{% url 'add_project_member' project.pk %}" enctype="multipart/form-data">
                               {% csrf_token %}
@@ -289,7 +340,7 @@
                               <input type="hidden" value="{{ auth_user.first_name }}" name="lname" required>
                               <input type="hidden" value="{{ user.first_name }}" name="uname" required>
                               <input type="hidden" value="{{ user.email_address }}" name="uemail" required>
-                              <button type="submit" class="btn btn-primary" onclick="return confirm('Are You Sure That You Want To Add This User to Your Project?');">Add To My Project</button>
+                              <button type="submit" class="btn btn-primary" onclick="return confirm('Are You Sure That You Want To Invite This User to Your Project?');">Invite To My Project</button>
                             </form>
                         </td>
                         {% endif %}
@@ -320,31 +371,26 @@
                             <div class="box box-solid">
                 <div class="box-header with-border">
                   <h3 class="box-title">Project Progress</h3>
-                  {% if  type == 'Client' or type == 'Quantity Surveyor' or type == 'Contractor' %} 
-                  <button class="btn btn-default pull-right" style="background-color: #ff3300; color: black; font-weight: bold;"> <a href="{% url 'dashboard' project.pk %}" style="color: black;">View Dashboard</a></button>
-                  {% elif type == 'Contractor' and project.leader_id == user_id %}
-                  <button class="btn btn-default pull-right" style="background-color: #ff3300; color: black; font-weight: bold;"> <a href="{% url 'dashboard' project.pk %}" style="color: black;">View Dashboard</a></button>                  
-                  {% endif %}
                 </div><!-- /.box-header -->
                 <div class="">
 
 {% with progress=progress_percentage %}
             {% if project.project_status == 'Completed' %}
-                            <div class="progress" style="color: white; background-color: red;">
+                            <div class="progress" style="color: white; background-color: red;" title="Based on Project Start & End Dates.">
                               <p style="color: white;">100% Complete (Expected)</p>
                                 <div class="progress-bar" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
                                     <!-- {{ progress|floatformat:2 }}% -->
                                 </div>
                             </div>
             {% elif progress > 100 %}
-                            <div class="progress" style="color: white; background-color: red;">
+                            <div class="progress" style="color: white; background-color: red;" title="Based on Project Start & End Dates.">
                               <p style="color: white;">100% Complete (Expected)</p>
                                 <div class="progress-bar" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
                                     <!-- {{ progress|floatformat:2 }}% -->
                                 </div>
                             </div>                                        
                     {% else %}
-                            <div class="progress" style="color: white; background-color: grey;">
+                            <div class="progress" style="color: white; background-color: grey;" title="Based on Project Start & End Dates.">
                               <p style="color: white;">{{ progress|floatformat:2 }}% Complete (Expected)</p>
                                 <div class="progress-bar" role="progressbar" style="width: {{ progress|floatformat:2 }}%" aria-valuenow="{{ progress|floatformat:2 }}" aria-valuemin="0" aria-valuemax="100" style="background-color: red;">
                                     <!-- {{ progress|floatformat:2 }}% -->
@@ -354,22 +400,22 @@
                 {% endwith %}
 
 {% with progress=total_progress_percentage %}
-            {% if all_pending_tasks.count > 0 %}
-                            <div class="progress" style="color: white; background-color: red;">
+            {% if all_pending_tasks.count < 0 %}
+                            <div class="progress" style="color: white; background-color: red;" title="Based on All Project Tasks & All Pending">
                               <p style="color: white;">100% Complete (Actual)</p>
                                 <div class="progress-bar" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
                                     <!-- {{ progress|floatformat:2 }}% -->
                                 </div>
                             </div> 
             {% elif all_pending_tasks.count == 0 %}
-                            <div class="progress" style="color: white; background-color: grey;">
+                            <div class="progress" style="color: white; background-color: grey;" title="Based on All Project Tasks & All Pending">
                               <p style="color: white;">0.00% Complete (Actual)</p>
                                 <div class="progress-bar" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
                                     <!-- {{ progress|floatformat:2 }}% -->
                                 </div>
                             </div>                                                                    
                     {% else %}
-                            <div class="progress" style="color: white; background-color: grey;">
+                            <div class="progress" style="color: white; background-color: grey;" title="Based on All Project Tasks & All Pending">
                               <p style="color: white;">{{ progress|floatformat:2 }}% Complete (Actual)</p>
                                 <div class="progress-bar" role="progressbar" style="width: {{ progress|floatformat:2 }}%" aria-valuenow="{{ progress|floatformat:2 }}" aria-valuemin="0" aria-valuemax="100" style="background-color: red;">
                                     <!-- {{ progress|floatformat:2 }}% -->
