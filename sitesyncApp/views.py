@@ -1539,20 +1539,22 @@ def resources(request, pk):
     # Calculate unread chat statuses and pending tasks for each project
     for project1 in projects:
         try:
-            group_chat = GroupChat.objects.get(project=project1)
+            group_chat = GroupChat.objects.get(project=project)
             chats = Chat.objects.filter(group_id=group_chat.group_id).exclude(sender_user_id=request.user.id)
             chatstatus = ChatStatus.objects.filter(status=1, user_id=request.user.id)
             all_unread_chats = chats.filter(
                 message__in=chats.values_list('message', flat=True),
                 timestamp__in=chats.values_list('timestamp', flat=True),
                 chatstatus__status=1,
+                chatstatus__user_id=request.user.id,
             )
             all_unread_chats1 = chats.filter(
                 message__in=chats.values_list('message', flat=True),
                 timestamp__in=chats.values_list('timestamp', flat=True),
             )            
             all_unread_chats1 = chatstatus
-            unread_count = all_unread_chats.count()
+            unread_chat_counts[project.project_id] = all_unread_chats1.count()     
+            unread_count = all_unread_chats1.count() 
         except GroupChat.DoesNotExist:
             unread_count = 0
 
@@ -1727,8 +1729,8 @@ def resources(request, pk):
     else:
         resources = all_resources
 
-    # Implement pagination (3 resources per page)
-    paginator = Paginator(resources, 3)
+    # Implement pagination (4 resources per page)
+    paginator = Paginator(resources, 4)
     page_number = request.GET.get('page', 1)  # Default to page 1 if not provided
     try:
         page_number = int(page_number)
@@ -3762,20 +3764,22 @@ def project_detail(request, pk):
     # Calculate unread chat statuses and pending tasks for each project
     for project1 in projects:
         try:
-            group_chat = GroupChat.objects.get(project=project1)
+            group_chat = GroupChat.objects.get(project=project)
             chats = Chat.objects.filter(group_id=group_chat.group_id).exclude(sender_user_id=request.user.id)
             chatstatus = ChatStatus.objects.filter(status=1, user_id=request.user.id)
             all_unread_chats = chats.filter(
                 message__in=chats.values_list('message', flat=True),
                 timestamp__in=chats.values_list('timestamp', flat=True),
                 chatstatus__status=1,
+                chatstatus__user_id=request.user.id,
             )
             all_unread_chats1 = chats.filter(
                 message__in=chats.values_list('message', flat=True),
                 timestamp__in=chats.values_list('timestamp', flat=True),
             )            
             all_unread_chats1 = chatstatus
-            unread_count = all_unread_chats.count()
+            unread_chat_counts[project.project_id] = all_unread_chats1.count()     
+            unread_count = all_unread_chats1.count() 
         except GroupChat.DoesNotExist:
             unread_count = 0
 
@@ -4699,6 +4703,7 @@ def client(request):
                 message__in=chats.values_list('message', flat=True),
                 timestamp__in=chats.values_list('timestamp', flat=True),
                 chatstatus__status=1,
+                chatstatus__user_id=request.user.id,
             )
             all_unread_chats1 = chats.filter(
                 message__in=chats.values_list('message', flat=True),

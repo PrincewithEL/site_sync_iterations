@@ -21,6 +21,12 @@
     <link href="{% static 'dashboard/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.min.css' %}" rel="stylesheet" type="text/css" />
         <link rel="stylesheet" href="{% static 'dashboard/dist/plugins/iCheck/flat/blue.css' %}">
 <script src="{% static 'dashboard/dist/plugins/iCheck/icheck.min.js' %}"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Include necessary libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.10.2/viewer.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.10.2/viewer.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
   </head>
       <style>
         .dropdown {
@@ -129,8 +135,9 @@
         <section class="content">
           <div class="row">
             <div class="col-md-3">
-              <a href="{% url 'client' %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Home</a>
-              <a href="#" onclick="openForm();" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Add A Files</a>    
+              <a href="{% url 'client' %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Home <i class="fa fa-home"></i></a> 
+              <a href="#" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" onclick="openForm();" style="color: white; font-weight: bold;">Add A File <i class="fa fa-plus"></i></a>
+              <a href="{% url 'project_detail' project.project_id %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Back <i class="fa fa-mail-reply"></i></a>                 
               <div class="box box-solid">
                 <div class="box-header with-border">
                   <h3 class="box-title">List of Project Files</h3>
@@ -144,7 +151,6 @@
                     <li class="{% if filter_type == 'Audio' %}active{% endif %}"><a href="?filter=Audio"><i class="fa fa-file-audio-o"></i> Audio <span class="label label-waring pull-right">{{ audio_count }}</span></a></li>
                     <li id="trashResourcesNavItem"><a href="#" onclick="opentrashResources();"><i class="fa fa-file-archive-o"></i> Trash <span class="label label-waring pull-right">{{ trash_resources_count }}</span></a></li>
                     <li class="{% if filter_type == 'bookmarked' %}active{% endif %}"><a href="?filter=bookmarked"><i class="fa fa-star"></i> Starred Files <span class="label label-waring pull-right">{{ bookmark_resources_count }}</span></a></li>
-                    <li><a href="{% url 'project_detail' project.project_id %}"><i class="fa fa-mail-reply"></i> Back</a></li>
                   </ul>
                 </div><!-- /.box-body -->
               </div><!-- /. box -->
@@ -265,41 +271,30 @@
             <li>
 <!-- HTML Template -->
 <div class="file-preview-container">
-{% for resource in resources %}
-  <div class="file-preview-item" data-file-url="{{ MEDIA_URL }}{{ resource.resource_directory }}" data-file-type="{{ resource.resource_type }}" data-file-name="{{ resource.resource_name }}">
-    {% if resource.resource_type == 'Video' %}
-      <div class="preview-thumbnail" style="width: 100px; height: 100px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;">
-        <i class="fa fa-file-video-o"></i>
-      </div>
-    {% elif resource.resource_type == 'Audio' %}
-      <div class="preview-thumbnail" style="width: 100px; height: 100px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;">
-        <i class="fa fa-file-audio-o"></i>
-      </div>
-    {% elif resource.resource_type == 'Image' %}
-      <img src="{{ MEDIA_URL }}{{ resource.resource_directory }}" alt="{{ resource.resource_name }}" style="width: 100px; height: 100px; object-fit: cover;" />
-    {% elif resource.resource_type == 'Document' %}
-      <div class="preview-thumbnail" style="width: 100px; height: 100px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;">
-        {% with extension=resource.resource_name|lower|split:'.'|last %}
-          {% if extension == 'pdf' %}
-            <i class="fa fa-file-pdf-o"></i>
-          {% elif extension == 'doc' or extension == 'docx' %}
-            <i class="fa fa-file-word-o"></i>
-          {% elif extension == 'xls' or extension == 'xlsx' %}
-            <i class="fa fa-file-excel-o"></i>
-          {% elif extension == 'ppt' or extension == 'pptx' %}
-            <i class="fa fa-file-powerpoint-o"></i>
-          {% else %}
-            <i class="fa fa-file-o"></i>
-          {% endif %}
-        {% endwith %}
-      </div>
-    {% else %}
-      <div class="preview-thumbnail" style="width: 100px; height: 100px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;">
-        <i class="fa fa-file-o"></i>
-      </div>
-    {% endif %}
-    <p>{{ resource.resource_name }}</p>
-  </div>
+    <div class="file-preview-item" data-file-url="{{ MEDIA_URL }}{{ resource.resource_directory }}" data-file-type="{{ resource.resource_type }}">
+      {% if resource.resource_type == 'Video' %}
+        <video width="100" height="100" preload="metadata">
+          <source src="{{ MEDIA_URL }}{{ resource.resource_directory }}" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+      {% elif resource.resource_type == 'Audio' %}
+        <audio controls>
+          <source src="{{ MEDIA_URL }}{{ resource.resource_directory }}" type="audio/mpeg">
+          Your browser does not support the audio element.
+        </audio>
+      {% elif resource.resource_type == 'Image' %}
+        <img src="{{ MEDIA_URL }}{{ resource.resource_directory }}" alt="{{ resource.resource_name }}" style="width: 100px; height: 100px; object-fit: cover;" />
+      {% elif resource.resource_type == 'Document' %}
+        <div class="document-preview" style="width: 100px; height: 100px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+          <i class="fa fa-file-o"></i>
+        </div>
+      {% else %}
+        <div class="file-icon" style="width: 100px; height: 100px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+          <i class="fa fa-file-o"></i>
+        </div>
+      {% endif %}
+      <p>{{ resource.resource_name }}</p>
+    </div>
 </div>
 
 <!-- Modal for file preview -->
@@ -321,15 +316,14 @@ document.addEventListener('DOMContentLoaded', function() {
     item.addEventListener('click', function() {
       const fileUrl = this.dataset.fileUrl;
       const fileType = this.dataset.fileType;
-      const fileName = this.dataset.fileName;
 
       modalContent.innerHTML = '';  // Clear previous content
 
       if (fileType === 'Image') {
         const img = document.createElement('img');
         img.src = fileUrl;
-        img.style.maxWidth = '100%';
         modalContent.appendChild(img);
+        new Viewer(img);
       } else if (fileType === 'Video') {
         const video = document.createElement('video');
         video.src = fileUrl;
@@ -342,13 +336,23 @@ document.addEventListener('DOMContentLoaded', function() {
         audio.controls = true;
         modalContent.appendChild(audio);
       } else if (fileType === 'Document') {
+    if (fileUrl.endsWith('.pdf')) {
         const iframe = document.createElement('iframe');
-        iframe.src = fileUrl;
+        iframe.src = `/static/pdfjs/web/viewer.html?file=${encodeURIComponent(fileUrl)}`;
         iframe.style.width = '100%';
         iframe.style.height = '600px';
         modalContent.appendChild(iframe);
-      } else {
-        modalContent.innerHTML = '<p>Preview not available for this file type. <a href="' + fileUrl + '" target="_blank">Download file</a></p>';
+    } else if (fileUrl.endsWith('.doc') || fileUrl.endsWith('.docx') || fileUrl.endsWith('.ppt') || fileUrl.endsWith('.xls')) {
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
+        iframe.style.width = '100%';
+        iframe.style.height = '600px';
+        modalContent.appendChild(iframe);
+    } else {
+        modalContent.innerHTML = '<p>Preview not available for this file type.</p>';
+    }
+} else {
+        modalContent.innerHTML = '<p>Preview not available for this file type.</p>';
       }
 
       modal.style.display = 'block';
@@ -400,18 +404,6 @@ document.addEventListener('DOMContentLoaded', function() {
   color: black;
   text-decoration: none;
   cursor: pointer;
-}
-
-.file-preview-item {
-  display: inline-block;
-  margin: 10px;
-  text-align: center;
-  cursor: pointer;
-}
-
-.preview-thumbnail {
-  border: 1px solid #ddd;
-  border-radius: 4px;
 }
 </style>
                 <div class="mailbox-attachment-info">
@@ -548,8 +540,8 @@ document.addEventListener('DOMContentLoaded', function() {
       </div>
             <div class="form-group col-md-6" style="display: none;">
         <label for="resource_type">Files Type</label>
-        <select class="form-control" id="resource_type" name="resource_type" required >
-          <option value="" disabled selected>Kindly Select A Resource Type</option>
+        <select class="form-control" id="resource_type" name="resource_type" required>
+          <option value="" selected>Kindly Select A Resource Type</option>
           <option value="Image">Image</option>
           <option value="Video">Video</option>
           <option value="Audio">Audio</option>
@@ -677,44 +669,53 @@ function searchTable() {
 <script>
     document.getElementById("resource_file").addEventListener("change", function() {
         var fileInput = document.getElementById("resource_file");
-        var filePreview = document.getElementById("file_preview");
-        filePreview.innerHTML = ""; // Clear previous previews
-        
-        // Get the selected file
-        var file = fileInput.files[0];
-        if (file) {
-            var fileName = file.name;
-            var fileType = file.type;
-            var fileURL = URL.createObjectURL(file);
-            var resourceType = "";
+        var resourceTypeSelect = document.getElementById("resource_type");
+        var fileName = fileInput.value.split('.').pop().toLowerCase();
+        var resourceType = "";
 
-            // Determine the type of file and create a preview
-            if (fileType.startsWith("image/")) {
-                // For image files
-                filePreview.innerHTML = `<img src="${fileURL}" alt="${fileName}" style="max-width: 200px; max-height: 200px;"/>`;
+        switch (fileName) {
+            case 'png':
+            case 'jpeg':
+            case 'jpg':
                 resourceType = "Image";
-            } else if (fileType.startsWith("video/")) {
-                // For video files
-                filePreview.innerHTML = `<video controls style="max-width: 200px; max-height: 200px;"><source src="${fileURL}" type="${fileType}">Your browser does not support the video tag.</video>`;
+                break;
+            case 'mp4':
+            case 'mov':
                 resourceType = "Video";
-            } else if (fileType.startsWith("audio/")) {
-                // For audio files
-                filePreview.innerHTML = `<audio controls><source src="${fileURL}" type="${fileType}">Your browser does not support the audio element.</audio>`;
+                break;
+            case 'mp3':
+            case 'wav':
+            case 'm4a':
                 resourceType = "Audio";
-            } else {
-                filePreview.innerHTML = `<p>File type not supported for preview: ${fileName}</p>`;
-            }
+                break;
+            case 'pdf':
+            case 'doc':
+            case 'docx':
+            case 'ppt':
+            case 'zip':
+            case 'rar':
+                resourceType = "Document";
+                break;
+            default:
+                resourceType = "";
+        }
 
-            // Set the value of the resource_type select element (optional)
-            var resourceTypeSelect = document.getElementById("resource_type");
-            if (resourceType) {
-                for (var i = 0; i < resourceTypeSelect.options.length; i++) {
-                    if (resourceTypeSelect.options[i].value === resourceType) {
-                        resourceTypeSelect.selectedIndex = i;
-                        break;
-                    }
-                }
+        // Set the value of the resource_type select element
+        for (var i = 0; i < resourceTypeSelect.options.length; i++) {
+            if (resourceTypeSelect.options[i].value === resourceType) {
+                resourceTypeSelect.selectedIndex = i;
+                break;
             }
+        }
+    });
+
+    // Prevent form submission if resource_type is not valid
+    document.querySelector("form").addEventListener("submit", function(event) {
+        var resourceTypeSelect = document.getElementById("resource_type");
+        if (resourceTypeSelect.value === "") {
+            event.preventDefault(); // Prevent form submission
+            resourceTypeSelect.focus(); // Focus on the select element
+            alert("Please select a valid resource type.");
         }
     });
 </script>
