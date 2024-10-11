@@ -23,9 +23,8 @@
 <script src="{% static 'dashboard/dist/plugins/iCheck/icheck.min.js' %}"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <!-- Include necessary libraries -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.10.2/viewer.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.10.2/viewer.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.worker.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
   </head>
       <style>
@@ -278,7 +277,7 @@
           Your browser does not support the video tag.
         </video>
       {% elif resource.resource_type == 'Audio' %}
-        <audio controls>
+        <audio controls style="width: 100px;">
           <source src="{{ MEDIA_URL }}{{ resource.resource_directory }}" type="audio/mpeg">
           Your browser does not support the audio element.
         </audio>
@@ -338,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
       } else if (fileType === 'Document') {
     if (fileUrl.endsWith('.pdf')) {
         const iframe = document.createElement('iframe');
-        iframe.src = `/static/pdfjs/web/viewer.html?file=${encodeURIComponent(fileUrl)}`;
+                iframe.src = `/static/pdfjs/web/viewer.html?file=${encodeURIComponent(fileUrl)}`;
         iframe.style.width = '100%';
         iframe.style.height = '600px';
         modalContent.appendChild(iframe);
