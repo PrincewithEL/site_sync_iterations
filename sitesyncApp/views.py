@@ -652,17 +652,16 @@ def add_project_member_api(request, pk):
 @login_required  # Ensure the user is authenticated
 def remove_project_member_api(request, pk):
     if request.method == 'POST':
-        # Fetch the project member based on the project ID
-        project_member = get_object_or_404(ProjectMembers, project_id=pk, is_deleted=0)
-
         user_id = request.POST.get('uid')  # Use request.POST for form data
 
-        if project_member.user_id == user_id:
-            project_member.is_deleted = 1
-            project_member.save()
-            return JsonResponse({"message": "Project member removed successfully."}, status=204)
-        else:
-            return JsonResponse({"error": "Project member not found."}, status=404)
+        # Fetch the project member based on the project ID and user ID
+        project_member = get_object_or_404(ProjectMembers, project_id=pk, user_id=user_id, is_deleted=0)
+
+        # Mark the project member as deleted
+        project_member.is_deleted = 1
+        project_member.save()
+        
+        return JsonResponse({"message": "Project member removed successfully."}, status=204)
 
     return JsonResponse({"error": "Method not allowed."}, status=405)
 
