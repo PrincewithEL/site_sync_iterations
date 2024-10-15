@@ -57,6 +57,7 @@ from rest_framework import generics
 from rest_framework.generics import DestroyAPIView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import View
+from django.middleware.csrf import get_token
 
 logger = logging.getLogger(__name__)
 
@@ -391,6 +392,7 @@ def create_project(request):
 class ForgotPasswordAPI(APIView):
     @csrf_exempt
     def post(self, request):
+        csrf_token = get_token(request)
         serializer = ForgotPasswordSerializer(data=request.data)
         if serializer.is_valid():
             email = serializer.validated_data.get('email')
