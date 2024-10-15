@@ -58,6 +58,7 @@ from rest_framework.generics import DestroyAPIView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import View
 from django.middleware.csrf import get_token
+from django.utils.decorators import method_decorator
 
 logger = logging.getLogger(__name__)
 
@@ -104,57 +105,58 @@ class SignInView(APIView):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class LogOutView(APIView):
-    permission_classes = [IsAuthenticated] 
-    def post(self, request):
+@csrf_exempt
+def LogOutView(request):
+    if request.method == 'POST':
+        # Implement the logout logic here
         user = request.user
-
         try:
-            # Update user's online status and logged_out time
             Users.objects.filter(email_address=user.email).update(online=0, logged_out=timezone.now())
-            
-            # Get the user details from the Users model
             user_data = Users.objects.get(email_address=user.email)
-            
-            # Log out the user
             logout(request)
-
-            # Prepare response data with user details
             response_data = {
                 'message': 'Logout successful',
                 'email_address': user_data.email_address,
                 'user_type': user_data.user_type,
             }
-
-            return Response(response_data, status=status.HTTP_200_OK)
-
+            return JsonResponse(response_data, status=200)
         except Users.DoesNotExist:
-            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+            return JsonResponse({"error": "User not found."}, status=404)
+    return JsonResponse({"error": "Method not allowed."}, status=405)
 
-class SignUpView(APIView):
-    def post(self, request):
-        fullname = request.data.get('fullname')
-        email = request.data.get('email_address')
-        password = request.data.get('password')
-        phone_number = request.data.get('phone_number')
-
-        if User.objects.filter(email=email).exists():
-            return Response({"error": "Email already exists."}, status=status.HTTP_400_BAD_REQUEST)
-
+@csrf_exempt
+def SignUpView(request):
+    if request.method == 'POST':
         try:
-            user = User.objects.create(
-                username=email,
+            data = json.loads(request.body)
+            fullname = data.get('fullname')
+            email = data.get('email_address')
+            password = data.get('password')
+            phone_number = data.get('phone_number')
+
+            if User.objects.filter(email=email).exists():
+                return JsonResponse({"error": "Email already exists."}, status=400)
+
+            if not email:
+                return JsonResponse({"error": "Email is required."}, status=400)
+
+            # Create the user
+            user = User(
+                username=email,  # Use email as username
                 first_name=fullname,
                 email=email,
-                password=make_password(password)  
+                password=make_password(password)  # Ensure password is hashed
             )
+            user.save()  # Save the user object to the database
 
+            # Create or update the profile
             profile = Profile.objects.get(user=user)
             profile.phone_number = phone_number
             profile.created_at = timezone.now()
             profile.updated_at = None
             profile.save()
 
+            # Create the Users entry
             Users.objects.create(
                 user_id=profile.user_id,
                 email_address=email,
@@ -162,29 +164,40 @@ class SignUpView(APIView):
                 user_type=profile.user_type,
                 is_deleted=0,
                 online=0,
-                phone_number=profile.phone_number  
+                phone_number=profile.phone_number
             )
 
-            return Response({
+            # Log the user in with the specified backend
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')  # Specify the backend
+
+            return JsonResponse({
                 "message": "User registered successfully",
                 "email_address": email
-            }, status=status.HTTP_201_CREATED)
-        
+            }, status=201)
+
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return JsonResponse({"error": str(e)}, status=500)
 
-class CompleteProfileView(APIView):
-    parser_classes = [MultiPartParser, FormParser]  # Add these parsers to handle form data and file uploads
+    return JsonResponse({"error": "Method not allowed."}, status=405)
 
-    def post(self, request):
+@csrf_exempt
+def CompleteProfileView(request):
+    if request.method == 'POST':
         user = request.user
-        user_type = request.data.get('user_type')
-        profile_picture = request.FILES.get('profile_picture')  # Use request.FILES to get uploaded file
+
+        # Check if user is authenticated
+        if not user.is_authenticated:
+            return JsonResponse({"error": "User not authenticated."}, status=403)
+
+        # Retrieve user_type and profile_picture
+        user_type = request.POST.get('user_type')
+        profile_picture = request.FILES.get('profile_picture')
 
         if not user_type or not profile_picture:
-            return Response({"error": "Both user_type and profile_picture are required."}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({"error": "Both user_type and profile_picture are required."}, status=400)
 
         try:
+            # Update the profile
             profile = Profile.objects.get(user=user)
             profile.user_type = user_type
             profile.profile_picture = profile_picture
@@ -204,37 +217,43 @@ class CompleteProfileView(APIView):
                 fail_silently=False,
             )
 
-            return Response({"message": "Profile updated successfully."}, status=status.HTTP_200_OK)
+            return JsonResponse({"message": "Profile updated successfully."}, status=200)
 
         except Profile.DoesNotExist:
-            return Response({"error": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+            return JsonResponse({"error": "Profile not found."}, status=404)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
 
-class VerifyOtpView(APIView):
-    def post(self, request):
-        otp_code = request.data.get('otp_code')
-        user_id = request.session.get('user_id')
-        
-        if not otp_code or not user_id:
-            return Response({"error": "OTP code or user ID not provided."}, status=status.HTTP_400_BAD_REQUEST)
+    return JsonResponse({"error": "Method not allowed."}, status=405)
 
+@csrf_exempt
+@login_required  # Ensure the user is authenticated
+def VerifyOtpView(request):
+    if request.method == 'POST':
         try:
-            otp = OTP.objects.get(user_id=user_id, otp_code=otp_code, used=False)
+            data = json.loads(request.body)
+            otp_code = data.get('otp_code')
 
-            # Optional: Check if the OTP is still valid (within a time frame)
-            # if otp.created_at >= timezone.now() - timedelta(minutes=15):
+            # Use the authenticated user directly
+            user = request.user
+
+            if not otp_code:
+                return JsonResponse({"error": "OTP code not provided."}, status=400)
+
+            # Retrieve the OTP object for the authenticated user
+            otp = OTP.objects.get(user=user, otp_code=otp_code, used=False)
+
             if otp:
                 otp.used = True  # Mark the OTP as used
                 otp.save()
 
-                user = otp.user
-
-                # Log the user in
-                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                # Log the user in again if needed (optional, as they should already be logged in)
+                # login(request, user, backend='django.contrib.auth.backends.ModelBackend')
 
                 # Mark the user as online
                 Users.objects.filter(email_address=user.email).update(online=1)
 
-                # Redirect based on user type
+                # Prepare user details
                 if hasattr(user, 'profile'):
                     profile = user.profile
                     user_details = {
@@ -244,17 +263,20 @@ class VerifyOtpView(APIView):
                         'user_type': profile.user_type,
                     }
 
-                    return Response({
+                    return JsonResponse({
                         'message': f'Welcome {user.first_name}',
                         'user_details': user_details,
-                    }, status=status.HTTP_200_OK)
+                    }, status=200)
                 else:
-                    return Response({"message": "OTP verified successfully", "redirect_url": "/home"}, status=status.HTTP_200_OK)
-            
-        except OTP.DoesNotExist:
-            return Response({"error": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
+                    return JsonResponse({"message": "OTP verified successfully", "redirect_url": "/home"}, status=200)
 
-        return Response({"error": "OTP has expired. Please request a new one."}, status=status.HTTP_400_BAD_REQUEST)
+        except OTP.DoesNotExist:
+            return JsonResponse({"error": "Invalid OTP."}, status=400)
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Method not allowed."}, status=405)
 
 class ClientProjectsAPI(APIView):
     permission_classes = [IsAuthenticated]
@@ -310,6 +332,7 @@ class ClientProjectsAPI(APIView):
 
         response_data = {
             'user': ProfileSerializer(profile).data,
+            'user_name': request.user.first_name,
             'all_projects': ProjectSerializer(all_projects, many=True).data,
             'unread_chats': unread_chat_counts,
             'pending_tasks': pending_tasks_counts,
@@ -319,75 +342,88 @@ class ClientProjectsAPI(APIView):
 
         return Response(response_data)
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@csrf_exempt  # Allow requests without CSRF token
+@login_required  # Ensure the user is authenticated
 def create_project(request):
-    # Deserialize the incoming request data
-    serializer = ProjectSerializer(data=request.data)
-    
-    # Validate the request data
-    if serializer.is_valid():
+    if request.method == 'POST':
         try:
-            user = request.user
-            project_data = serializer.validated_data
-            
-            # Check required fields are present
-            pname = project_data.get('project_name')
-            sdate = project_data.get('start_date')
-            edate = project_data.get('end_date')
-            ebug = project_data.get('estimated_budget')
-            pdet = project_data.get('project_details')
-            image = request.FILES.get('project_image')
+            # Use the serializer directly with request.data
+            serializer = ProjectSerializer(data=request.POST)  # Use request.POST for form data
 
-            if not all([pname, sdate, edate, ebug, pdet]):
-                return Response({'error': 'Please fill in all required fields.'}, status=status.HTTP_400_BAD_REQUEST)
+            # Validate the request data
+            if serializer.is_valid():
+                user = request.user
+                project_data = serializer.validated_data
+                
+                # Check required fields are present
+                pname = project_data.get('project_name')
+                sdate = project_data.get('start_date')
+                edate = project_data.get('end_date')
+                ebug = project_data.get('estimated_budget')
+                pdet = project_data.get('project_details')
+                image = request.FILES.get('project_image')
 
-            # Calculate total days and initial balances
-            total_days = (edate - sdate).days
-            actual_expenditure = 0
-            balance = float(ebug)
-            project_status = 'Active'
-            leader_id = user.id  # Use the logged-in user's ID
-            is_deleted = 0
+                if not all([pname, sdate, edate, ebug, pdet]):
+                    return JsonResponse({'error': 'Please fill in all required fields.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Handle project image if provided
-            project_image = None
-            if image:
-                unique_filename = str(uuid.uuid4()) + os.path.splitext(image.name)[1]
-                profile_picture_path = default_storage.save(unique_filename, image)
-                project_image = 'project_images/' + unique_filename
+                # Calculate total days and initial balances
+                total_days = (edate - sdate).days
+                actual_expenditure = 0
+                balance = float(ebug)
+                project_status = 'Active'
+                leader_id = user.id  # Use the logged-in user's ID
+                is_deleted = 0
 
-            # Create the new project
-            new_project = Projects.objects.create(
+                # Handle project image if provided
+                project_image = None
+                if image:
+                    profile_picture = image
+                    unique_filename = str(uuid.uuid4()) + os.path.splitext(profile_picture.name)[1]
+                    profile_picture_path = default_storage.save(unique_filename, profile_picture)
+                    dest_path = os.path.join(settings.MEDIA_ROOT, 'project_images', unique_filename)
+                    os.rename(os.path.join(settings.MEDIA_ROOT, profile_picture_path), dest_path)
+                    project_image = 'project_images/' + unique_filename
+
+                # Create the new project
+                new_project = Projects.objects.create(
+                    leader_id=leader_id,
+                    project_name=pname,
+                    project_details=pdet,
+                    project_image=project_image,
+                    created_at=timezone.now(),
+                    start_date=sdate,
+                    end_date=edate,
+                    total_days=total_days,
+                    estimated_budget=balance,
+                    actual_expenditure=actual_expenditure,
+                    balance=balance,
+                    project_status=project_status,
+                    is_deleted=is_deleted
+                )
+                group_chat = GroupChat(
                 leader_id=leader_id,
-                project_name=pname,
-                project_details=pdet,
-                project_image=project_image,
-                created_at=timezone.now(),
-                start_date=sdate,
-                end_date=edate,
-                total_days=total_days,
-                estimated_budget=balance,
-                actual_expenditure=actual_expenditure,
-                balance=balance,
-                project_status='Active',
-                is_deleted=is_deleted
-            )
+                project=new_project,
+                group_name=pname,  
+                is_deleted=is_deleted,
+                )
+                group_chat.save()
 
-            # Return a success response
-            return Response(
-                {
-                    'message': 'Project created successfully!',
-                    'project': ProjectSerializer(new_project).data
-                }, 
-                status=status.HTTP_201_CREATED
-            )
+                # Return a success response
+                return JsonResponse(
+                    {
+                        'message': 'Project created successfully!',
+                        'project': ProjectSerializer(new_project).data
+                    }, 
+                    status=status.HTTP_201_CREATED
+                )
+            else:
+                # Return validation errors
+                return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
         except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    else:
-        # Return validation errors
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    return JsonResponse({"error": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 class ForgotPasswordAPI(APIView):
     @csrf_exempt

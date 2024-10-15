@@ -96,10 +96,10 @@ urlpatterns = [
     #APIs
 
     path('api/signin/', SignInView.as_view(), name='signin_api'),
-    path('api/logout/', LogOutView.as_view(), name='logout_api'),
-    path('api/signup/', SignUpView.as_view(), name='signup_api'),
-    path('api/completeprofile/', CompleteProfileView.as_view(), name='complete_profile_api'),      
-    path('api/verifyotp/', VerifyOtpView.as_view(), name='verify_otp_api'), 
+    path('api/logout/', LogOutView, name='logout_api'),
+    path('api/signup/', SignUpView, name='signup_api'),
+    path('api/completeprofile/', CompleteProfileView, name='complete_profile_api'),      
+    path('api/verifyotp/', VerifyOtpView, name='verify_otp_api'), 
     path('api/client-projects/', ClientProjectsAPI.as_view(), name='client-projects-api'),     
     path('api/create-project/', create_project, name='create_project'),
     path('api/forgot-password/', ForgotPasswordAPI.as_view(), name='forgot_password_api'),

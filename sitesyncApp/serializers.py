@@ -18,7 +18,7 @@ class ProfileSerializer1(serializers.ModelSerializer):
 class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Projects
-        fields = ['project_id', 'project_name', 'start_date', 'end_date', 'leader_id', 'project_status']
+        fields = ['project_name', 'start_date', 'end_date', 'project_details', 'estimated_budget']
 
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
