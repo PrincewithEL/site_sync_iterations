@@ -387,8 +387,9 @@ def create_project(request):
         # Return validation errors
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class ForgotPasswordAPI(APIView):
 
+class ForgotPasswordAPI(APIView):
+    @csrf_exempt
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)
         if serializer.is_valid():
