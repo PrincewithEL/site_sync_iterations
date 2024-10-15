@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'social_django',
     'rest_framework',
+    'corsheaders',
     'sitesyncApp'
 ]
 
@@ -60,6 +61,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware', 
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -97,6 +99,10 @@ SOCIAL_AUTH_PIPELINE = (
 )
 
 WSGI_APPLICATION = 'sitesyncProject.wsgi.application'
+
+CORS_ALLOWED_ORIGINS = [
+    "https://site-sync-iterations.onrender.com",
+]
 
 # LOGGING = {
 #     'version': 1,
