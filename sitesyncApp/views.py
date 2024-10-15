@@ -653,15 +653,16 @@ def add_project_member_api(request, pk):
 def remove_project_member_api(request, pk):
     if request.method == 'POST':
         user_id = request.POST.get('uid')  # Use request.POST for form data
-
-        # Fetch the project member based on the project ID and user ID
-        project_member = get_object_or_404(ProjectMembers, project_id=pk, user_id=user_id, is_deleted=0)
-
-        # Mark the project member as deleted
-        project_member.is_deleted = 1
-        project_member.save()
         
-        return JsonResponse({"message": "Project member removed successfully."}, status=204)
+        # Try to get the project member based on project_id and user_id
+        project_member = ProjectMembers.objects.filter(project_id=pk, user_id=user_id, is_deleted=0).first()
+        
+        if project_member:
+            project_member.is_deleted = 1
+            project_member.save()
+            return JsonResponse({"message": "Project member removed successfully."}, status=204)
+        else:
+            return JsonResponse({"error": "Project member not found."}, status=404)
 
     return JsonResponse({"error": "Method not allowed."}, status=405)
 
