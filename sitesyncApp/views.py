@@ -585,74 +585,86 @@ class ResetPasswordAPI(APIView):
 
         return Response({"message": "Your password has been reset successfully."}, status=status.HTTP_200_OK)
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@csrf_exempt  # Allow requests without CSRF token
+@login_required  # Ensure the user is authenticated
 def add_project_member_api(request, pk):
-    user = request.user
-    project = get_object_or_404(Projects, pk=pk)
-    leader_profile = Profile.objects.get(user_id=project.leader_id)
-
-    data = request.data  # Expecting a JSON payload with 'uid', 'lid', 'uname', 'lname', 'uemail'
-
-    # Ensure all required fields are present in the request data
-    required_fields = ['uid', 'lid', 'uname', 'lname', 'uemail']
-    for field in required_fields:
-        if field not in data:
-            return Response({'error': f'Missing field {field}'}, status=status.HTTP_400_BAD_REQUEST)
-
-    user_id = data['uid']
-    leader_id = data['lid']
-    user_name = data['uname']
-    leader_name = data['lname']
-    user_email = data['uemail']
-
-    # Save the project member to the database
-    projectM = ProjectMembers(
-        leader_id=leader_id,
-        user_name=user_name,
-        project_id=project.project_id,
-        user_id=user_id,
-        created_at=timezone.now(),
-        is_deleted=0,
-        status='Pending',
-    )
-    projectM.save()
-
-    # Send invitation email to the new project member
-    send_mail(
-        'Site Sync: Alert - Project Invitation Notification',
-        f'Dear {user_name},\n\n'
-        f'You have received a project invitation from {leader_name}, on the project {project.project_name}.\n'
-        f'Kindly login to your account to accept or reject the project invitation request.\n\n'
-        'Thank you for choosing Site Sync.',
-        'sitesync2024@gmail.com',  # Replace with your email
-        [user_email],
-        fail_silently=False,
-    )
-
-    # Return a success response
-    return Response({
-        'message': f'Project invitation sent to {user_name} ({user_email})',
-        'project_id': project.project_id,
-        'user_id': user_id,
-        'leader_id': leader_id,
-        'status': 'Pending'
-    }, status=status.HTTP_201_CREATED)
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def remove_project_member_api(request, pk):
-    project_member = get_object_or_404(ProjectMembers, project_id=pk, is_deleted=0)
-
     if request.method == 'POST':
-        user_id = request.data.get('uid')
-        
+        try:
+            data = json.loads(request.body)
+            user = request.user
+            project = get_object_or_404(Projects, pk=pk)
+            leader_profile = Profile.objects.get(user_id=project.leader_id)
+
+            # Ensure all required fields are present in the request data
+            required_fields = ['uid']
+            for field in required_fields:
+                if field not in data:
+                    return Response({'error': f'Missing field {field}'}, status=status.HTTP_400_BAD_REQUEST)
+
+            user_id = data['uid']
+            leader_id = project.leader_id
+            user1 = User.objects.get(id=user_id)
+            user_name = user1.first_name
+            leader_name = leader_profile.user.first_name
+            user_email = user1.email
+
+            # Save the project member to the database
+            project_member = ProjectMembers(
+                leader_id=leader_id,
+                user_name=user_name,
+                project_id=project.project_id,
+                user_id=user_id,
+                created_at=timezone.now(),
+                is_deleted=0,
+                status='Pending',
+            )
+            project_member.save()
+
+            # Send invitation email to the new project member
+            send_mail(
+                'Site Sync: Alert - Project Invitation Notification',
+                f'Dear {user_name},\n\n'
+                f'You have received a project invitation from {leader_name}, on the project {project.project_name}.\n'
+                f'Kindly login to your account to accept or reject the project invitation request.\n\n'
+                'Thank you for choosing Site Sync.',
+                'sitesync2024@gmail.com',  # Replace with your email
+                [user_email],
+                fail_silently=False,
+            )
+
+            # Return a success response
+            return JsonResponse({
+                'message': f'Project invitation sent to {user_name} ({user_email})',
+                'project_id': project.project_id,
+                'user_id': user_id,
+                'leader_id': leader_id,
+                'status': 'Pending'
+            }, status=201)
+
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON payload'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({"error": "Method not allowed."}, status=405)
+
+@csrf_exempt  # Allow requests without CSRF token
+@login_required  # Ensure the user is authenticated
+def remove_project_member_api(request, pk):
+    if request.method == 'POST':
+        # Fetch the project member based on the project ID
+        project_member = get_object_or_404(ProjectMembers, project_id=pk, is_deleted=0)
+
+        user_id = request.POST.get('uid')  # Use request.POST for form data
+
         if project_member.user_id == user_id:
             project_member.is_deleted = 1
             project_member.save()
-            return Response({"message": "Project member removed successfully."}, status=status.HTTP_204_NO_CONTENT)
+            return JsonResponse({"message": "Project member removed successfully."}, status=204)
         else:
-            return Response({"error": "Project member not found."}, status=status.HTTP_404_NOT_FOUND)
+            return JsonResponse({"error": "Project member not found."}, status=404)
+
+    return JsonResponse({"error": "Method not allowed."}, status=405)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])

@@ -41,7 +41,7 @@ class ResetPasswordSerializer(serializers.Serializer):
 class ProjectMemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectMembers
-        fields = ['leader_id', 'user_name', 'project_id', 'user_id']
+        fields = ['user_name', 'project_id', 'user_id']
 
 class SendMessageSerializer(serializers.ModelSerializer):
     class Meta:
