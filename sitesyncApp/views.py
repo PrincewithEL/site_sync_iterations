@@ -66,10 +66,15 @@ logger = logging.getLogger(__name__)
 
 # API Classes
 
-@method_decorator(csrf_exempt, name='dispatch')
-class SignInView(APIView):
-    def post(self, request, *args, **kwargs):
-        serializer = SignInSerializer(data=request.data)
+@csrf_exempt
+def SignInView(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+        serializer = SignInSerializer(data=data)
         if serializer.is_valid():
             identifier = serializer.validated_data['identifier']
             password = serializer.validated_data['password']
@@ -96,15 +101,17 @@ class SignInView(APIView):
                     'user_type': profile.user_type,
                 }
 
-                return Response({
+                return JsonResponse({
                     'message': f'Welcome {user.first_name}',
                     'user_details': user_details,
-                }, status=status.HTTP_200_OK)
+                }, status=200)
 
             else:
-                return Response({'error': 'Invalid email or password.'}, status=status.HTTP_400_BAD_REQUEST)
+                return JsonResponse({'error': 'Invalid email or password.'}, status=400)
         
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse(serializer.errors, status=400)
+    
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 @csrf_exempt
 def LogOutView(request):

@@ -95,7 +95,7 @@ urlpatterns = [
 
     #APIs
 
-    path('api/signin/', SignInView.as_view(), name='signin_api'),
+    path('api/signin/', SignInView, name='signin_api'),
     path('api/logout/', LogOutView, name='logout_api'),
     path('api/signup/', SignUpView, name='signup_api'),
     path('api/completeprofile/', CompleteProfileView, name='complete_profile_api'),      
