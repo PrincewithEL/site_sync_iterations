@@ -472,7 +472,7 @@ class ForgotPasswordAPI(APIView):
 
         return Response({"error": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-@csrf_exempt
+@method_decorator(csrf_exempt, name='dispatch')
 class VerifyOtpAPI(APIView):
     
     def post(self, request):
@@ -524,7 +524,7 @@ class VerifyOtpAPI(APIView):
 
         return Response({"error": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-@csrf_exempt
+@method_decorator(csrf_exempt, name='dispatch')
 class VerifyOtp1API(APIView):
     def post(self, request):
         if request.method == 'POST':
@@ -587,7 +587,7 @@ class ProjectDetailAPI(APIView):
         
         return Response(response_data)
 
-@csrf_exempt
+@method_decorator(csrf_exempt, name='dispatch')
 class ResetPasswordAPI(APIView):
     def post(self, request):
         if request.method == 'POST':
