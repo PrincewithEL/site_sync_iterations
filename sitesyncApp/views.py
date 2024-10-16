@@ -66,6 +66,7 @@ logger = logging.getLogger(__name__)
 
 # API Classes
 
+@method_decorator(csrf_exempt, name='dispatch')
 class SignInView(APIView):
     def post(self, request, *args, **kwargs):
         serializer = SignInSerializer(data=request.data)
@@ -90,7 +91,7 @@ class SignInView(APIView):
                 profile = user.profile
                 user_details = {
                     'fullname': user.first_name,
-                    'email_address': user.username,
+                    'email_address': user.email,
                     'profile_picture': request.build_absolute_uri(profile.profile_picture.url) if profile.profile_picture else None,
                     'user_type': profile.user_type,
                 }
@@ -108,20 +109,33 @@ class SignInView(APIView):
 @csrf_exempt
 def LogOutView(request):
     if request.method == 'POST':
-        # Implement the logout logic here
         user = request.user
-        try:
-            Users.objects.filter(email_address=user.email).update(online=0, logged_out=timezone.now())
-            user_data = Users.objects.get(email_address=user.email)
-            logout(request)
-            response_data = {
-                'message': 'Logout successful',
-                'email_address': user_data.email_address,
-                'user_type': user_data.user_type,
-            }
-            return JsonResponse(response_data, status=200)
-        except Users.DoesNotExist:
-            return JsonResponse({"error": "User not found."}, status=404)
+        
+        if user.is_authenticated:
+            try:
+                # Attempt to retrieve the user directly
+                user_data = Users.objects.get(email_address=user.email, online=1)
+                
+                # Update user status to logged out
+                user_data.online = 0
+                user_data.logged_out = timezone.now()
+                user_data.save()
+
+                # Log the user out
+                logout(request)
+
+                response_data = {
+                    'message': 'Logout successful',
+                    'email_address': user_data.email_address,
+                    'user_type': user_data.user_type,
+                }
+                return JsonResponse(response_data, status=200)
+
+            except Users.DoesNotExist:
+                return JsonResponse({"error": "User not found."}, status=404)
+
+        return JsonResponse({"error": "User is not authenticated."}, status=401)
+
     return JsonResponse({"error": "Method not allowed."}, status=405)
 
 @csrf_exempt
@@ -778,57 +792,63 @@ def api_view_profile(request):
 
     return Response(response_data, status=status.HTTP_200_OK)
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@csrf_exempt  # Allow requests without CSRF token
+@login_required  # Ensure the user is authenticated
 def api_update_profile(request):
-    user = request.user
-    profile = user.profile
+    if request.method == 'POST':
+        user = request.user
+        profile = user.profile
 
-    email = request.data.get('email')
-    password = request.data.get('password')
-    phone_number = request.data.get('phone')
-    profile_picture = request.FILES.get('image')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        phone_number = request.POST.get('phone')
+        profile_picture = request.FILES.get('image')
 
-    # Check if the email is being changed and if it already exists
-    if email and email != user.email and User.objects.filter(email=email).exists():
-        return Response({"error": "Email address already in use."}, status=status.HTTP_400_BAD_REQUEST)
+        # Check if the email is being changed and if it already exists
+        if email and email != user.email and User.objects.filter(email=email).exists():
+            return JsonResponse({"error": "Email address already in use."}, status=400)
 
-    # Validate password
-    if password and not validate_password(password):
-        return Response({"error": "Password must be at least 8 characters long, contain uppercase and lowercase letters, numbers, and symbols."}, status=status.HTTP_400_BAD_REQUEST)
+        # Validate password
+        if password:
+            try:
+                validate_password(password)
+            except ValidationError as e:
+                return JsonResponse({"error": str(e)}, status=400)
 
-    # Update user details
-    user.first_name = request.data.get('fname', user.first_name)
-    if email:
-        user.email = email
-    if password:
-        user.set_password(password)
+        # Update user details
+        user.first_name = request.POST.get('fname', user.first_name)
+        if email:
+            user.email = email
+        if password:
+            user.set_password(password)
 
-    user.save()
+        user.save()
 
-    # Update profile information
-    profile.phone_number = phone_number
-    profile.updated_at = timezone.now()
+        # Update profile information
+        profile.phone_number = phone_number
+        profile.updated_at = timezone.now()
 
-    if profile_picture:
-        unique_filename = str(uuid.uuid4()) + os.path.splitext(profile_picture.name)[1]
-        profile_picture_path = default_storage.save(unique_filename, profile_picture)
-        dest_path = os.path.join(settings.MEDIA_ROOT, 'profile_pictures', unique_filename)
+        if profile_picture:
+            unique_filename = str(uuid.uuid4()) + os.path.splitext(profile_picture.name)[1]
+            profile_picture_path = default_storage.save(unique_filename, profile_picture)
+            dest_path = os.path.join(settings.MEDIA_ROOT, 'profile_pictures', unique_filename)
 
-        try:
-            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-            os.rename(os.path.join(settings.MEDIA_ROOT, profile_picture_path), dest_path)
-            profile.profile_picture = 'profile_pictures/' + unique_filename
-        except Exception as e:
-            return Response({"error": f"Error saving profile picture: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            try:
+                os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+                os.rename(os.path.join(settings.MEDIA_ROOT, profile_picture_path), dest_path)
+                profile.profile_picture = 'profile_pictures/' + unique_filename
+            except Exception as e:
+                return JsonResponse({"error": f"Error saving profile picture: {str(e)}"}, status=500)
 
-    profile.save()
+        profile.save()
 
-    # If the password was changed, update the session to prevent logout
-    if password:
-        update_session_auth_hash(request, user)
+        # If the password was changed, update the session to prevent logout
+        if password:
+            update_session_auth_hash(request, user)
 
-    return Response({"success": "Profile updated successfully."}, status=status.HTTP_200_OK)
+        return JsonResponse({"success": "Profile updated successfully."}, status=200)
+
+    return JsonResponse({"error": "Method not allowed."}, status=405)
 
 @api_view(['GET'])
 @login_required
