@@ -430,7 +430,7 @@ def create_project(request):
 
     return JsonResponse({"error": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-@csrf_exempt
+@method_decorator(csrf_exempt, name='dispatch')
 class ForgotPasswordAPI(APIView):
     
     def post(self, request):
