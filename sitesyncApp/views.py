@@ -72,7 +72,11 @@ def SignInView(request):
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+            return JsonResponse({
+                'status_code': 400,
+                'message': 'Invalid JSON',
+                'data': {}
+            }, status=400)
 
         serializer = SignInSerializer(data=data)
         if serializer.is_valid():
@@ -87,7 +91,7 @@ def SignInView(request):
                 login(request, user)
                 
                 # Set the user as online
-                Users.objects.filter(email_address=user.email).update(
+                Users.objects.filter(email_address=user.username).update(
                     online=1,
                     logged_in=timezone.now()
                 )
@@ -102,16 +106,29 @@ def SignInView(request):
                 }
 
                 return JsonResponse({
+                    'status_code': 200,
                     'message': f'Welcome {user.first_name}',
-                    'user_details': user_details,
+                    'data': user_details,
                 }, status=200)
 
             else:
-                return JsonResponse({'error': 'Invalid email or password.'}, status=400)
+                return JsonResponse({
+                    'status_code': 400,
+                    'message': 'Invalid email or password.',
+                    'data': {}
+                }, status=400)
         
-        return JsonResponse(serializer.errors, status=400)
+        return JsonResponse({
+            'status_code': 400,
+            'message': 'Validation errors.',
+            'data': serializer.errors
+        }, status=400)
     
-    return JsonResponse({'error': 'Method not allowed'}, status=405)
+    return JsonResponse({
+        'status_code': 405,
+        'message': 'Method not allowed',
+        'data': {}
+    }, status=405)
 
 @csrf_exempt
 def LogOutView(request):
@@ -132,18 +149,33 @@ def LogOutView(request):
                 logout(request)
 
                 response_data = {
+                    'status_code': 200,
                     'message': 'Logout successful',
-                    'email_address': user_data.email_address,
-                    'user_type': user_data.user_type,
+                    'data': {
+                        'email_address': user_data.email_address,
+                        'user_type': user_data.user_type,
+                    }
                 }
                 return JsonResponse(response_data, status=200)
 
             except Users.DoesNotExist:
-                return JsonResponse({"error": "User not found."}, status=404)
+                return JsonResponse({
+                    'status_code': 404,
+                    'message': 'User not found.',
+                    'data': {}
+                }, status=404)
 
-        return JsonResponse({"error": "User is not authenticated."}, status=401)
+        return JsonResponse({
+            'status_code': 401,
+            'message': 'User is not authenticated.',
+            'data': {}
+        }, status=401)
 
-    return JsonResponse({"error": "Method not allowed."}, status=405)
+    return JsonResponse({
+        'status_code': 405,
+        'message': 'Method not allowed.',
+        'data': {}
+    }, status=405)
 
 @csrf_exempt
 def SignUpView(request):
@@ -156,10 +188,18 @@ def SignUpView(request):
             phone_number = data.get('phone_number')
 
             if User.objects.filter(email=email).exists():
-                return JsonResponse({"error": "Email already exists."}, status=400)
+                return JsonResponse({
+                    'status_code': 400,
+                    'message': 'Email already exists.',
+                    'data': {}
+                }, status=400)
 
             if not email:
-                return JsonResponse({"error": "Email is required."}, status=400)
+                return JsonResponse({
+                    'status_code': 400,
+                    'message': 'Email is required.',
+                    'data': {}
+                }, status=400)
 
             # Create the user
             user = User(
@@ -189,17 +229,28 @@ def SignUpView(request):
             )
 
             # Log the user in with the specified backend
-            login(request, user, backend='django.contrib.auth.backends.ModelBackend')  # Specify the backend
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
 
             return JsonResponse({
-                "message": "User registered successfully",
-                "email_address": email
+                'status_code': 201,
+                'message': 'User registered successfully',
+                'data': {
+                    'email_address': email
+                }
             }, status=201)
 
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                'status_code': 500,
+                'message': str(e),
+                'data': {}
+            }, status=500)
 
-    return JsonResponse({"error": "Method not allowed."}, status=405)
+    return JsonResponse({
+        'status_code': 405,
+        'message': 'Method not allowed.',
+        'data': {}
+    }, status=405)
 
 @csrf_exempt
 def CompleteProfileView(request):
@@ -208,14 +259,22 @@ def CompleteProfileView(request):
 
         # Check if user is authenticated
         if not user.is_authenticated:
-            return JsonResponse({"error": "User not authenticated."}, status=403)
+            return JsonResponse({
+                'status_code': 403,
+                'message': 'User not authenticated.',
+                'data': {}
+            }, status=403)
 
         # Retrieve user_type and profile_picture
         user_type = request.POST.get('user_type')
         profile_picture = request.FILES.get('profile_picture')
 
         if not user_type or not profile_picture:
-            return JsonResponse({"error": "Both user_type and profile_picture are required."}, status=400)
+            return JsonResponse({
+                'status_code': 400,
+                'message': 'Both user_type and profile_picture are required.',
+                'data': {}
+            }, status=400)
 
         try:
             # Update the profile
@@ -243,14 +302,30 @@ def CompleteProfileView(request):
                 fail_silently=False,
             )
 
-            return JsonResponse({"message": "Profile updated successfully."}, status=200)
+            return JsonResponse({
+                'status_code': 200,
+                'message': 'Profile updated successfully.',
+                'data': {}
+            }, status=200)
 
         except Profile.DoesNotExist:
-            return JsonResponse({"error": "Profile not found."}, status=404)
+            return JsonResponse({
+                'status_code': 404,
+                'message': 'Profile not found.',
+                'data': {}
+            }, status=404)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                'status_code': 500,
+                'message': str(e),
+                'data': {}
+            }, status=500)
 
-    return JsonResponse({"error": "Method not allowed."}, status=405)
+    return JsonResponse({
+        'status_code': 405,
+        'message': 'Method not allowed.',
+        'data': {}
+    }, status=405)
 
 @csrf_exempt
 @login_required  # Ensure the user is authenticated
@@ -264,7 +339,11 @@ def VerifyOtpView(request):
             user = request.user
 
             if not otp_code:
-                return JsonResponse({"error": "OTP code not provided."}, status=400)
+                return JsonResponse({
+                    'status_code': 400,
+                    'message': 'OTP code not provided.',
+                    'data': {}
+                }, status=400)
 
             # Retrieve the OTP object for the authenticated user
             otp = OTP.objects.get(user=user, otp_code=otp_code, used=False)
@@ -272,9 +351,6 @@ def VerifyOtpView(request):
             if otp:
                 otp.used = True  # Mark the OTP as used
                 otp.save()
-
-                # Log the user in again if needed (optional, as they should already be logged in)
-                # login(request, user, backend='django.contrib.auth.backends.ModelBackend')
 
                 # Mark the user as online
                 Users.objects.filter(email_address=user.email).update(online=1)
@@ -290,19 +366,36 @@ def VerifyOtpView(request):
                     }
 
                     return JsonResponse({
+                        'status_code': 200,
                         'message': f'Welcome {user.first_name}',
-                        'user_details': user_details,
+                        'data': {'user_details': user_details}
                     }, status=200)
                 else:
-                    return JsonResponse({"message": "OTP verified successfully", "redirect_url": "/home"}, status=200)
+                    return JsonResponse({
+                        'status_code': 200,
+                        'message': 'OTP verified successfully',
+                        'data': {'redirect_url': '/home'}
+                    }, status=200)
 
         except OTP.DoesNotExist:
-            return JsonResponse({"error": "Invalid OTP."}, status=400)
+            return JsonResponse({
+                'status_code': 400,
+                'message': 'Invalid OTP.',
+                'data': {}
+            }, status=400)
 
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({
+                'status_code': 500,
+                'message': str(e),
+                'data': {}
+            }, status=500)
 
-    return JsonResponse({"error": "Method not allowed."}, status=405)
+    return JsonResponse({
+        'status_code': 405,
+        'message': 'Method not allowed.',
+        'data': {}
+    }, status=405)
 
 class ClientProjectsAPI(APIView):
     permission_classes = [IsAuthenticated]
@@ -313,60 +406,69 @@ class ClientProjectsAPI(APIView):
         now = timezone.now().date()
         user_id = profile.user_id
 
-        # Fetch all active projects where user is leader or member
-        leader_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=0, project_status='Active')
-        current_date = timezone.now().date()
-        # leader_projects.filter(end_date__lt=current_date, project_status__in=['Active']).update(project_status='Completed')
-        trash_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=1)
-        member_projects = Projects.objects.filter(
-            project_id__in=ProjectMembers.objects.filter(user_id=user.id, is_deleted=0, status='Accepted').values_list('project_id', flat=True),
-            is_deleted=0
-        )
-        bookmarks = Bookmarks.objects.filter(is_deleted=0, item_type='Project', user_id=request.user.id)
-        bookmarked_project_ids = bookmarks.values_list('item_id', flat=True)
-        bookmarked_projects = Projects.objects.filter(project_id__in=bookmarked_project_ids)
-        all_projects = (leader_projects | member_projects | bookmarked_projects).distinct()
-        
-        # Remove distinct() since union() automatically removes duplicates
-        all_projects_count = all_projects.count()
+        try:
+            # Fetch all active projects where user is leader or member
+            leader_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=0, project_status='Active')
+            trash_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=1)
+            member_projects = Projects.objects.filter(
+                project_id__in=ProjectMembers.objects.filter(user_id=user.id, is_deleted=0, status='Accepted').values_list('project_id', flat=True),
+                is_deleted=0
+            )
+            bookmarks = Bookmarks.objects.filter(is_deleted=0, item_type='Project', user_id=request.user.id)
+            bookmarked_project_ids = bookmarks.values_list('item_id', flat=True)
+            bookmarked_projects = Projects.objects.filter(project_id__in=bookmarked_project_ids)
+            all_projects = (leader_projects | member_projects | bookmarked_projects).distinct()
+            
+            all_projects_count = all_projects.count()
 
-        # Unread chats and pending tasks
-        unread_chat_counts = {}
-        pending_tasks_counts = {}
-        progress_percentages = {}
+            # Unread chats and pending tasks
+            unread_chat_counts = {}
+            pending_tasks_counts = {}
+            progress_percentages = {}
 
-        for project in all_projects:
-            try:
-                group_chat = GroupChat.objects.get(project=project)
-                unread_chats = Chat.objects.filter(group_id=group_chat.group_id).exclude(sender_user_id=user_id)
-                unread_status = ChatStatus.objects.filter(status=1, user_id=user_id)
-                unread_chat_counts[project.project_id] = unread_status.count()
+            for project in all_projects:
+                try:
+                    group_chat = GroupChat.objects.get(project=project)
+                    unread_chats = Chat.objects.filter(group_id=group_chat.group_id).exclude(sender_user_id=user_id)
+                    unread_status = ChatStatus.objects.filter(status=1, user_id=user_id)
+                    unread_chat_counts[project.project_id] = unread_status.count()
 
-                # Calculate pending tasks
-                ongoing_tasks = Tasks.objects.filter(project=project, task_status='Ongoing', is_deleted=0)
-                pending_tasks_counts[project.project_id] = ongoing_tasks.count()
+                    # Calculate pending tasks
+                    ongoing_tasks = Tasks.objects.filter(project=project, task_status='Ongoing', is_deleted=0)
+                    pending_tasks_counts[project.project_id] = ongoing_tasks.count()
 
-                # Calculate progress based on start/end date
-                total_days = (project.end_date - project.start_date).days
-                days_left = (project.end_date - now).days
-                progress_percentage = ((total_days - days_left) / total_days) * 100 if total_days > 0 else 0
-                progress_percentages[project.project_id] = progress_percentage if progress_percentage > 0 else 0
-            except GroupChat.DoesNotExist:
-                unread_chat_counts[project.project_id] = 0
-                pending_tasks_counts[project.project_id] = 0
-                progress_percentages[project.project_id] = 0
+                    # Calculate progress based on start/end date
+                    total_days = (project.end_date - project.start_date).days
+                    days_left = (project.end_date - now).days
+                    progress_percentage = ((total_days - days_left) / total_days) * 100 if total_days > 0 else 0
+                    progress_percentages[project.project_id] = progress_percentage if progress_percentage > 0 else 0
+                except GroupChat.DoesNotExist:
+                    unread_chat_counts[project.project_id] = 0
+                    pending_tasks_counts[project.project_id] = 0
+                    progress_percentages[project.project_id] = 0
 
-        response_data = {
-            'user': ProfileSerializer(profile).data,
-            'user_name': request.user.first_name,
-            'all_projects': ProjectSerializer(all_projects, many=True).data,
-            'unread_chats': unread_chat_counts,
-            'pending_tasks': pending_tasks_counts,
-            'progress_percentages': progress_percentages,
-            'all_projects_count': all_projects_count,
-        }
+            response_data = {
+                'user': ProfileSerializer(profile).data,
+                'user_name': request.user.first_name,
+                'all_projects': ProjectSerializer(all_projects, many=True).data,
+                'unread_chats': unread_chat_counts,
+                'pending_tasks': pending_tasks_counts,
+                'progress_percentages': progress_percentages,
+                'all_projects_count': all_projects_count,
+            }
 
-        return Response(response_data)
+            return Response({
+                'status_code': 200,
+                'message': 'Projects retrieved successfully.',
+                'data': response_data
+            }, status=200)
+
+        except Exception as e:
+            return Response({
+                'status_code': 500,
+                'message': str(e),
+                'data': {}
+            }, status=500)
 
 @csrf_exempt  # Allow requests without CSRF token
 @login_required  # Ensure the user is authenticated
@@ -390,7 +492,11 @@ def create_project(request):
                 image = request.FILES.get('project_image')
 
                 if not all([pname, sdate, edate, ebug, pdet]):
-                    return JsonResponse({'error': 'Please fill in all required fields.'}, status=status.HTTP_400_BAD_REQUEST)
+                    return JsonResponse({
+                        'status_code': 400,
+                        'message': 'Please fill in all required fields.',
+                        'data': {}
+                    }, status=400)
 
                 # Calculate total days and initial balances
                 total_days = (edate - sdate).days
@@ -403,9 +509,8 @@ def create_project(request):
                 # Handle project image if provided
                 project_image = None
                 if image:
-                    profile_picture = image
-                    unique_filename = str(uuid.uuid4()) + os.path.splitext(profile_picture.name)[1]
-                    profile_picture_path = default_storage.save(unique_filename, profile_picture)
+                    unique_filename = str(uuid.uuid4()) + os.path.splitext(image.name)[1]
+                    profile_picture_path = default_storage.save(unique_filename, image)
                     dest_path = os.path.join(settings.MEDIA_ROOT, 'project_images', unique_filename)
                     os.rename(os.path.join(settings.MEDIA_ROOT, profile_picture_path), dest_path)
                     project_image = 'project_images/' + unique_filename
@@ -427,29 +532,40 @@ def create_project(request):
                     is_deleted=is_deleted
                 )
                 group_chat = GroupChat(
-                leader_id=leader_id,
-                project=new_project,
-                group_name=pname,  
-                is_deleted=is_deleted,
+                    leader_id=leader_id,
+                    project=new_project,
+                    group_name=pname,
+                    is_deleted=is_deleted,
                 )
                 group_chat.save()
 
                 # Return a success response
-                return JsonResponse(
-                    {
-                        'message': 'Project created successfully!',
-                        'project': ProjectSerializer(new_project).data
-                    }, 
-                    status=status.HTTP_201_CREATED
-                )
+                return JsonResponse({
+                    'status_code': 201,
+                    'message': 'Project created successfully!',
+                    'data': ProjectSerializer(new_project).data
+                }, status=201)
+
             else:
                 # Return validation errors
-                return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return JsonResponse({
+                    'status_code': 400,
+                    'message': 'Validation errors.',
+                    'data': serializer.errors
+                }, status=400)
         
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return JsonResponse({
+                'status_code': 500,
+                'message': str(e),
+                'data': {}
+            }, status=500)
 
-    return JsonResponse({"error": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    return JsonResponse({
+        'status_code': 405,
+        'message': 'Method not allowed.',
+        'data': {}
+    }, status=405)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ForgotPasswordAPI(APIView):
@@ -482,16 +598,38 @@ class ForgotPasswordAPI(APIView):
 
                         # Return success response
                         request.session['user_id'] = user.id
-                        return Response({'message': 'OTP has been sent to your email.'}, status=status.HTTP_200_OK)
+                        return Response({
+                            'status_code': 200,
+                            'message': 'OTP has been sent to your email.',
+                            'data': {}
+                        }, status=status.HTTP_200_OK)
+
                     else:
-                        return Response({'error': 'No account found with this email address.'}, status=status.HTTP_404_NOT_FOUND)
+                        return Response({
+                            'status_code': 404,
+                            'message': 'No account found with this email address.',
+                            'data': {}
+                        }, status=status.HTTP_404_NOT_FOUND)
+
                 else:
-                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({
+                        'status_code': 400,
+                        'message': 'Validation errors.',
+                        'data': serializer.errors
+                    }, status=status.HTTP_400_BAD_REQUEST)
 
             except json.JSONDecodeError:
-                return Response({"error": "Invalid JSON."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    'status_code': 400,
+                    'message': 'Invalid JSON.',
+                    'data': {}
+                }, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response({"error": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return Response({
+            'status_code': 405,
+            'message': 'Method not allowed.',
+            'data': {}
+        }, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class VerifyOtpAPI(APIView):
@@ -530,20 +668,43 @@ class VerifyOtpAPI(APIView):
                                 elif profile.user_type == 'Contractor':
                                     redirect_url = 'contractor'
 
-                                return Response({'redirect_url': redirect_url,
-                                                 'message': 'Correct OTP.'}, status=status.HTTP_200_OK)
+                                return Response({
+                                    'status_code': 200,
+                                    'message': 'Correct OTP.',
+                                    'data': {'redirect_url': redirect_url}
+                                }, status=status.HTTP_200_OK)
 
                         except OTP.DoesNotExist:
-                            return Response({'error': 'Invalid OTP.'}, status=status.HTTP_400_BAD_REQUEST)
+                            return Response({
+                                'status_code': 400,
+                                'message': 'Invalid OTP.',
+                                'data': {}
+                            }, status=status.HTTP_400_BAD_REQUEST)
 
-                    return Response({'error': 'Session expired or invalid.'}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({
+                        'status_code': 400,
+                        'message': 'Session expired or invalid.',
+                        'data': {}
+                    }, status=status.HTTP_400_BAD_REQUEST)
 
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    'status_code': 400,
+                    'message': 'Validation errors.',
+                    'data': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
 
             except json.JSONDecodeError:
-                return Response({"error": "Invalid JSON."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    'status_code': 400,
+                    'message': 'Invalid JSON.',
+                    'data': {}
+                }, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response({"error": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return Response({
+            'status_code': 405,
+            'message': 'Method not allowed.',
+            'data': {}
+        }, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class VerifyOtp1API(APIView):
@@ -563,30 +724,60 @@ class VerifyOtp1API(APIView):
                         uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
                         token = default_token_generator.make_token(user)
                         return Response({
-                            'redirect_url': f'/reset-password/{uidb64}/{token}/',
-                            'message': 'Correct OTP.'
+                            'status_code': 200,
+                            'message': 'Correct OTP.',
+                            'data': {'redirect_url': f'/reset-password/{uidb64}/{token}/'}
                         }, status=status.HTTP_200_OK)
                     else:
-                        return Response({'error': 'Invalid OTP.'}, status=status.HTTP_400_BAD_REQUEST)
+                        return Response({
+                            'status_code': 400,
+                            'message': 'Invalid OTP.',
+                            'data': {}
+                        }, status=status.HTTP_400_BAD_REQUEST)
 
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    'status_code': 400,
+                    'message': 'Validation errors.',
+                    'data': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
 
             except json.JSONDecodeError:
-                return Response({"error": "Invalid JSON."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    'status_code': 400,
+                    'message': 'Invalid JSON.',
+                    'data': {}
+                }, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response({"error": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return Response({
+            'status_code': 405,
+            'message': 'Method not allowed.',
+            'data': {}
+        }, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 class ProjectDetailAPI(APIView):
     def get(self, request, pk):
+        # Check if the user is authenticated
+        if not request.user.is_authenticated:
+            return Response({
+                'status_code': 403,
+                'message': 'User not authenticated.',
+                'data': {}
+            }, status=status.HTTP_403_FORBIDDEN)
+
         user = request.user
         profile = user.profile
         project = get_object_or_404(Projects, pk=pk)
-        
+
         # Fetch project leader details
         leader_profile = Profile.objects.get(user_id=project.leader_id)
-        
+
         # Fetch unread messages and tasks
-        unread_messages = ChatStatus.objects.filter(user_id=user.id, group=project.groupchat, status=1, is_deleted=0)
+        unread_messages = ChatStatus.objects.filter(
+            user_id=user.id,
+            group=project.groupchat,
+            status=1,
+            is_deleted=0
+        )
         unread_tasks = Tasks.objects.filter(
             project=project,
             member__in=[user],
@@ -605,8 +796,12 @@ class ProjectDetailAPI(APIView):
             'unread_tasks': unread_tasks_data,
             'unread_messages': unread_messages_data
         }
-        
-        return Response(response_data)
+
+        return Response({
+            'status_code': 200,
+            'message': 'Project details retrieved successfully.',
+            'data': response_data
+        }, status=status.HTTP_200_OK)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ResetPasswordAPI(APIView):
@@ -619,33 +814,61 @@ class ResetPasswordAPI(APIView):
                 confirm_password = data.get('confirm_password')
 
                 if not email:
-                    return Response({"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({
+                        'status_code': 400,
+                        'message': 'Email is required.',
+                        'data': {}
+                    }, status=status.HTTP_400_BAD_REQUEST)
 
                 # Fetch user by email
                 user = User.objects.filter(email=email).first()
 
                 if user is None:
-                    return Response({"error": "Invalid email."}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({
+                        'status_code': 400,
+                        'message': 'Invalid email.',
+                        'data': {}
+                    }, status=status.HTTP_400_BAD_REQUEST)
 
                 if password != confirm_password:
-                    return Response({"error": "Passwords do not match."}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({
+                        'status_code': 400,
+                        'message': 'Passwords do not match.',
+                        'data': {}
+                    }, status=status.HTTP_400_BAD_REQUEST)
 
                 # Validate password
                 try:
                     validate_password(password)
                 except Exception as e:
-                    return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({
+                        'status_code': 400,
+                        'message': str(e),
+                        'data': {}
+                    }, status=status.HTTP_400_BAD_REQUEST)
 
                 # Update the user's password
                 user.set_password(password)
                 user.save()
 
-                return Response({"message": "Your password has been reset successfully."}, status=status.HTTP_200_OK)
+                return Response({
+                    'status_code': 200,
+                    'message': 'Your password has been reset successfully.',
+                    'data': {}
+                }, status=status.HTTP_200_OK)
 
             except json.JSONDecodeError:
-                return Response({"error": "Invalid JSON."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    'status_code': 400,
+                    'message': 'Invalid JSON.',
+                    'data': {}
+                }, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response({"error": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return Response({
+            'status_code': 405,
+            'message': 'Method not allowed.',
+            'data': {}
+        }, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 @csrf_exempt  # Allow requests without CSRF token
 @login_required  # Ensure the user is authenticated
@@ -661,7 +884,11 @@ def add_project_member_api(request, pk):
             required_fields = ['uid']
             for field in required_fields:
                 if field not in data:
-                    return Response({'error': f'Missing field {field}'}, status=status.HTTP_400_BAD_REQUEST)
+                    return JsonResponse({
+                        'status_code': 400,
+                        'message': f'Missing field {field}',
+                        'data': {}
+                    }, status=400)
 
             user_id = data['uid']
             leader_id = project.leader_id
@@ -696,19 +923,34 @@ def add_project_member_api(request, pk):
 
             # Return a success response
             return JsonResponse({
+                'status_code': 201,
                 'message': f'Project invitation sent to {user_name} ({user_email})',
-                'project_id': project.project_id,
-                'user_id': user_id,
-                'leader_id': leader_id,
-                'status': 'Pending'
+                'data': {
+                    'project_id': project.project_id,
+                    'user_id': user_id,
+                    'leader_id': leader_id,
+                    'status': 'Pending'
+                }
             }, status=201)
 
         except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON payload'}, status=400)
+            return JsonResponse({
+                'status_code': 400,
+                'message': 'Invalid JSON payload',
+                'data': {}
+            }, status=400)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return JsonResponse({
+                'status_code': 500,
+                'message': str(e),
+                'data': {}
+            }, status=500)
 
-    return JsonResponse({"error": "Method not allowed."}, status=405)
+    return JsonResponse({
+        'status_code': 405,
+        'message': 'Method not allowed.',
+        'data': {}
+    }, status=405)
 
 @csrf_exempt  # Allow requests without CSRF token
 @login_required  # Ensure the user is authenticated
@@ -729,21 +971,36 @@ def remove_project_member_api(request, pk):
             if project_member:  # Check if project_member is found
                 project_member.is_deleted = 1
                 project_member.save()
-                return JsonResponse({"message": "Project member removed successfully."}, status=204)
+                return JsonResponse({
+                    'status_code': 204,
+                    'message': "Project member removed successfully.",
+                    'data': {}
+                }, status=204)
             else:
-                return JsonResponse({"error": "Project member not found."}, status=404)
+                return JsonResponse({
+                    'status_code': 404,
+                    'message': "Project member not found.",
+                    'data': {}
+                }, status=404)
 
         except json.JSONDecodeError:
-            return JsonResponse({"error": "Invalid JSON data."}, status=400)
+            return JsonResponse({
+                'status_code': 400,
+                'message': "Invalid JSON data.",
+                'data': {}
+            }, status=400)
 
-    return JsonResponse({"error": "Method not allowed."}, status=405)
+    return JsonResponse({
+        'status_code': 405,
+        'message': "Method not allowed.",
+        'data': {}
+    }, status=405)
 
 @csrf_exempt  # Allow requests without CSRF token
 @login_required  # Ensure the user is authenticated
 def exit_project_api(request, pk):
     if request.method == 'POST':
         try:
-            # Load JSON data from the request body
             user = request.user
             
             # Check if the project member exists
@@ -754,12 +1011,24 @@ def exit_project_api(request, pk):
             project_member.status = 'Exited'
             project_member.save()
 
-            return JsonResponse({"message": "You have exited the project successfully."}, status=204)
+            return JsonResponse({
+                'status_code': 204,
+                'message': "You have exited the project successfully.",
+                'data': {}
+            }, status=204)
 
         except json.JSONDecodeError:
-            return JsonResponse({"error": "Invalid JSON data."}, status=400)
+            return JsonResponse({
+                'status_code': 400,
+                'message': "Invalid JSON data.",
+                'data': {}
+            }, status=400)
 
-    return JsonResponse({"error": "Method not allowed."}, status=405)
+    return JsonResponse({
+        'status_code': 405,
+        'message': "Method not allowed.",
+        'data': {}
+    }, status=405)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -797,7 +1066,11 @@ def api_view_profile(request):
         'projects': project_data,
     }
 
-    return Response(response_data, status=status.HTTP_200_OK)
+    return Response({
+        'status_code': 200,
+        'message': "Profile retrieved successfully.",
+        'data': response_data
+    }, status=status.HTTP_200_OK)
 
 @csrf_exempt  # Allow requests without CSRF token
 @login_required  # Ensure the user is authenticated
@@ -813,19 +1086,28 @@ def api_update_profile(request):
 
         # Check if the email is being changed and if it already exists
         if email and email != user.email and User.objects.filter(email=email).exists():
-            return JsonResponse({"error": "Email address already in use."}, status=400)
+            return JsonResponse({
+                "message": "Email address already in use.",
+                "status_code": 400,
+                "data": {}
+            }, status=400)
 
         # Validate password
         if password:
             try:
                 validate_password(password)
             except ValidationError as e:
-                return JsonResponse({"error": str(e)}, status=400)
+                return JsonResponse({
+                    "message": str(e),
+                    "status_code": 400,
+                    "data": {}
+                }, status=400)
 
         # Update user details
         user.first_name = request.POST.get('fname', user.first_name)
         if email:
             user.email = email
+            user.username = email
         if password:
             user.set_password(password)
 
@@ -845,7 +1127,11 @@ def api_update_profile(request):
                 os.rename(os.path.join(settings.MEDIA_ROOT, profile_picture_path), dest_path)
                 profile.profile_picture = 'profile_pictures/' + unique_filename
             except Exception as e:
-                return JsonResponse({"error": f"Error saving profile picture: {str(e)}"}, status=500)
+                return JsonResponse({
+                    "message": f"Error saving profile picture: {str(e)}",
+                    "status_code": 500,
+                    "data": {}
+                }, status=500)
 
         profile.save()
 
@@ -853,9 +1139,17 @@ def api_update_profile(request):
         if password:
             update_session_auth_hash(request, user)
 
-        return JsonResponse({"success": "Profile updated successfully."}, status=200)
+        return JsonResponse({
+            "message": "Profile updated successfully.",
+            "status_code": 200,
+            "data": {}
+        }, status=200)
 
-    return JsonResponse({"error": "Method not allowed."}, status=405)
+    return JsonResponse({
+        "message": "Method not allowed.",
+        "status_code": 405,
+        "data": {}
+    }, status=405)
 
 @api_view(['GET'])
 @login_required
@@ -907,158 +1201,216 @@ def chat_room_view(request, pk):
     # Create a list to store chat messages with read status
     chat_messages_with_status = []
     for message in chat_messages:
-        # Check the chat status for the current user
         chat_status = ChatStatus.objects.filter(chat=message, group_id=pk, is_deleted=0).first()
         
-        if chat_status:
-            is_read = chat_status.status == 0  # Message is unread if status is 0
-            receiver_user_id = chat_status.user_id  # Safely access user_id
-        else:
-            is_read = False  # Default to read if no status found
-            receiver_user_id = None  # No receiver found
+        is_read = chat_status.status == 0 if chat_status else False
+        receiver_user_id = chat_status.user_id if chat_status else None
 
-        # Ensure receiver_user_id is not None before trying to get the profile
-        if receiver_user_id:
-            receiver_profile = get_object_or_404(Profile, user_id=receiver_user_id)
-            receiver_user_type = receiver_profile.user_type  # Safely access user_type
-        else:
-            receiver_profile = None  # Handle the case where there's no receiver
-            receiver_user_type = None  # Handle the case where there's no user type
+        receiver_profile = get_object_or_404(Profile, user_id=receiver_user_id) if receiver_user_id else None
+        receiver_user_type = receiver_profile.user_type if receiver_profile else None
 
         chat_messages_with_status.append({
             'id': message.chat_id,
             'message': message.message,
             'timestamp': message.timestamp,
             'sender': message.sender_user_id,
-            'receiver': receiver_user_id,  # Ensure you're using the correct variable
-            'receiver_type': receiver_user_type,  # Use the safely accessed user_type
+            'receiver': receiver_user_id,
+            'receiver_type': receiver_user_type,
             'is_starred': message.chat_id in bookmarked_chat_ids,
             'file': message.file.url if message.file else None,
             'file_extension': os.path.splitext(message.file.name)[1].lower().strip('.') if message.file else '',
-            'is_read': is_read,  # Add read status here
+            'is_read': is_read,
         })
 
     if user_id:
         project_members = project_members.filter(user_id=user_id)
-        project_member_details = [
-            member for member in project_member_details if member['id'] == user_id
-        ]
-        chat_messages_with_status = [
-            message for message in chat_messages_with_status if message['receiver'] == user_id
-        ]
+        project_member_details = [member for member in project_member_details if member['id'] == user_id]
+        chat_messages_with_status = [message for message in chat_messages_with_status if message['receiver'] == user_id]
     elif user_type:
         project_members = project_members.filter(user__profile__user_type=user_type)
-        project_member_details = [
-            member for member in project_member_details if member['user_type'] == user_type
-        ]
-        chat_messages_with_status = [
-            message for message in chat_messages_with_status if message['receiver_type'] == user_type
-        ]      
+        project_member_details = [member for member in project_member_details if member['user_type'] == user_type]
+        chat_messages_with_status = [message for message in chat_messages_with_status if message['receiver_type'] == user_type]
 
     # Prepare the response data
     response_data = {
         'project': {
             'id': project.project_id,
             'name': project.project_name,
-            # add other relevant project details here
+            # Add other relevant project details here
         },
         'project_member_details': project_member_details,
         'chat_messages': chat_messages_with_status,
     }
     
-    return Response(response_data)
+    return Response({
+        "message": "Chat room details retrieved successfully.",
+        "status_code": 200,
+        "data": response_data
+    }, status=200)
 
-@api_view(['POST'])
+@csrf_exempt  # Allow requests without CSRF token
 @login_required
 def send_message_api(request, pk):
-    user = request.user
-    project = get_object_or_404(Projects, pk=pk)
-    message = request.data.get('message')
-    selected_users = request.data.get('selected_users')  # List of user IDs
-    file = request.FILES.get('file')
-    reply_message_id = request.data.get('reply_message_id')
+    if request.method == 'POST':
+        user = request.user
+        project = get_object_or_404(Projects, pk=pk)
 
-    # Fetch original message only if reply_message_id is present
-    original_message = None
-    if reply_message_id:
+        # Parse JSON body data
         try:
-            original_message = Chat.objects.get(chat_id=reply_message_id)
-        except Chat.DoesNotExist:
-            return Response({'detail': 'The message you are replying to does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({
+                "message": "Invalid JSON.",
+                "status_code": 400,
+                "data": {}
+            }, status=400)
 
-    # Create the chat message
-    new_chat = Chat.objects.create(
-        group=project.groupchat,
-        sender_user=user,
-        message=message,
-        timestamp=timezone.now(),
-        is_deleted=0,
-        reply=original_message.message if original_message else None,
-        file=file
-    )
+        message = data.get('message')
+        selected_users = data.get('selected_users')  # List of user IDs
+        reply_message_id = data.get('reply_message_id')
+        
+        # Handle file upload
+        file = request.FILES.get('file')
 
-    # Handle resource creation if file is attached
-    if file:
-        resource_name = file.name
-        resource_details = message[:80] if message else "No details provided"
-        resource_size = file.size
-        resource_directory = os.path.join('chat_files', file.name)
+        # Fetch original message only if reply_message_id is present
+        original_message = None
+        if reply_message_id:
+            try:
+                original_message = Chat.objects.get(chat_id=reply_message_id)
+            except Chat.DoesNotExist:
+                return JsonResponse({
+                    "message": "The message you are replying to does not exist.",
+                    "status_code": 400,
+                    "data": {}
+                }, status=400)
 
-        Resources.objects.create(
-            user=user,
-            project=project,
-            resource_name=resource_name,
-            resource_details=resource_details,
-            resource_directory=resource_directory,
-            created_at=timezone.now(),
-            updated_at=None,
-            resource_status="active",
-            resource_type="file",
-            resource_size=f"{resource_size} bytes",
+        # Create the chat message
+        new_chat = Chat.objects.create(
+            group=project.groupchat,
+            sender_user=user,
+            message=message,
+            timestamp=timezone.now(),
             is_deleted=0,
-            deleted_at=None
+            reply=original_message.message if original_message else None,
+            file=file
         )
 
-    # Send to selected users
-    for user_id in selected_users:
-        existing_status = ChatStatus.objects.filter(
-            user_id=user_id,
-            group=new_chat.group,
-            chat=new_chat
-        ).exists()
+        # Handle resource creation if file is attached
+        if file:
+            resource_name = file.name
+            resource_details = message[:80] if message else "No details provided"
+            resource_size = file.size
+            resource_directory = os.path.join('chat_files', file.name)
 
-        if not existing_status:
-            ChatStatus.objects.create(
-                chat=new_chat,
-                group=project.groupchat,
-                user_id=user_id,
-                status=1,
-                is_deleted=0 
+            # Determine resource type based on file extension
+            _, file_extension = os.path.splitext(file.name)
+            resource_type = "Other"  # Default resource type
+            if file_extension.lower() in ['.jpg', '.jpeg', '.png', '.gif']:
+                resource_type = "Image"
+            elif file_extension.lower() in ['.mp4', '.mov', '.avi']:
+                resource_type = "Video"
+            elif file_extension.lower() in ['.mp3', '.wav', '.m4a']:
+                resource_type = "Audio"
+            elif file_extension.lower() in ['.pdf', '.doc', '.docx', '.ppt', '.pptx']:
+                resource_type = "Document"
+
+            Resources.objects.create(
+                user=user,
+                project=project,
+                resource_name=resource_name,
+                resource_details=resource_details,
+                resource_directory=resource_directory,
+                created_at=timezone.now(),
+                updated_at=None,
+                resource_status="active",
+                resource_type=resource_type,
+                resource_size=f"{resource_size} bytes",
+                is_deleted=0,
+                deleted_at=None
             )
 
-    return Response({'status': 'Message sent successfully'}, status=status.HTTP_201_CREATED)
+        # Send to selected users
+        for user_id in selected_users:
+            existing_status = ChatStatus.objects.filter(
+                user_id=user_id,
+                group=new_chat.group,
+                chat=new_chat
+            ).exists()
 
-class EditMessageAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+            if not existing_status:
+                ChatStatus.objects.create(
+                    chat=new_chat,
+                    group=project.groupchat,
+                    user_id=user_id,
+                    status=1,
+                    is_deleted=0 
+                )
 
-    def post(self, request, pk):
-        message_id = request.data.get('mid')
-        new_message = request.data.get('edited_message')
+        return JsonResponse({
+            "message": "Message sent successfully.",
+            "status_code": 201,
+            "data": {}
+        }, status=201)
+
+    return JsonResponse({
+        "message": "Method not allowed.",
+        "status_code": 405,
+        "data": {}
+    }, status=405)
+
+@csrf_exempt  # Allow requests without CSRF token
+@login_required
+def EditMessageAPIView(request, pk):
+    if request.method == 'POST':
+        # Parse JSON body data
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({
+                "message": "Invalid JSON.",
+                "status_code": 400,
+                "data": {}
+            }, status=400)
+
+        message_id = data.get('mid')
+        new_message = data.get('edited_message')
 
         # Fetch the chat message for the current user
         chat = get_object_or_404(Chat, chat_id=message_id, sender_user=request.user)
-        
+
         chat.message = new_message
         chat.updated_at = timezone.now()
         chat.save()
 
-        return Response({'success': True, 'message': 'Message edited successfully.'}, status=status.HTTP_200_OK)
+        return JsonResponse({
+            "message": "Message edited successfully.",
+            "status_code": 200,
+            "data": {}
+        }, status=200)
 
-class DeleteMessageAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    return JsonResponse({
+        "message": "Method not allowed.",
+        "status_code": 405,
+        "data": {}
+    }, status=405)
 
-    def post(self, request, pk):
-        message_id = request.data.get('mid')
+@csrf_exempt  # Allow requests without CSRF token
+@login_required
+def DeleteMessageAPIView(request, pk):
+    if request.method == 'POST':
+        # Parse JSON body data
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({
+                "message": "Invalid JSON.",
+                "status_code": 400,
+                "data": {}
+            }, status=400)
+
+        message_id = data.get('mid')
+
+        # Fetch the chat message for the current user
         chat_message = get_object_or_404(Chat, chat_id=message_id, sender_user=request.user)
 
         # Set the is_deleted flag to 1 for the Chat message
@@ -1081,7 +1433,17 @@ class DeleteMessageAPIView(APIView):
             chat_status.status = 0
             chat_status.save()
 
-        return Response({'success': True, 'message': 'Message deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+        return JsonResponse({
+            "message": "Message deleted successfully.",
+            "status_code": 204,
+            "data": {}
+        }, status=204)
+
+    return JsonResponse({
+        "message": "Method not allowed.",
+        "status_code": 405,
+        "data": {}
+    }, status=405)
 
 class ResourceListView(generics.ListAPIView):
     serializer_class = ResourceSerializer
@@ -1107,6 +1469,16 @@ class ResourceListView(generics.ListAPIView):
             resources = resources.filter(resource_type=resource_type)
 
         return resources
+
+    def get(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        
+        return Response({
+            "message": "Resources retrieved successfully.",
+            "status_code": 200,
+            "data": serializer.data
+        }, status=200)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -1141,25 +1513,31 @@ def get_potential_project_members(request, project_id):
             user_details.append(user_info)
 
         # Prepare the response
-        response_data = {
-            'project_id': project_id,
-            'potential_members': user_details
-        }
-        
-        return Response(response_data, status=status.HTTP_200_OK)
+        return Response({
+            "message": "Potential project members retrieved successfully.",
+            "status_code": 200,
+            "data": {
+                'project_id': project_id,
+                'potential_members': user_details
+            }
+        }, status=status.HTTP_200_OK)
 
     except Projects.DoesNotExist:
-        return Response({"error": "Project not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response({
+            "message": "Project not found.",
+            "status_code": 404,
+            "data": {}
+        }, status=status.HTTP_404_NOT_FOUND)
 
-class AddResourceView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, pk):
+@csrf_exempt  # Allow requests without CSRF token
+@login_required
+def AddResourceView(request, pk):
+    if request.method == 'POST':
         project = get_object_or_404(Projects, pk=pk)
         file = request.FILES.get('resource_file')
 
         if file:
-            file_extension = os.path.splitext(file.name)[1]
+            file_extension = os.path.splitext(file.name)[1].lower()  # Get file extension
             unique_filename = str(uuid.uuid4()) + file_extension
             profile_picture_path = default_storage.save(unique_filename, file)
 
@@ -1177,14 +1555,27 @@ class AddResourceView(APIView):
                     f"{file_size / (1024 * 1024):.2f} MB"
                 )
 
-                resource_name_with_extension = request.data['resource_name'] + file_extension
+                # Determine resource type based on file extension
+                if file_extension in ['.pdf', '.doc', '.docx', '.xls', '.txt', '.ppt']:
+                    resource_type = 'Document'
+                elif file_extension in ['.jpg', '.jpeg', '.png']:
+                    resource_type = 'Image'
+                elif file_extension in ['.mp4', '.avi']:
+                    resource_type = 'Video'
+                elif file_extension in ['.mp3']:
+                    resource_type = 'Audio'
+                else:
+                    resource_type = 'Other'  # Default type for unknown extensions
+
+                resource_name_with_extension = request.POST.get('resource_name', 'Resource') + file_extension
+                resource_details = request.POST.get('resource_details', '')
 
                 resource = Resources(
                     user=request.user,
                     project=project,
                     resource_name=resource_name_with_extension,
-                    resource_details=request.data['resource_details'],
-                    resource_type=request.data['resource_type'],
+                    resource_details=resource_details,
+                    resource_type=resource_type,
                     resource_directory=chat_file,
                     resource_size=file_size_str,
                     is_deleted=0,
@@ -1193,30 +1584,63 @@ class AddResourceView(APIView):
                 )
                 resource.save()
 
-                return Response(ResourceSerializer(resource).data, status=status.HTTP_201_CREATED)
+                return JsonResponse({
+                    "message": "Resource added successfully.",
+                    "status_code": 201,
+                    "data": {
+                        "resource_id": resource.resource_id
+                    }
+                }, status=201)
 
             except Exception as e:
-                return Response({'error': f"Error saving project file: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+                return JsonResponse({
+                    "message": f"Error saving project file: {str(e)}",
+                    "status_code": 400,
+                    "data": {}
+                }, status=400)
 
-        return Response({'error': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse({
+            "message": "No file provided.",
+            "status_code": 400,
+            "data": {}
+        }, status=400)
 
+    return JsonResponse({
+        "message": "Method not allowed.",
+        "status_code": 405,
+        "data": {}
+    }, status=405)
 
-class DeleteResourceView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def delete(self, request, pk, resource_id):
+@csrf_exempt  # Allow requests without CSRF token
+@login_required
+def DeleteResourceView(request, pk, resource_id):
+    if request.method == 'DELETE':
+        # Fetch the resource for the project
         resource = get_object_or_404(Resources, pk=resource_id, project__pk=pk)
+
+        # Mark the resource as deleted
         resource.is_deleted = 1
         resource.deleted_at = timezone.now()
         resource.save()
 
+        # Mark related bookmarks as deleted
         Bookmarks.objects.filter(
             item_id=resource_id,
             item_type='Resource',
             user_id=request.user.id
         ).update(is_deleted=1)
 
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return JsonResponse({
+            "message": "Resource deleted successfully.",
+            "status_code": 204,
+            "data": {}
+        }, status=204)
+
+    return JsonResponse({
+        "message": "Method not allowed.",
+        "status_code": 405,
+        "data": {}
+    }, status=405)
 
 class TaskListView(APIView):
     permission_classes = [IsAuthenticated]
@@ -1257,14 +1681,18 @@ class TaskListView(APIView):
                 'assigned_to': [f"{person.first_name} {person.last_name}" for person in assigned_person]
             })
 
-        return Response(task_list, status=status.HTTP_200_OK)
+        return Response({
+            "message": "Tasks retrieved successfully.",
+            "status_code": 200,
+            "data": task_list
+        }, status=status.HTTP_200_OK)
 
-class AddTaskAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, pk, format=None):
+@csrf_exempt  # Allow requests without CSRF token
+@login_required  # Ensure the user is authenticated
+def AddTaskAPIView(request, pk):
+    if request.method == 'POST':
         project = get_object_or_404(Projects, pk=pk)
-        
+
         # Get the list of member IDs from the request
         member_ids = request.data.get('members', [])
         members = User.objects.filter(id__in=member_ids)
@@ -1274,7 +1702,7 @@ class AddTaskAPIView(APIView):
         try:
             task_due_date = datetime.strptime(request.data['due_date'], '%Y-%m-%d').date()
         except (KeyError, ValueError):
-            return Response({"error": "Invalid date format. Expected YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({"message": "Invalid date format. Expected YYYY-MM-DD.", "status_code": 400}, status=400)
 
         # Calculate days left
         days_left = (task_due_date - task_given_date).days
@@ -1315,14 +1743,21 @@ class AddTaskAPIView(APIView):
             project.balance = project.estimated_budget - project.actual_expenditure
             project.save()
 
-        serializer = TaskSerializer(task)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+            serializer = TaskSerializer(task)
+            return JsonResponse({
+                "message": "Task added successfully.",
+                "status_code": 201,
+                "data": serializer.data
+            }, status=201)
+        else:
+            return JsonResponse({"message": "Insufficient project balance.", "status_code": 400}, status=400)
 
+    return JsonResponse({"message": "Method not allowed.", "status_code": 405}, status=405)
 
-class DeleteTaskAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def delete(self, request, pk, task_id, format=None):
+@csrf_exempt  # Allow requests without CSRF token
+@login_required  # Ensure the user is authenticated
+def DeleteTaskAPIView(request, pk, task_id):
+    if request.method == 'DELETE':
         task = get_object_or_404(Tasks, pk=task_id, project__pk=pk)
 
         # Reverse the effect of each transaction and then delete it
@@ -1338,200 +1773,441 @@ class DeleteTaskAPIView(APIView):
         # Delete the task after reversing and deleting the transactions
         task.delete()
 
-        return Response({"message": "Task and associated transactions deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        return JsonResponse({
+            "message": "Task and associated transactions deleted successfully.",
+            "status_code": 204
+        }, status=204)
 
-class CompleteTaskAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    return JsonResponse({
+        "message": "Method not allowed.",
+        "status_code": 405
+    }, status=405)
 
-    def patch(self, request, pk, task_id, format=None):
+@csrf_exempt  # Allow requests without CSRF token
+@login_required  # Ensure the user is authenticated
+def CompleteTaskAPIView(request, pk, task_id):
+    if request.method == 'PATCH':
         task = get_object_or_404(Tasks, pk=task_id, project__pk=pk)
         
-        task.task_status = 'Completed Today'
+        # Determine task completion status
         if task.task_days_left > 0:
             task.task_status = 'Completed Early'
         elif task.task_days_left == 0:
             task.task_status = 'Completed Today'
         else:
             task.task_status = f'Completed Late (by {abs(task.task_days_left)} days)'
-        
+
         task.task_completed_date = timezone.now()
         task.save()
 
         serializer = TaskSerializer(task)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return JsonResponse({
+            "message": "Task completed successfully.",
+            "status_code": 200,
+            "task": serializer.data
+        }, status=200)
 
-class HideTaskAPI(DestroyAPIView):
-    permission_classes = [IsAuthenticated]
-    queryset = Tasks.objects.all()
+    return JsonResponse({
+        "message": "Method not allowed.",
+        "status_code": 405
+    }, status=405)
 
-    def delete(self, request, pk, task_id):
+@csrf_exempt  # Allow requests without CSRF token
+@login_required  # Ensure the user is authenticated
+def HideTaskAPI(request, pk, task_id):
+    if request.method == 'DELETE':
         task = get_object_or_404(Tasks, pk=task_id, project__pk=pk)
         task.delete()
-        return Response({'message': 'Task hidden successfully.'}, status=204)
+        return JsonResponse({
+            "message": "Task hidden successfully.",
+            "status_code": 204
+        }, status=204)
 
-class RestoreTaskAPI(APIView):
-    permission_classes = [IsAuthenticated]
+    return JsonResponse({
+        "message": "Method not allowed.",
+        "status_code": 405
+    }, status=405)
 
-    def put(self, request, pk, task_id):
+@csrf_exempt  # Allow requests without CSRF token
+@login_required  # Ensure the user is authenticated
+def RestoreTaskAPI(request, pk, task_id):
+    if request.method == 'PUT':
         task = get_object_or_404(Tasks, pk=task_id, project_id=pk)
         task.is_deleted = 0
         task.save()
-        return Response({'message': 'Task restored successfully.'}, status=200)
+        return JsonResponse({
+            "message": "Task restored successfully.",
+            "status_code": 200
+        }, status=200)
 
-class HideProjectAPI(APIView):
-    permission_classes = [IsAuthenticated]
+    return JsonResponse({
+        "message": "Method not allowed.",
+        "status_code": 405
+    }, status=405)
 
-    def put(self, request, pk):
+@csrf_exempt  # Allow requests without CSRF token
+@login_required  # Ensure the user is authenticated
+def HideProjectAPI(request, pk):
+    if request.method == 'PUT':
         project = get_object_or_404(Projects, pk=pk)
         project.is_deleted = 2  # Assuming 2 is for 'hidden'
         project.save()
-        return Response({'message': 'Project hidden successfully.'}, status=200)
+        return JsonResponse({
+            "message": "Project hidden successfully.",
+            "status_code": 200
+        }, status=200)
 
-class RestoreProjectAPI(APIView):
-    permission_classes = [IsAuthenticated]
+    return JsonResponse({
+        "message": "Method not allowed.",
+        "status_code": 405
+    }, status=405)
 
-    def put(self, request, pk):
+@csrf_exempt  # Allow requests without CSRF token
+@login_required  # Ensure the user is authenticated
+def RestoreProjectAPI(request, pk):
+    if request.method == 'PUT':
         project = get_object_or_404(Projects, pk=pk)
-        project.is_deleted = 0
+        project.is_deleted = 0  # Restore the project
         project.save()
-        return Response({'message': 'Project restored successfully.'}, status=200)
+        return JsonResponse({
+            "message": "Project restored successfully.",
+            "status_code": 200
+        }, status=200)
 
-class DeleteProjectAPI(APIView):
-    permission_classes = [IsAuthenticated]
+    return JsonResponse({
+        "message": "Method not allowed.",
+        "status_code": 405
+    }, status=405)
 
-    def put(self, request, pk):
+
+@csrf_exempt  # Allow requests without CSRF token
+@login_required  # Ensure the user is authenticated
+def DeleteProjectAPI(request, pk):
+    if request.method == 'PUT':
         project = get_object_or_404(Projects, pk=pk)
 
         # Check if the logged-in user is the project leader
         if project.project_leader != request.user:
-            return Response({'error': 'You do not have permission to delete this project.'}, status=403)
+            return JsonResponse({
+                "message": "You do not have permission to delete this project.",
+                "status_code": 403
+            }, status=403)
 
         # Mark project as deleted
         project.is_deleted = 1
         project.deleted_at = timezone.now()
         project.save()
-        return Response({'message': 'Project deleted successfully.'}, status=200)
+        return JsonResponse({
+            "message": "Project deleted successfully.",
+            "status_code": 200
+        }, status=200)
 
-class HideResourceAPI(DestroyAPIView):
-    permission_classes = [IsAuthenticated]
-    queryset = Resources.objects.all()
+    return JsonResponse({
+        "message": "Method not allowed.",
+        "status_code": 405
+    }, status=405)
 
-    def delete(self, request, pk, resource_id):
+@csrf_exempt  # Allow requests without CSRF token
+@login_required  # Ensure the user is authenticated
+def HideResourceAPI(request, pk, resource_id):
+    if request.method == 'DELETE':
         resource = get_object_or_404(Resources, pk=resource_id, project__pk=pk)
         resource.delete()
-        return Response({'message': 'Resource hidden successfully.'}, status=204)
+        return JsonResponse({
+            'message': 'Resource hidden successfully.',
+            'status_code': 204
+        }, status=204)
 
-class RestoreResourceAPI(APIView):
-    permission_classes = [IsAuthenticated]
+    return JsonResponse({
+        'message': 'Method not allowed.',
+        'status_code': 405
+    }, status=405)
 
-    def put(self, request, pk, resource_id):
+
+@csrf_exempt  # Allow requests without CSRF token
+@login_required  # Ensure the user is authenticated
+def RestoreResourceAPI(request, pk, resource_id):
+    if request.method == 'PUT':
         resource = get_object_or_404(Resources, pk=resource_id, project__pk=pk)
         resource.is_deleted = 0
         resource.save()
-        return Response({'message': 'Resource restored successfully.'}, status=200)
+        return JsonResponse({
+            'message': 'Resource restored successfully.',
+            'status_code': 200
+        }, status=200)
 
-class TransactionViewSet(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
+    return JsonResponse({
+        'message': 'Method not allowed.',
+        'status_code': 405
+    }, status=405)
 
-    def list(self, request, pk=None):
-        # List all transactions for a specific project
+# class TransactionViewSet(viewsets.ViewSet):
+#     permission_classes = [IsAuthenticated]
+
+#     def list(self, request, pk=None):
+#         # List all transactions for a specific project
+#         project = get_object_or_404(Projects, pk=pk)
+#         transactions = Transactions.objects.filter(project_id=project.project_id, is_deleted=0)
+#         serializer = TransactionSerializer(transactions, many=True)
+#         return Response(serializer.data)
+
+#     def retrieve(self, request, pk=None, transaction_id=None):
+#         # Retrieve a specific transaction
+#         transaction = get_object_or_404(Transactions, transaction_id=transaction_id)
+#         serializer = TransactionSerializer(transaction)
+#         return Response(serializer.data)
+
+#     def create(self, request, pk=None):
+#         # Create a new transaction
+#         serializer = TransactionSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     def update(self, request, pk=None, transaction_id=None):
+#         # Update an existing transaction
+#         transaction = get_object_or_404(Transactions, transaction_id=transaction_id)
+#         serializer = TransactionSerializer(transaction, data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     def destroy(self, request, pk=None, transaction_id=None):
+#         # Soft delete a transaction
+#         transaction = get_object_or_404(Transactions, transaction_id=transaction_id)
+#         transaction.is_deleted = 1  # Mark as deleted
+#         transaction.save()
+#         return Response(status=status.HTTP_204_NO_CONTENT)
+
+#     def restore(self, request, pk=None, transaction_id=None):
+#         # Restore a soft-deleted transaction
+#         transaction = get_object_or_404(Transactions, transaction_id=transaction_id)
+#         transaction.is_deleted = 0  # Mark as not deleted
+#         transaction.save()
+#         return Response(status=status.HTTP_200_OK)
+
+@csrf_exempt
+@login_required
+def transaction_list(request, pk):
+    if request.method == 'GET':
         project = get_object_or_404(Projects, pk=pk)
         transactions = Transactions.objects.filter(project_id=project.project_id, is_deleted=0)
         serializer = TransactionSerializer(transactions, many=True)
-        return Response(serializer.data)
+        return JsonResponse({
+            'transactions': serializer.data,
+            'status_code': 200
+        }, status=200)
 
-    def retrieve(self, request, pk=None, transaction_id=None):
-        # Retrieve a specific transaction
+    return JsonResponse({
+        'message': 'Method not allowed.',
+        'status_code': 405
+    }, status=405)
+
+
+@csrf_exempt
+@login_required
+def transaction_detail(request, pk, transaction_id):
+    if request.method == 'GET':
         transaction = get_object_or_404(Transactions, transaction_id=transaction_id)
         serializer = TransactionSerializer(transaction)
-        return Response(serializer.data)
+        return JsonResponse({
+            'transaction': serializer.data,
+            'status_code': 200
+        }, status=200)
 
-    def create(self, request, pk=None):
-        # Create a new transaction
+    return JsonResponse({
+        'message': 'Method not allowed.',
+        'status_code': 405
+    }, status=405)
+
+@csrf_exempt
+@login_required
+def transaction_create(request, pk):
+    if request.method == 'POST':
         serializer = TransactionSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({
+                'transaction': serializer.data,
+                'status_code': 201
+            }, status=status.HTTP_201_CREATED)
+        return JsonResponse({
+            'errors': serializer.errors,
+            'status_code': 400
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    def update(self, request, pk=None, transaction_id=None):
-        # Update an existing transaction
+    return JsonResponse({
+        'message': 'Method not allowed.',
+        'status_code': 405
+    }, status=405)
+
+
+@csrf_exempt
+@login_required
+def transaction_update(request, pk, transaction_id):
+    if request.method == 'PUT':
         transaction = get_object_or_404(Transactions, transaction_id=transaction_id)
         serializer = TransactionSerializer(transaction, data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({
+                'transaction': serializer.data,
+                'status_code': 200
+            }, status=200)
+        return JsonResponse({
+            'errors': serializer.errors,
+            'status_code': 400
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    def destroy(self, request, pk=None, transaction_id=None):
-        # Soft delete a transaction
+    return JsonResponse({
+        'message': 'Method not allowed.',
+        'status_code': 405
+    }, status=405)
+
+@csrf_exempt
+@login_required
+def transaction_destroy(request, pk, transaction_id):
+    if request.method == 'DELETE':
         transaction = get_object_or_404(Transactions, transaction_id=transaction_id)
-        transaction.is_deleted = 1  # Mark as deleted
+        transaction.is_deleted = 1  # Soft delete
         transaction.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return JsonResponse({
+            'message': 'Transaction deleted successfully.',
+            'status_code': 204
+        }, status=204)
 
-    def restore(self, request, pk=None, transaction_id=None):
-        # Restore a soft-deleted transaction
+    return JsonResponse({
+        'message': 'Method not allowed.',
+        'status_code': 405
+    }, status=405)
+
+@csrf_exempt
+@login_required
+def transaction_restore(request, pk, transaction_id):
+    if request.method == 'PUT':
         transaction = get_object_or_404(Transactions, transaction_id=transaction_id)
-        transaction.is_deleted = 0  # Mark as not deleted
+        transaction.is_deleted = 0  # Restore
         transaction.save()
-        return Response(status=status.HTTP_200_OK)
+        return JsonResponse({
+            'message': 'Transaction restored successfully.',
+            'status_code': 200
+        }, status=200)
 
-class EventViewSet(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
+    return JsonResponse({
+        'message': 'Method not allowed.',
+        'status_code': 405
+    }, status=405)
 
-    def list(self, request, pk=None):
-        # List all transactions for a specific project
+# class EventViewSet(viewsets.ViewSet):
+#     permission_classes = [IsAuthenticated]
+
+#     def list(self, request, pk=None):
+#         # List all transactions for a specific project
+#         project = get_object_or_404(Projects, pk=pk)
+#         events = Events.objects.filter(project_id=project.project_id, is_deleted=0)
+#         serializer = EventsSerializer(events, many=True)
+#         return Response(serializer.data)
+
+#     def restore(self, request, pk, event_id):
+#         event = get_object_or_404(Events, event_id=event_id, project_id=pk)
+#         event.is_deleted = 0
+#         event.save()
+#         messages.success(request, 'Event restored successfully.')
+#         return redirect('events', pk=pk)
+
+#     def hide(self, request, pk, event_id):
+#         get_object_or_404(Events, pk=event_id, project__pk=pk).delete()
+#         messages.success(request, 'Event deleted successfully.')
+#         return redirect('events', pk=pk)
+
+#     def add(self, request, pk):
+#         if request.method == 'POST':
+#             project = self.get_project(pk)
+
+#             # Parse date and time
+#             event_date = datetime.strptime(request.POST['event_date'], '%Y-%m-%d').date()
+#             event_start_time = datetime.strptime(request.POST['event_start_time'], '%H:%M').time()
+#             event_end_time = datetime.strptime(request.POST['event_end_time'], '%H:%M').time()
+
+#             event = Events(
+#                 user=request.user,
+#                 project=project,
+#                 event_name=request.POST['event_name'],
+#                 event_details=request.POST['event_details'],
+#                 event_date=event_date,
+#                 event_start_time=event_start_time,
+#                 event_end_time=event_end_time,
+#                 event_location=request.POST.get('event_location', ''),
+#                 event_link=request.POST.get('event_link', ''),
+#                 event_status='Scheduled',  # Initial status
+#                 created_at=timezone.now(),
+#                 is_deleted=0
+#             )
+
+#             event.save()
+#             messages.success(request, 'Event added successfully.')
+#             return redirect('events', pk=pk)
+
+#         return redirect('events', pk=pk)
+
+#     def delete(self, request, pk, event_id):
+#         event = get_object_or_404(Events, pk=event_id, project__pk=pk)
+#         event.is_deleted = 1
+#         event.deleted_at = timezone.now()
+#         event.save()
+        
+#         # Mark related bookmarks as deleted
+#         Bookmarks.objects.filter(
+#             item_id=event_id,
+#             item_type='Event',
+#             user_id=request.user.id
+#         ).update(is_deleted=1)
+
+#         messages.success(request, 'Event marked as deleted.')
+#         return redirect('events', pk=pk)
+
+@csrf_exempt
+@login_required
+def event_list(request, pk):
+    if request.method == 'GET':
         project = get_object_or_404(Projects, pk=pk)
         events = Events.objects.filter(project_id=project.project_id, is_deleted=0)
         serializer = EventsSerializer(events, many=True)
-        return Response(serializer.data)
+        return JsonResponse({
+            'events': serializer.data,
+            'status_code': 200
+        }, status=200)
 
-    def restore(self, request, pk, event_id):
+    return JsonResponse({
+        'message': 'Method not allowed.',
+        'status_code': 405
+    }, status=405)
+
+@csrf_exempt
+@login_required
+def event_restore(request, pk, event_id):
+    if request.method == 'PUT':
         event = get_object_or_404(Events, event_id=event_id, project_id=pk)
-        event.is_deleted = 0
+        event.is_deleted = 0  # Restore
         event.save()
-        messages.success(request, 'Event restored successfully.')
-        return redirect('events', pk=pk)
+        return JsonResponse({
+            'message': 'Event restored successfully.',
+            'status_code': 200
+        }, status=200)
 
-    def hide(self, request, pk, event_id):
-        get_object_or_404(Events, pk=event_id, project__pk=pk).delete()
-        messages.success(request, 'Event deleted successfully.')
-        return redirect('events', pk=pk)
+    return JsonResponse({
+        'message': 'Method not allowed.',
+        'status_code': 405
+    }, status=405)
 
-    def add(self, request, pk):
-        if request.method == 'POST':
-            project = self.get_project(pk)
-
-            # Parse date and time
-            event_date = datetime.strptime(request.POST['event_date'], '%Y-%m-%d').date()
-            event_start_time = datetime.strptime(request.POST['event_start_time'], '%H:%M').time()
-            event_end_time = datetime.strptime(request.POST['event_end_time'], '%H:%M').time()
-
-            event = Events(
-                user=request.user,
-                project=project,
-                event_name=request.POST['event_name'],
-                event_details=request.POST['event_details'],
-                event_date=event_date,
-                event_start_time=event_start_time,
-                event_end_time=event_end_time,
-                event_location=request.POST.get('event_location', ''),
-                event_link=request.POST.get('event_link', ''),
-                event_status='Scheduled',  # Initial status
-                created_at=timezone.now(),
-                is_deleted=0
-            )
-
-            event.save()
-            messages.success(request, 'Event added successfully.')
-            return redirect('events', pk=pk)
-
-        return redirect('events', pk=pk)
-
-    def delete(self, request, pk, event_id):
+@csrf_exempt
+@login_required
+def event_hide(request, pk, event_id):
+    if request.method == 'DELETE':
         event = get_object_or_404(Events, pk=event_id, project__pk=pk)
-        event.is_deleted = 1
+        event.is_deleted = 1  # Mark as deleted
         event.deleted_at = timezone.now()
         event.save()
         
@@ -1542,8 +2218,58 @@ class EventViewSet(viewsets.ViewSet):
             user_id=request.user.id
         ).update(is_deleted=1)
 
-        messages.success(request, 'Event marked as deleted.')
-        return redirect('events', pk=pk)
+        return JsonResponse({
+            'message': 'Event marked as deleted.',
+            'status_code': 204
+        }, status=204)
+
+    return JsonResponse({
+        'message': 'Method not allowed.',
+        'status_code': 405
+    }, status=405)
+
+@csrf_exempt
+@login_required
+def event_add(request, pk):
+    if request.method == 'POST':
+        project = get_object_or_404(Projects, pk=pk)
+
+        # Parse date and time
+        try:
+            event_date = datetime.strptime(request.POST['event_date'], '%Y-%m-%d').date()
+            event_start_time = datetime.strptime(request.POST['event_start_time'], '%H:%M').time()
+            event_end_time = datetime.strptime(request.POST['event_end_time'], '%H:%M').time()
+        except (KeyError, ValueError):
+            return JsonResponse({
+                'error': 'Invalid date or time format.',
+                'status_code': 400
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        event = Events(
+            user=request.user,
+            project=project,
+            event_name=request.POST['event_name'],
+            event_details=request.POST['event_details'],
+            event_date=event_date,
+            event_start_time=event_start_time,
+            event_end_time=event_end_time,
+            event_location=request.POST.get('event_location', ''),
+            event_link=request.POST.get('event_link', ''),
+            event_status='Scheduled',  # Initial status
+            created_at=timezone.now(),
+            is_deleted=0
+        )
+
+        event.save()
+        return JsonResponse({
+            'message': 'Event added successfully.',
+            'status_code': 201
+        }, status=status.HTTP_201_CREATED)
+
+    return JsonResponse({
+        'message': 'Method not allowed.',
+        'status_code': 405
+    }, status=405)
 
 # Function Views
 
