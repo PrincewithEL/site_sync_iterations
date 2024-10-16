@@ -164,7 +164,7 @@ def SignUpView(request):
                 user_type=profile.user_type,
                 is_deleted=0,
                 online=0,
-                phone_number=profile.phone_number
+                phone_number=phone_number
             )
 
             # Log the user in with the specified backend
@@ -203,6 +203,11 @@ def CompleteProfileView(request):
             profile.profile_picture = profile_picture
             profile.updated_at = timezone.now()
             profile.save()
+
+            users = Users.objects.get(user_id=user.id)
+            users.user_type = user_type
+            users.updated_at = timezone.now()
+            users.save()
 
             # Generate OTP
             otp, created = OTP.objects.get_or_create(user=user)
@@ -425,103 +430,130 @@ def create_project(request):
 
     return JsonResponse({"error": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
+@csrf_exempt
 class ForgotPasswordAPI(APIView):
-    @csrf_exempt
+    
     def post(self, request):
-        csrf_token = get_token(request)
-        serializer = ForgotPasswordSerializer(data=request.data)
-        if serializer.is_valid():
-            email = serializer.validated_data.get('email')
-            user = User.objects.filter(email=email).first()
+        if request.method == 'POST':
+            try:
+                data = json.loads(request.body)  # Load JSON data from the request body
+                serializer = ForgotPasswordSerializer(data=data)
 
-            if user:
-                # Generate OTP and save it in the database
-                otp = generate_otp()
-                otp_entry, created = OTP.objects.get_or_create(user=user)
-                otp_entry.otp_code = otp
-                otp_entry.save()
+                if serializer.is_valid():
+                    email = serializer.validated_data.get('email')
+                    user = User.objects.filter(email=email).first()
 
-                # Send OTP via email
-                send_mail(
-                    'Site Sync: Alert - Password Reset OTP',
-                    f'Your OTP code is {otp}. \n\n Thank you for choosing, Site Sync.',
-                    'sitesync2024@gmail.com',  # Replace with your email
-                    [user.email],
-                    fail_silently=False,
-                )
+                    if user:
+                        # Generate OTP and save it in the database
+                        otp = generate_otp()
+                        otp_entry, created = OTP.objects.get_or_create(user=user)
+                        otp_entry.otp_code = otp
+                        otp_entry.save()
 
-                # Return success response
-                request.session['user_id'] = user.id
-                return Response({'message': 'OTP has been sent to your email.'}, status=status.HTTP_200_OK)
-            else:
-                return Response({'error': 'No account found with this email address.'}, status=status.HTTP_404_NOT_FOUND)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                        # Send OTP via email
+                        send_mail(
+                            'Site Sync: Alert - Password Reset OTP',
+                            f'Your OTP code is {otp}. \n\n Thank you for choosing Site Sync.',
+                            'sitesync2024@gmail.com',  # Replace with your email
+                            [user.email],
+                            fail_silently=False,
+                        )
 
+                        # Return success response
+                        request.session['user_id'] = user.id
+                        return Response({'message': 'OTP has been sent to your email.'}, status=status.HTTP_200_OK)
+                    else:
+                        return Response({'error': 'No account found with this email address.'}, status=status.HTTP_404_NOT_FOUND)
+                else:
+                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            except json.JSONDecodeError:
+                return Response({"error": "Invalid JSON."}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"error": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+@csrf_exempt
 class VerifyOtpAPI(APIView):
     
     def post(self, request):
-        serializer = VerifyOtpSerializer(data=request.data)
-        if serializer.is_valid():
-            otp_code = serializer.validated_data.get('otp_code')
-            user_id = request.session.get('user_id')
+        if request.method == 'POST':
+            try:
+                data = json.loads(request.body)  # Load JSON data from the request body
+                serializer = VerifyOtpSerializer(data=data)
 
-            if user_id:
-                try:
-                    otp = OTP.objects.get(user_id=user_id, otp_code=otp_code, used=False)
+                if serializer.is_valid():
+                    otp_code = serializer.validated_data.get('otp_code')
+                    user_id = request.session.get('user_id')
+
+                    if user_id:
+                        try:
+                            otp = OTP.objects.get(user_id=user_id, otp_code=otp_code, used=False)
+
+                            if otp:
+                                otp.used = True
+                                otp.save()
+
+                                user = otp.user
+                                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+
+                                Users.objects.filter(email_address=user.email).update(online=1)
+
+                                # Redirect based on user type
+                                profile = user.profile
+                                redirect_url = 'home'  # Default redirect
+
+                                if profile.user_type == 'Admin':
+                                    redirect_url = 'admin1'
+                                elif profile.user_type == 'Client':
+                                    redirect_url = 'client'
+                                elif profile.user_type == 'Contractor':
+                                    redirect_url = 'contractor'
+
+                                return Response({'redirect_url': redirect_url,
+                                                 'message': 'Correct OTP.'}, status=status.HTTP_200_OK)
+
+                        except OTP.DoesNotExist:
+                            return Response({'error': 'Invalid OTP.'}, status=status.HTTP_400_BAD_REQUEST)
+
+                    return Response({'error': 'Session expired or invalid.'}, status=status.HTTP_400_BAD_REQUEST)
+
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            except json.JSONDecodeError:
+                return Response({"error": "Invalid JSON."}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"error": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+@csrf_exempt
+class VerifyOtp1API(APIView):
+    def post(self, request):
+        if request.method == 'POST':
+            try:
+                data = json.loads(request.body)  # Load JSON data from the request body
+                serializer = VerifyOtp1Serializer(data=data)
+
+                if serializer.is_valid():
+                    otp_code = serializer.validated_data.get('otp_code')
+                    user_id = request.session.get('user_id')
+                    user = get_object_or_404(User, pk=user_id)
+                    otp = OTP.objects.filter(user=user, otp_code=otp_code).first()
 
                     if otp:
-                        otp.used = True
-                        otp.save()
+                        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+                        token = default_token_generator.make_token(user)
+                        return Response({
+                            'redirect_url': f'/reset-password/{uidb64}/{token}/',
+                            'message': 'Correct OTP.'
+                        }, status=status.HTTP_200_OK)
+                    else:
+                        return Response({'error': 'Invalid OTP.'}, status=status.HTTP_400_BAD_REQUEST)
 
-                        user = otp.user
-                        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-                        Users.objects.filter(email_address=user.email).update(online=1)
+            except json.JSONDecodeError:
+                return Response({"error": "Invalid JSON."}, status=status.HTTP_400_BAD_REQUEST)
 
-                        # Redirect based on user type
-                        profile = user.profile
-                        if profile.user_type == 'Admin':
-                            return Response({'redirect_url': 'admin1',
-                    'message': 'Correct OTP.'}, status=status.HTTP_200_OK)
-                        elif profile.user_type == 'Client':
-                            return Response({'redirect_url': 'client',
-                    'message': 'Correct OTP.'}, status=status.HTTP_200_OK)
-                        elif profile.user_type == 'Contractor':
-                            return Response({'redirect_url': 'contractor',
-                    'message': 'Correct OTP.'}, status=status.HTTP_200_OK)
-                        else:
-                            return Response({'redirect_url': 'home',
-                    'message': 'Correct OTP.'}, status=status.HTTP_200_OK)
-
-                except OTP.DoesNotExist:
-                    return Response({'error': 'Invalid OTP.'}, status=status.HTTP_400_BAD_REQUEST)
-
-            return Response({'error': 'Session expired or invalid.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class VerifyOtp1API(APIView):
-
-    def post(self, request):
-        serializer = VerifyOtp1Serializer(data=request.data)
-        if serializer.is_valid():
-            otp_code = serializer.validated_data.get('otp_code')
-            user_id = request.session.get('user_id')
-            user = get_object_or_404(User, pk=user_id)
-            otp = OTP.objects.filter(user=user, otp_code=otp_code).first()
-
-            if otp:
-                uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-                token = default_token_generator.make_token(user)
-                return Response({
-                    'redirect_url': f'/reset-password/{uidb64}/{token}/',
-                    'message': 'Correct OTP.'
-                }, status=status.HTTP_200_OK)
-            else:
-                return Response({'error': 'Invalid OTP.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 class ProjectDetailAPI(APIView):
     def get(self, request, pk):
@@ -555,35 +587,44 @@ class ProjectDetailAPI(APIView):
         
         return Response(response_data)
 
+@csrf_exempt
 class ResetPasswordAPI(APIView):
     def post(self, request):
-        email = request.data.get('email')
-        password = request.data.get('password')
-        confirm_password = request.data.get('confirm_password')
+        if request.method == 'POST':
+            try:
+                data = json.loads(request.body)  # Load JSON data from the request body
+                email = data.get('email')
+                password = data.get('password')
+                confirm_password = data.get('confirm_password')
 
-        if not email:
-            return Response({"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
+                if not email:
+                    return Response({"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Fetch user by email
-        user = User.objects.filter(email=email).first()
+                # Fetch user by email
+                user = User.objects.filter(email=email).first()
 
-        if user is None:
-            return Response({"error": "Invalid email."}, status=status.HTTP_400_BAD_REQUEST)
+                if user is None:
+                    return Response({"error": "Invalid email."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if password != confirm_password:
-            return Response({"error": "Passwords do not match."}, status=status.HTTP_400_BAD_REQUEST)
+                if password != confirm_password:
+                    return Response({"error": "Passwords do not match."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Validate password
-        try:
-            validate_password(password)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+                # Validate password
+                try:
+                    validate_password(password)
+                except Exception as e:
+                    return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Update the user's password
-        user.set_password(password)
-        user.save()
+                # Update the user's password
+                user.set_password(password)
+                user.save()
 
-        return Response({"message": "Your password has been reset successfully."}, status=status.HTTP_200_OK)
+                return Response({"message": "Your password has been reset successfully."}, status=status.HTTP_200_OK)
+
+            except json.JSONDecodeError:
+                return Response({"error": "Invalid JSON."}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"error": "Method not allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 @csrf_exempt  # Allow requests without CSRF token
 @login_required  # Ensure the user is authenticated
@@ -652,35 +693,52 @@ def add_project_member_api(request, pk):
 @login_required  # Ensure the user is authenticated
 def remove_project_member_api(request, pk):
     if request.method == 'POST':
-        user_id = request.POST.get('uid')  # Use request.POST for form data
-        
-        # Try to get the project member based on project_id and user_id
-        project_member = ProjectMembers.objects.filter(project_id=pk, user_id=user_id, is_deleted=0).first()
-        
-        if project_member:
-            project_member.is_deleted = 1
-            project_member.save()
-            return JsonResponse({"message": "Project member removed successfully."}, status=204)
-        else:
-            return JsonResponse({"error": "Project member not found."}, status=404)
+        try:
+            data = json.loads(request.body)  # Load JSON data from the request body
+            user_id = data.get('uid')  # Extract the uid from the JSON data
+            
+            # Try to get the project member based on project_id and user_id
+            project_member = ProjectMembers.objects.filter(
+                project_id=pk,
+                user_id=user_id,
+                is_deleted=0,
+                status='Accepted'
+            ).first()  # Use filter().first() to avoid DoesNotExist error
+
+            if project_member:  # Check if project_member is found
+                project_member.is_deleted = 1
+                project_member.save()
+                return JsonResponse({"message": "Project member removed successfully."}, status=204)
+            else:
+                return JsonResponse({"error": "Project member not found."}, status=404)
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON data."}, status=400)
 
     return JsonResponse({"error": "Method not allowed."}, status=405)
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@csrf_exempt  # Allow requests without CSRF token
+@login_required  # Ensure the user is authenticated
 def exit_project_api(request, pk):
-    project_member = get_object_or_404(ProjectMembers, project_id=pk, is_deleted=0)
-
     if request.method == 'POST':
-        user_id = request.data.get('uid')
-        
-        if project_member.user_id == user_id:
+        try:
+            # Load JSON data from the request body
+            user = request.user
+            
+            # Check if the project member exists
+            project_member = get_object_or_404(ProjectMembers, project_id=pk, user_id=user.id, is_deleted=0, status='Accepted')
+
+            # Update the project member's status and deletion flag
             project_member.is_deleted = 1
             project_member.status = 'Exited'
             project_member.save()
-            return Response({"message": "You have exited the project successfully."}, status=status.HTTP_204_NO_CONTENT)
-        else:
-            return Response({"error": "Project member not found."}, status=status.HTTP_404_NOT_FOUND)
+
+            return JsonResponse({"message": "You have exited the project successfully."}, status=204)
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON data."}, status=400)
+
+    return JsonResponse({"error": "Method not allowed."}, status=405)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
