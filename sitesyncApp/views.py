@@ -972,10 +972,10 @@ def remove_project_member_api(request, pk):
                 project_member.is_deleted = 1
                 project_member.save()
                 return JsonResponse({
-                    'status_code': 204,
+                    'status_code': 200,
                     'message': "Project member removed successfully.",
                     'data': {}
-                }, status=204)
+                }, status=200)
             else:
                 return JsonResponse({
                     'status_code': 404,
