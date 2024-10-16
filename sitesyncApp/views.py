@@ -1012,10 +1012,10 @@ def exit_project_api(request, pk):
             project_member.save()
 
             return JsonResponse({
-                'status_code': 204,
+                'status_code': 200,
                 'message': "You have exited the project successfully.",
                 'data': {}
-            }, status=204)
+            }, status=200)
 
         except json.JSONDecodeError:
             return JsonResponse({
@@ -1435,9 +1435,9 @@ def DeleteMessageAPIView(request, pk):
 
         return JsonResponse({
             "message": "Message deleted successfully.",
-            "status_code": 204,
+            "status_code": 200,
             "data": {}
-        }, status=204)
+        }, status=200)
 
     return JsonResponse({
         "message": "Method not allowed.",
@@ -1632,9 +1632,9 @@ def DeleteResourceView(request, pk, resource_id):
 
         return JsonResponse({
             "message": "Resource deleted successfully.",
-            "status_code": 204,
+            "status_code": 200,
             "data": {}
-        }, status=204)
+        }, status=200)
 
     return JsonResponse({
         "message": "Method not allowed.",
@@ -1775,8 +1775,8 @@ def DeleteTaskAPIView(request, pk, task_id):
 
         return JsonResponse({
             "message": "Task and associated transactions deleted successfully.",
-            "status_code": 204
-        }, status=204)
+            "status_code": 200
+        }, status=200)
 
     return JsonResponse({
         "message": "Method not allowed.",
@@ -1820,8 +1820,8 @@ def HideTaskAPI(request, pk, task_id):
         task.delete()
         return JsonResponse({
             "message": "Task hidden successfully.",
-            "status_code": 204
-        }, status=204)
+            "status_code": 200
+        }, status=200)
 
     return JsonResponse({
         "message": "Method not allowed.",
@@ -1915,8 +1915,8 @@ def HideResourceAPI(request, pk, resource_id):
         resource.delete()
         return JsonResponse({
             'message': 'Resource hidden successfully.',
-            'status_code': 204
-        }, status=204)
+            'status_code': 200
+        }, status=200)
 
     return JsonResponse({
         'message': 'Method not allowed.',
@@ -1979,7 +1979,7 @@ def RestoreResourceAPI(request, pk, resource_id):
 #         transaction = get_object_or_404(Transactions, transaction_id=transaction_id)
 #         transaction.is_deleted = 1  # Mark as deleted
 #         transaction.save()
-#         return Response(status=status.HTTP_204_NO_CONTENT)
+#         return Response(status=status.HTTP_200_NO_CONTENT)
 
 #     def restore(self, request, pk=None, transaction_id=None):
 #         # Restore a soft-deleted transaction
@@ -2075,8 +2075,8 @@ def transaction_destroy(request, pk, transaction_id):
         transaction.save()
         return JsonResponse({
             'message': 'Transaction deleted successfully.',
-            'status_code': 204
-        }, status=204)
+            'status_code': 200
+        }, status=200)
 
     return JsonResponse({
         'message': 'Method not allowed.',
@@ -2220,8 +2220,8 @@ def event_hide(request, pk, event_id):
 
         return JsonResponse({
             'message': 'Event marked as deleted.',
-            'status_code': 204
-        }, status=204)
+            'status_code': 200
+        }, status=200)
 
     return JsonResponse({
         'message': 'Method not allowed.',
