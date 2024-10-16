@@ -304,7 +304,7 @@ def CompleteProfileView(request):
 
             return JsonResponse({
                 'status_code': 200,
-                'message': 'Profile updated successfully.',
+                'message': 'Profile updated successfully. Kindly verify your account using the OTP sent to your email address.',
                 'data': {}
             }, status=200)
 
