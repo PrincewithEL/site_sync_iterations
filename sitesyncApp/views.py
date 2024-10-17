@@ -1767,7 +1767,7 @@ def DeleteTaskAPIView(request, pk, task_id):
         task = get_object_or_404(Tasks, pk=task_id, project__pk=pk)
 
         # Reverse the effect of each transaction and then delete it
-        for transaction in task.transactions.all():
+        for transaction in task.task_transaction_price.all():
             # Reverse the transaction impact on project budget and balance
             task.project.actual_expenditure -= transaction.total_transaction_price
             task.project.balance += transaction.total_transaction_price
