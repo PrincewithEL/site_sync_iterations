@@ -2039,48 +2039,54 @@ def transaction_create(request, pk):
     if request.method == 'POST':
         project = get_object_or_404(Projects, pk=pk)
 
-        # Parse transaction details from request.POST
+        # Calculate total price
         try:
-            transaction_name = request.POST['transaction_name']
-            transaction_details = request.POST['transaction_details']
             transaction_price = float(request.POST['transaction_price'])
             transaction_quantity = int(request.POST['transaction_quantity'])
-            transaction_category = request.POST.get('transaction_category', '')
-            transaction_type = request.POST.get('transaction_type', '')
-            total_transaction_price = transaction_price * transaction_quantity
+            total_price = transaction_price * transaction_quantity
         except (KeyError, ValueError):
             return JsonResponse({
                 'message': 'Invalid data provided.',
                 'status_code': 400
             }, status=400)
 
-        transaction = Transactions(
-            user=request.user,
-            project=project,
-            transaction_name=transaction_name,
-            transaction_details=transaction_details,
-            transaction_price=transaction_price,
-            transaction_quantity=transaction_quantity,
-            transaction_category=transaction_category,
-            transaction_type=transaction_type,
-            total_transaction_price=total_transaction_price,
-            created_at=timezone.now(),
-            transaction_date=datetime.now().strftime('%Y-%m-%d'),
-            transaction_time=datetime.now().strftime('%H:%M'),
-            updated_at=None,
-            transaction_status='Completed',  # Initial status
-            is_deleted=0
-        )
+        # Check if the new price exceeds the project's budget
+        new_balance = project.balance - total_price
+        if new_balance >= 0:
+            project.actual_expenditure += total_price
+            project.balance = project.estimated_budget - project.actual_expenditure
+            project.save()
 
-        transaction.save()
-        return JsonResponse({
-            'message': 'Transaction created successfully.',
-            'data': {
-                'transaction_id': transaction.transaction_id,
-                'total_transaction_price': total_transaction_price
-            },
-            'status_code': 201
-        }, status=201)
+            # Create the transaction
+            transaction = Transactions(
+                user=request.user,
+                project=project,
+                transaction_name=request.POST['transaction_name'],
+                transaction_details=request.POST['transaction_details'],
+                transaction_price=transaction_price,
+                transaction_quantity=transaction_quantity,
+                transaction_type=request.POST['transaction_type'],
+                transaction_category=request.POST['transaction_category'],
+                total_transaction_price=total_price,
+                created_at=timezone.now(),
+                transaction_status='Completed',  # Initial status
+                is_deleted=0
+            )
+            transaction.save()
+
+            return JsonResponse({
+                'message': 'Transaction created successfully.',
+                'status_code': 201,
+                'data': {
+                    'transaction_id': transaction.transaction_id,
+                    'total_transaction_price': total_price
+                }
+            }, status=201)
+        else:
+            return JsonResponse({
+                'message': 'Price of transaction exceeds the project budget, kindly try again.',
+                'status_code': 400
+            }, status=400)
 
     return JsonResponse({
         'message': 'Method not allowed.',
