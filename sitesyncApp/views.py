@@ -2005,7 +2005,8 @@ def transaction_list(request, pk):
         transactions = Transactions.objects.filter(project_id=project.project_id, is_deleted=0)
         serializer = TransactionSerializer(transactions, many=True)
         return JsonResponse({
-            'transactions': serializer.data,
+            'message': 'Transactions retrieved successfully.',
+            'data': serializer.data,
             'status_code': 200
         }, status=200)
 
@@ -2022,7 +2023,8 @@ def transaction_detail(request, pk, transaction_id):
         transaction = get_object_or_404(Transactions, transaction_id=transaction_id)
         serializer = TransactionSerializer(transaction)
         return JsonResponse({
-            'transaction': serializer.data,
+            'message': 'Transaction retrieved successfully.',
+            'data': serializer.data,
             'status_code': 200
         }, status=200)
 
@@ -2039,11 +2041,12 @@ def transaction_create(request, pk):
         if serializer.is_valid():
             serializer.save()
             return JsonResponse({
-                'transaction': serializer.data,
+                'message': 'Transaction created successfully.',
+                'data': serializer.data,
                 'status_code': 201
             }, status=status.HTTP_201_CREATED)
         return JsonResponse({
-            'errors': serializer.errors,
+            'message': serializer.errors,
             'status_code': 400
         }, status=status.HTTP_400_BAD_REQUEST)
 
@@ -2062,7 +2065,8 @@ def transaction_update(request, pk, transaction_id):
         if serializer.is_valid():
             serializer.save()
             return JsonResponse({
-                'transaction': serializer.data,
+                'message': 'Transaction successfully updated.',
+                'data': serializer.data,
                 'status_code': 200
             }, status=200)
         return JsonResponse({
@@ -2185,7 +2189,8 @@ def event_list(request, pk):
         events = Events.objects.filter(project_id=project.project_id, is_deleted=0)
         serializer = EventsSerializer(events, many=True)
         return JsonResponse({
-            'events': serializer.data,
+            'message': 'Events retrieved successfully.',
+            'data': serializer.data,
             'status_code': 200
         }, status=200)
 
@@ -2250,7 +2255,7 @@ def event_add(request, pk):
             event_end_time = datetime.strptime(request.POST['event_end_time'], '%H:%M').time()
         except (KeyError, ValueError):
             return JsonResponse({
-                'error': 'Invalid date or time format.',
+                'message': 'Invalid date or time format.',
                 'status_code': 400
             }, status=status.HTTP_400_BAD_REQUEST)
 
