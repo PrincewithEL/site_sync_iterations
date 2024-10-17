@@ -135,16 +135,16 @@ urlpatterns = [
     # path('api/projects/<int:pk>/transactions/<int:event_id>/', TransactionViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}), name='project-transaction-detail'),
     path('api/projects/<int:pk>/transactions/', transaction_list, name='transaction-list'),  # List transactions for a project
     path('api/projects/<int:pk>/transactions/<int:transaction_id>/', transaction_detail, name='transaction-detail'),  # Retrieve a specific transaction
-    path('projects/<int:pk>/transactions/create/', transaction_create, name='transaction-create'),  # Create a new transaction
+    path('api/projects/<int:pk>/transactions/create/', transaction_create, name='transaction-create'),  # Create a new transaction
     path('api/projects/<int:pk>/transactions/<int:transaction_id>/update/', transaction_update, name='transaction-update'),  # Update a transaction
     path('api/projects/<int:pk>/transactions/<int:transaction_id>/delete/', transaction_destroy, name='transaction-delete'),  # Soft delete a transaction
     path('api/projects/<int:pk>/transactions/<int:transaction_id>/restore/', transaction_restore, name='transaction-restore'),  # Restore a soft-deleted transaction
     # path('api/projects/<int:pk>/events/', EventViewSet.as_view({'get': 'list', 'post': 'add'}), name='project-events'),
     # path('api/projects/<int:pk>/events/<int:event_id>/', EventViewSet.as_view({'delete': 'delete'}), name='project-event-detail'),
-    path('projects/<int:pk>/events/', event_list, name='event-list'),  # List events for a project
-    path('projects/<int:pk>/events/<int:event_id>/restore/', event_restore, name='event-restore'),  # Restore an event
-    path('projects/<int:pk>/events/<int:event_id>/delete/', event_hide, name='event-hide'),  # Soft delete an event
-    path('projects/<int:pk>/events/add/', event_add, name='event-add'),  # Add a new event
+    path('api/projects/<int:pk>/events/', event_list, name='event-list'),  # List events for a project
+    path('api/projects/<int:pk>/events/<int:event_id>/restore/', event_restore, name='event-restore'),  # Restore an event
+    path('api/projects/<int:pk>/events/<int:event_id>/delete/', event_hide, name='event-hide'),  # Soft delete an event
+    path('api/projects/<int:pk>/events/add/', event_add, name='event-add'),  # Add a new event
  ]
 
 if settings.DEBUG:
