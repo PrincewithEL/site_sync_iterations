@@ -299,6 +299,7 @@ class Transactions(models.Model):
     transaction_id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, models.DO_NOTHING)
     project = models.ForeignKey(Projects, models.DO_NOTHING)
+    task = models.ForeignKey(Tasks, null=True, blank=True, related_name='transactions', on_delete=models.CASCADE)
     transaction_name = models.CharField(max_length=75)
     transaction_details = models.CharField(max_length=80)
     transaction_price = models.FloatField()
