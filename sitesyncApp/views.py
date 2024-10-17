@@ -2039,12 +2039,13 @@ def transaction_create(request, pk):
     if request.method == 'POST':
         project = get_object_or_404(Projects, pk=pk)
 
-        # Calculate total price
+        # Parse JSON data from the request body
         try:
-            transaction_price = float(request.POST['transaction_price'])
-            transaction_quantity = int(request.POST['transaction_quantity'])
+            request_data = json.loads(request.body)
+            transaction_price = float(request_data['transaction_price'])
+            transaction_quantity = int(request_data['transaction_quantity'])
             total_price = transaction_price * transaction_quantity
-        except (KeyError, ValueError):
+        except (KeyError, ValueError, json.JSONDecodeError):
             return JsonResponse({
                 'message': 'Invalid data provided.',
                 'status_code': 400
@@ -2061,12 +2062,12 @@ def transaction_create(request, pk):
             transaction = Transactions(
                 user=request.user,
                 project=project,
-                transaction_name=request.POST['transaction_name'],
-                transaction_details=request.POST['transaction_details'],
+                transaction_name=request_data['transaction_name'],
+                transaction_details=request_data['transaction_details'],
                 transaction_price=transaction_price,
                 transaction_quantity=transaction_quantity,
-                transaction_type=request.POST['transaction_type'],
-                transaction_category=request.POST['transaction_category'],
+                transaction_type=request_data['transaction_type'],
+                transaction_category=request_data['transaction_category'],
                 total_transaction_price=total_price,
                 created_at=timezone.now(),
                 transaction_status='Completed',  # Initial status
@@ -2285,27 +2286,29 @@ def event_add(request, pk):
     if request.method == 'POST':
         project = get_object_or_404(Projects, pk=pk)
 
-        # Parse date and time
+        # Parse JSON data from the request body
         try:
-            event_date = datetime.strptime(request.POST['event_date'], '%Y-%m-%d').date()
-            event_start_time = datetime.strptime(request.POST['event_start_time'], '%H:%M').time()
-            event_end_time = datetime.strptime(request.POST['event_end_time'], '%H:%M').time()
-        except (KeyError, ValueError):
+            request_data = json.loads(request.body)
+            event_date = datetime.strptime(request_data['event_date'], '%Y-%m-%d').date()
+            event_start_time = datetime.strptime(request_data['event_start_time'], '%H:%M').time()
+            event_end_time = datetime.strptime(request_data['event_end_time'], '%H:%M').time()
+        except (KeyError, ValueError, json.JSONDecodeError):
             return JsonResponse({
-                'message': 'Invalid date or time format.',
+                'message': 'Invalid date or time format or missing fields.',
                 'status_code': 400
-            }, status=status.HTTP_400_BAD_REQUEST)
+            }, status=400)
 
+        # Create the event
         event = Events(
             user=request.user,
             project=project,
-            event_name=request.POST['event_name'],
-            event_details=request.POST['event_details'],
+            event_name=request_data['event_name'],
+            event_details=request_data['event_details'],
             event_date=event_date,
             event_start_time=event_start_time,
             event_end_time=event_end_time,
-            event_location=request.POST.get('event_location', ''),
-            event_link=request.POST.get('event_link', ''),
+            event_location=request_data.get('event_location', ''),
+            event_link=request_data.get('event_link', ''),
             event_status='Scheduled',  # Initial status
             created_at=timezone.now(),
             is_deleted=0
@@ -2315,7 +2318,7 @@ def event_add(request, pk):
         return JsonResponse({
             'message': 'Event added successfully.',
             'status_code': 201
-        }, status=status.HTTP_201_CREATED)
+        }, status=201)
 
     return JsonResponse({
         'message': 'Method not allowed.',
