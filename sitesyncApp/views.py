@@ -1693,14 +1693,20 @@ def AddTaskAPIView(request, pk):
     if request.method == 'POST':
         project = get_object_or_404(Projects, pk=pk)
 
+        # Check if the request body contains JSON
+        try:
+            request_data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({"message": "Invalid JSON format.", "status_code": 400}, status=400)
+
         # Get the list of member IDs from the request
-        member_ids = request.data.get('members', [])
+        member_ids = request_data.get('members', [])
         members = User.objects.filter(id__in=member_ids)
 
         # Parse dates
         task_given_date = timezone.now().date()
         try:
-            task_due_date = datetime.strptime(request.data['due_date'], '%Y-%m-%d').date()
+            task_due_date = datetime.strptime(request_data['due_date'], '%Y-%m-%d').date()
         except (KeyError, ValueError):
             return JsonResponse({"message": "Invalid date format. Expected YYYY-MM-DD.", "status_code": 400}, status=400)
 
@@ -1708,7 +1714,7 @@ def AddTaskAPIView(request, pk):
         days_left = (task_due_date - task_given_date).days
 
         # Get transaction price
-        task_transaction_price = float(request.data.get('transaction_price', 0.0))
+        task_transaction_price = float(request_data.get('transaction_price', 0.0))
 
         # Check if the task transaction price exceeds the project's balance
         new_balance = project.balance - task_transaction_price
@@ -1717,8 +1723,8 @@ def AddTaskAPIView(request, pk):
             task = Tasks(
                 leader=request.user,
                 project=project,
-                task_name=request.data.get('task_name'),
-                task_details=request.data.get('task_details'),
+                task_name=request_data.get('task_name'),
+                task_details=request_data.get('task_details'),
                 task_given_date=task_given_date,
                 task_due_date=task_due_date,
                 task_days_left=days_left,
@@ -1731,7 +1737,7 @@ def AddTaskAPIView(request, pk):
             )
 
             # Handle dependent task if provided
-            dependent_task_id = request.data.get('dependent_task')
+            dependent_task_id = request_data.get('dependent_task')
             if dependent_task_id:
                 task.dependant_task_id = dependent_task_id
 
