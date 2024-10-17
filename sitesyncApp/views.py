@@ -2037,25 +2037,56 @@ def transaction_detail(request, pk, transaction_id):
 @login_required
 def transaction_create(request, pk):
     if request.method == 'POST':
-        serializer = TransactionSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
+        project = get_object_or_404(Projects, pk=pk)
+
+        # Parse transaction details from request.POST
+        try:
+            transaction_name = request.POST['transaction_name']
+            transaction_details = request.POST['transaction_details']
+            transaction_price = float(request.POST['transaction_price'])
+            transaction_quantity = int(request.POST['transaction_quantity'])
+            transaction_category = request.POST.get('transaction_category', '')
+            transaction_type = request.POST.get('transaction_type', '')
+            total_transaction_price = transaction_price * transaction_quantity
+        except (KeyError, ValueError):
             return JsonResponse({
-                'message': 'Transaction created successfully.',
-                'data': serializer.data,
-                'status_code': 201
-            }, status=status.HTTP_201_CREATED)
+                'message': 'Invalid data provided.',
+                'status_code': 400
+            }, status=400)
+
+        transaction = Transactions(
+            user=request.user,
+            project=project,
+            transaction_name=transaction_name,
+            transaction_details=transaction_details,
+            transaction_price=transaction_price,
+            transaction_quantity=transaction_quantity,
+            transaction_category=transaction_category,
+            transaction_type=transaction_type,
+            total_transaction_price=total_transaction_price,
+            created_at=timezone.now(),
+            transaction_date=datetime.now().strftime('%Y-%m-%d'),
+            transaction_time=datetime.now().strftime('%H:%M'),
+            updated_at=None,
+            transaction_status='Completed',  # Initial status
+            is_deleted=0
+        )
+
+        transaction.save()
         return JsonResponse({
-            'message': serializer.errors,
-            'status_code': 400
-        }, status=status.HTTP_400_BAD_REQUEST)
+            'message': 'Transaction created successfully.',
+            'data': {
+                'transaction_id': transaction.transaction_id,
+                'total_transaction_price': total_transaction_price
+            },
+            'status_code': 201
+        }, status=201)
 
     return JsonResponse({
         'message': 'Method not allowed.',
         'status_code': 405
     }, status=405)
-
-
+    
 @csrf_exempt
 @login_required
 def transaction_update(request, pk, transaction_id):
