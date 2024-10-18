@@ -1896,7 +1896,7 @@ def DeleteProjectAPI(request, pk):
         project = get_object_or_404(Projects, pk=pk)
 
         # Check if the logged-in user is the project leader
-        if project.project_leader != request.user:
+        if project.leader != request.user:
             return JsonResponse({
                 "message": "You do not have permission to delete this project.",
                 "status_code": 403
@@ -2093,7 +2093,7 @@ def transaction_create(request, pk):
         'message': 'Method not allowed.',
         'status_code': 405
     }, status=405)
-    
+
 @csrf_exempt
 @login_required
 def transaction_update(request, pk, transaction_id):
@@ -2271,7 +2271,7 @@ def event_hide(request, pk, event_id):
         ).update(is_deleted=1)
 
         return JsonResponse({
-            'message': 'Event marked as deleted.',
+            'message': 'Event deleted successfully.',
             'status_code': 200
         }, status=200)
 
