@@ -235,7 +235,7 @@
               <option value="video" {% if current_status_filter == 'video' %}selected{% endif %}>Video</option>              
             </select>
           </div>
-          <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
+          <button type="submit" class="btn btn-primary btn-sm">Apply Filters<i class="fa fa-filter"></i></button>
         </form>
       </div>
     </div><!-- /.btn-group -->
@@ -265,10 +265,66 @@
     {% csrf_token %}
     <input type="hidden" name="action" id="form-action" value="">
                 <div class="box-footer">
+<!--         <ul class="mailbox-attachments clearfix" id="resources">
+            {% for resource in resources %}
+            <li>
+                <span class="mailbox-attachment-icon" data-resource-type="{{ resource.resource_type }}">
+{% if resource.resource_type == 'Video' %}
+    <i class="fa fa-file-video-o"></i>
+{% elif resource.resource_type == 'Audio' %}
+        <audio controls style="width: 100px;">
+          <source src="{{ MEDIA_URL }}{{ resource.resource_directory }}" type="audio/mpeg">
+          Your browser does not support the audio element.
+        </audio>
+{% elif resource.resource_type == 'Image' %}
+    <img src="{{ MEDIA_URL }}{{ resource.resource_directory }}" alt="Attachment" style="width: 100px; height: 100px;" />
+{% elif resource.resource_type == 'Document' %}
+    {% if resource.resource_name|file_extension:'.pdf' %}
+        <i class="fa fa-file-pdf-o"></i>
+    {% elif resource.resource_name|file_extension:'.doc' or resource.resource_name|file_extension:'.docx' %}
+        <i class="fa fa-file-word-o"></i>
+    {% elif resource.resource_name|file_extension:'.xls' or resource.resource_name|file_extension:'.xlsx' %}
+        <i class="fa fa-file-excel-o"></i>
+    {% elif resource.resource_name|file_extension:'.ppt' or resource.resource_name|file_extension:'.pptx' %}
+        <i class="fa fa-file-powerpoint-o"></i>
+    {% elif resource.resource_name|file_extension:'.txt' %}
+        <i class="fa fa-file-text-o"></i>
+    {% elif resource.resource_name|file_extension:'.zip' or resource.resource_name|file_extension:'.rar' %}
+        <i class="fa fa-file-archive-o"></i>
+    {% else %}
+        <i class="fa fa-file-o"></i>
+    {% endif %}
+{% else %}
+    <i class="fa fa-file-o"></i>
+{% endif %}
+                </span>
+                <div class="mailbox-attachment-info">
+    <input type="checkbox" id="resource-{{ resource.resource_id }}" name="selected_resources" value="{{ resource.resource_id }}" class="resources-checkbox">
+    <label for="resource-{{ resource.resource_id }}"></label>
+                    <a href="#" class="mailbox-attachment-name">{{ resource.resource_name }}</a>
+                        <form method="post" action="{% url 'resources' pk=project.project_id %}">
+                          {% csrf_token %}
+        <button type="submit" class="btn btn-link" style="padding: 0; border: none; background: none;"
+        onclick="return confirm('Are You Sure You Want To {% if resource.resource_id in bookmarked_resources_ids %}Remove The Star For{% else %}Star{% endif %} This Resource?')">
+        <input type="hidden" id="inputs" name="selected_resource" value="{{ resource.resource_id }}">
+        <input type="hidden" name="action1" value="{% if resource.resource_id in bookmarked_resources_ids %}unbookmark1{% else %}bookmark1{% endif %}">
+        <i class="fa {% if resource.resource_id in bookmarked_resources_ids %}fa-star{% else %}fa-star-o{% endif %} text-yellow"></i>
+    </button>
+  </form>
+                    <span class="mailbox-attachment-size">
+                        {{ resource.resource_size }}<br>
+                        {{ resource.resource_details }}
+                        <a href="{{MEDIA_URL}}{{ resource.resource_directory }}" class="btn btn-default btn-xs pull-right" download><i class="fa fa-cloud-download"></i></a>
+                        <a href="{% url 'delete_resource' pk=resource.project_id resource_id=resource.resource_id %}" onclick="return confirm('Are You Sure You Want To Remove This Resource ?')" class="btn btn-default btn-xs pull-right"><i class="fa fa-trash-o"></i></a>
+                    </span>
+                </div>
+            </li>
+            {% endfor %}
+        </ul> -->
         <ul class="mailbox-attachments clearfix" id="resources">
             {% for resource in resources %}
             <li>
-<!-- HTML Template -->
+
 <div class="file-preview-container">
     <div class="file-preview-item" data-file-url="{{ MEDIA_URL }}{{ resource.resource_directory }}" data-file-type="{{ resource.resource_type }}">
       {% if resource.resource_type == 'Video' %}
@@ -284,8 +340,22 @@
       {% elif resource.resource_type == 'Image' %}
         <img src="{{ MEDIA_URL }}{{ resource.resource_directory }}" alt="{{ resource.resource_name }}" style="width: 100px; height: 100px; object-fit: cover;" />
       {% elif resource.resource_type == 'Document' %}
-        <div class="document-preview" style="width: 100px; height: 100px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;">
-          <i class="fa fa-file-o"></i>
+        <div class="document-preview" style="width: 100px; height: 100px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;" onclick="">
+{% if resource.resource_name|file_extension:'.pdf' %}
+        <i class="fa fa-file-pdf-o"></i>
+    {% elif resource.resource_name|file_extension:'.doc' or resource.resource_name|file_extension:'.docx' %}
+        <i class="fa fa-file-word-o"></i>
+    {% elif resource.resource_name|file_extension:'.xls' or resource.resource_name|file_extension:'.xlsx' %}
+        <i class="fa fa-file-excel-o"></i>
+    {% elif resource.resource_name|file_extension:'.ppt' or resource.resource_name|file_extension:'.pptx' %}
+        <i class="fa fa-file-powerpoint-o"></i>
+    {% elif resource.resource_name|file_extension:'.txt' %}
+        <i class="fa fa-file-text-o"></i>
+    {% elif resource.resource_name|file_extension:'.zip' or resource.resource_name|file_extension:'.rar' %}
+        <i class="fa fa-file-archive-o"></i>
+    {% else %}
+        <i class="fa fa-file-o"></i>
+    {% endif %}
         </div>
       {% else %}
         <div class="file-icon" style="width: 100px; height: 100px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;">
@@ -296,7 +366,7 @@
     </div>
 </div>
 
-<!-- Modal for file preview -->
+
 <div id="filePreviewModal" class="modal">
   <div class="modal-content">
     <span class="close">&times;</span>
@@ -318,11 +388,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
       modalContent.innerHTML = '';  // Clear previous content
 
+// if(fileType === 'Document'){
+// alert('Apologies this feature is still in the works. Kindly try again later, thank you for your patience :)');
+// }else{
+
       if (fileType === 'Image') {
         const img = document.createElement('img');
         img.src = fileUrl;
         modalContent.appendChild(img);
-        new Viewer(img);
+        // new Viewer(img);
+        img.style.width = '100%';
+        img.style.height = '100%';
+        modalContent.appendChild(img);
       } else if (fileType === 'Video') {
         const video = document.createElement('video');
         video.src = fileUrl;
@@ -334,27 +411,32 @@ document.addEventListener('DOMContentLoaded', function() {
         audio.src = fileUrl;
         audio.controls = true;
         modalContent.appendChild(audio);
-      } else if (fileType === 'Document') {
-    if (fileUrl.endsWith('.pdf')) {
-        const iframe = document.createElement('iframe');
-                iframe.src = `/static/pdfjs/web/viewer.html?file=${encodeURIComponent(fileUrl)}`;
-        iframe.style.width = '100%';
-        iframe.style.height = '600px';
-        modalContent.appendChild(iframe);
-    } else if (fileUrl.endsWith('.doc') || fileUrl.endsWith('.docx') || fileUrl.endsWith('.ppt') || fileUrl.endsWith('.xls')) {
-        const iframe = document.createElement('iframe');
-        iframe.src = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
-        iframe.style.width = '100%';
-        iframe.style.height = '600px';
-        modalContent.appendChild(iframe);
-    } else {
-        modalContent.innerHTML = '<p>Preview not available for this file type.</p>';
-    }
-} else {
-        modalContent.innerHTML = '<p>Preview not available for this file type.</p>';
+      } 
+//       else if (fileType === 'Document') {
+//     if (fileUrl.endsWith('.pdf')) {
+//         const iframe = document.createElement('iframe');
+//                 iframe.src = `/static/pdfjs/web/viewer.html?file=${encodeURIComponent(fileUrl)}`;
+//         iframe.style.width = '100%';
+//         iframe.style.height = '600px';
+//         modalContent.appendChild(iframe);
+//     } else if (fileUrl.endsWith('.doc') || fileUrl.endsWith('.docx') || fileUrl.endsWith('.ppt') || fileUrl.endsWith('.xls')) {
+//         const iframe = document.createElement('iframe');
+//         iframe.src = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
+//         iframe.style.width = '100%';
+//         iframe.style.height = '600px';
+//         modalContent.appendChild(iframe);
+//     }
+//      else {
+//         modalContent.innerHTML = '<p>Preview not available for this file type.</p>';
+//     }
+// } 
+else {
+    
+        modalContent.innerHTML = '<p>Apologies this feature is still in the works. Kindly try again later, thank you for your patience :).</p>';
       }
 
       modal.style.display = 'block';
+  // }
     });
   });
 
@@ -374,7 +456,7 @@ document.addEventListener('DOMContentLoaded', function() {
 .modal {
   display: none;
   position: fixed;
-  z-index: 1;
+  z-index: 1000;
   left: 0;
   top: 0;
   width: 100%;

@@ -92,6 +92,11 @@ urlpatterns = [
     path('project/<int:project_id>/bookmark_message/', views.bookmark_message, name='bookmark_message'),
     path('project/<int:project_id>/unbookmark_message/', views.unbookmark_message, name='unbookmark_message'),
     path('reply/<int:pk>/', views.reply_message, name='reply_message'),
+    path('preview-resource/<int:resource_id>/', views.preview_resource, name='preview_resource'),
+    path('projects/<int:project_id>/tasks/<str:task_id>/update-dates/', views.update_task_dates, name='update_task_dates'),
+    path('events/calendar/<int:pk>/', views.calendar_view, name='calendar_view'),
+    path('events/delete/<int:pk>/<int:event_id>/', views.delete_event, name='delete_event'),
+    path('events/update/', views.update_event, name='update_event'),
 
     #APIs
 

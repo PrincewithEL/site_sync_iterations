@@ -160,7 +160,7 @@ CORS_ALLOWED_ORIGINS = [
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'site_sync',
+#         'NAME': 'site_sync_sem2',
 #         'USER': 'root',
 #         'PASSWORD': '',
 #         'HOST': 'localhost',

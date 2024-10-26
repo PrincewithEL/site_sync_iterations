@@ -78,7 +78,7 @@
         <!-- Right side column -->
         <div class="content-wrapper">
             <!-- Content Header -->
-            <section class="content-header" style="position: relative; left: -970px;">
+            <section class="content-header" style="position: relative; left: -920px;">
                 <h1>
                     Dashboard (for current month)
                 </h1>
@@ -193,6 +193,17 @@
     
     <button type="submit" class="btn btn-default btn-sm" title="Filter By Date"><span class="glyphicon glyphicon-filter"></span></button>
 </form>
+
+    <div>
+    <h4>Select Chart Group to Display:</h4>
+    <select id="chartGroupSelect" class="form-control">
+        <option value="all">All Charts</option>
+        <option value="tasks">Tasks and Workloads</option>
+        <option value="transactions">Transactions</option>
+        <option value="events">Events</option>
+        <option value="messages">Messages</option>
+    </select>
+</div>
 </div>
 
                         <!-- Bar Chart for Online Activity -->
@@ -590,6 +601,32 @@ document.getElementById('downloadPdf').addEventListener('click', function() {
     $("body").addClass('sidebar-collapse'); // Add collapse class on page load
   });
 </script>
+<script type="text/javascript">
+    // Function to toggle chart visibility based on the selected group
+function toggleChartVisibility() {
+    const selectedGroup = document.getElementById('chartGroupSelect').value;
 
+    // Get all chart boxes
+    const chartBoxes = document.querySelectorAll('.box');
+
+    // Loop through each chart box and set visibility
+    chartBoxes.forEach(box => {
+        // Check if the chart box belongs to the selected group
+        const group = box.getAttribute('data-group');
+        if (selectedGroup === 'all' || group === selectedGroup) {
+            box.style.display = 'block'; // Show chart
+        } else {
+            box.style.display = 'none'; // Hide chart
+        }
+    });
+}
+
+// Add event listener to the dropdown
+document.getElementById('chartGroupSelect').addEventListener('change', toggleChartVisibility);
+
+// Initial call to set visibility on page load
+toggleChartVisibility();
+
+</script>
   </body>
 </html>

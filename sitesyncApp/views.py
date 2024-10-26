@@ -59,6 +59,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import View
 from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator
+from django.views.decorators.http import require_http_methods
+from django.db.models import Exists, OuterRef
 
 logger = logging.getLogger(__name__)
 
@@ -231,6 +233,8 @@ def SignUpView(request):
             # Log the user in with the specified backend
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')
 
+            # Users.objects.filter(email_address=email).update(online=1, logged_in=timezone.now())
+
             return JsonResponse({
                 'status_code': 201,
                 'message': 'User registered successfully',
@@ -399,13 +403,11 @@ def VerifyOtpView(request):
 
 class ClientProjectsAPI(APIView):
     permission_classes = [IsAuthenticated]
-
     def get(self, request):
         user = request.user
         profile = user.profile
         now = timezone.now().date()
         user_id = profile.user_id
-
         try:
             # Fetch all active projects where user is leader or member
             leader_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=0, project_status='Active')
@@ -420,49 +422,58 @@ class ClientProjectsAPI(APIView):
             all_projects = (leader_projects | member_projects | bookmarked_projects).distinct()
             
             all_projects_count = all_projects.count()
-
-            # Unread chats and pending tasks
-            unread_chat_counts = {}
-            pending_tasks_counts = {}
-            progress_percentages = {}
-
+            
+            # Format project data with all metrics included
+            projects_data = []
             for project in all_projects:
                 try:
                     group_chat = GroupChat.objects.get(project=project)
                     unread_chats = Chat.objects.filter(group_id=group_chat.group_id).exclude(sender_user_id=user_id)
                     unread_status = ChatStatus.objects.filter(status=1, user_id=user_id)
-                    unread_chat_counts[project.project_id] = unread_status.count()
-
+                    unread_count = unread_status.count()
+                    
                     # Calculate pending tasks
                     ongoing_tasks = Tasks.objects.filter(project=project, task_status='Ongoing', is_deleted=0)
-                    pending_tasks_counts[project.project_id] = ongoing_tasks.count()
-
+                    pending_tasks_count = ongoing_tasks.count()
+                    
                     # Calculate progress based on start/end date
                     total_days = (project.end_date - project.start_date).days
                     days_left = (project.end_date - now).days
                     progress_percentage = ((total_days - days_left) / total_days) * 100 if total_days > 0 else 0
-                    progress_percentages[project.project_id] = progress_percentage if progress_percentage > 0 else 0
+                    progress = progress_percentage if progress_percentage > 0 else 0
+                    
                 except GroupChat.DoesNotExist:
-                    unread_chat_counts[project.project_id] = 0
-                    pending_tasks_counts[project.project_id] = 0
-                    progress_percentages[project.project_id] = 0
+                    unread_count = 0
+                    pending_tasks_count = 0
+                    progress = 0
 
+                # Create project data dictionary with all metrics included
+                project_data = {
+                    'project_id': project.project_id,
+                    'project_name': project.project_name,
+                    'start_date': project.start_date,
+                    'end_date': project.end_date,
+                    'project_details': project.project_details,
+                    'estimated_budget': project.estimated_budget,
+                    'chats': unread_count,
+                    'tasks': pending_tasks_count,
+                    'projectpercentage': progress
+                }
+                projects_data.append(project_data)
+            
             response_data = {
                 'user': ProfileSerializer(profile).data,
                 'user_name': request.user.first_name,
-                'all_projects': ProjectSerializer(all_projects, many=True).data,
-                'unread_chats': unread_chat_counts,
-                'pending_tasks': pending_tasks_counts,
-                'progress_percentages': progress_percentages,
+                'all_projects': projects_data,
                 'all_projects_count': all_projects_count,
             }
-
+            
             return Response({
                 'status_code': 200,
                 'message': 'Projects retrieved successfully.',
                 'data': response_data
             }, status=200)
-
+            
         except Exception as e:
             return Response({
                 'status_code': 500,
@@ -2327,6 +2338,24 @@ def event_add(request, pk):
 
 # Function Views
 
+from django.http import JsonResponse
+from django.template.loader import render_to_string
+
+def preview_resource(request, resource_id):
+    try:
+        resource = Resource.objects.get(id=resource_id)
+        return JsonResponse({
+            'status': 'success',
+            'resource_url': resource.resource_directory.url,
+            'resource_type': resource.resource_type,
+            'resource_name': resource.resource_name
+        })
+    except Resource.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Resource not found'
+        })
+
 def tasks1(request, project_id):
     # Retrieve tasks for the specific project
     tasks = Tasks.objects.filter(project_id=project_id)
@@ -2816,8 +2845,8 @@ def add_transaction(request, pk):
 
     newprice = project.balance - tp
     if newprice > 0:
-        project.actual_expenditure = tp
-        project.balance = project.estimated_budget - project.actual_expenditure 
+        project.actual_expenditure = project.actual_expenditure + tp
+        project.balance = project.estimated_budget - project.actual_expenditure
         project.save()
 
         transaction = Transactions(
@@ -3649,10 +3678,8 @@ def update_task(request, task_id):
 def dashboard(request, pk):
     user = request.user
     profile = user.profile
-    now = date.today() 
-    now = timezone.now()       
+    now = timezone.now()  # Ensure this is a timezone-aware datetime
     today = now.date()  # Current date
-    current_time = now.time()  # Current time
     project = get_object_or_404(Projects, pk=pk)
     project_id = project.project_id
 
@@ -3705,22 +3732,42 @@ def dashboard(request, pk):
     total_tasks = Tasks.objects.filter(project_id=project_id, is_deleted=0).count()
 
     # Get current date and compute month and last month for expense calculations
-    now1 = datetime.now()
-    current_month = now1.strftime('%Y-%m')
-    last_month = (now1 - timedelta(days=30)).strftime('%Y-%m')
+    # now = datetime.now()
+    # current_month = now1.strftime('%Y-%m')
+    # last_month = (now - timedelta(days=30)).strftime('%Y-%m')
 
     # Expenses
+    first_day_of_month = timezone.make_aware(
+        datetime(now.year, now.month, 1)
+    )
+    first_day_of_next_month = timezone.make_aware(
+        datetime(now.year, now.month + 1, 1) if now.month < 12 
+        else datetime(now.year + 1, 1, 1)
+    )
+
+    # Get expenses for current month
     month_to_date_expenses = Transactions.objects.filter(
         project_id=project_id,
-        created_at__year=now.year,
-        created_at__month=now.month,
+        created_at__gte=first_day_of_month,
+        created_at__lt=first_day_of_next_month,
         is_deleted=0
     ).aggregate(total_expenses=Sum('total_transaction_price'))['total_expenses'] or 0
 
+    # Calculate first day of last month
+    if now.month > 1:
+        first_day_of_last_month = timezone.make_aware(
+            datetime(now.year, now.month - 1, 1)
+        )
+    else:
+        first_day_of_last_month = timezone.make_aware(
+            datetime(now.year - 1, 12, 1)
+        )
+
+    # Get expenses for last month
     last_month_expenses = Transactions.objects.filter(
         project_id=project_id,
-        created_at__year=now.year,
-        created_at__month=(now.month - 1 if now.month > 1 else 12),
+        created_at__gte=first_day_of_last_month,
+        created_at__lt=first_day_of_month,
         is_deleted=0
     ).aggregate(total_expenses=Sum('total_transaction_price'))['total_expenses'] or 0
 
@@ -3729,8 +3776,7 @@ def dashboard(request, pk):
     # Month to Date Expenses Data
     month_to_date_data = [
         last_month_expenses,
-        month_to_date_expenses,
-        #month_to_date_expenses * 1.1  # Example forecast
+        month_to_date_expenses * 1.1,  # Example forecast
         remaining_budget,
     ]
 
@@ -3926,7 +3972,7 @@ def dashboard(request, pk):
         'day': today,
         'project': project,
         'project_id': project_id,
-        'now': now,
+        # 'now': now,
         'pending_tasks_counts': pending_tasks_counts,
         'unread_count': unread_count,
         'all_unread_chats': all_unread_chats,
@@ -4253,6 +4299,58 @@ def events(request, pk):
 
     return render(request, 'events.html', context)
 
+@login_required
+def calendar_view(request, pk):
+    project = get_object_or_404(Projects, pk=pk)
+    events = Events.objects.filter(project=project, is_deleted=0).values(
+        'event_id', 'event_name', 'event_date', 'event_start_time', 'event_end_time', 'event_details', 'user_id'
+    )
+    return JsonResponse(list(events), safe=False)
+
+@login_required
+def delete_event(request, event_id, pk):
+    if request.method == 'POST':
+        event = get_object_or_404(Events, event_id=event_id)
+        event.is_deleted = 1
+        event.save()
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error'}, status=400)
+
+@login_required
+def update_event(request):
+    if request.method == 'POST':
+        event_id = request.POST.get('event_id')
+        start = request.POST.get('start')
+        end = request.POST.get('end')
+
+        event = get_object_or_404(Events, event_id=event_id)
+        
+        # Check if the current user is the creator of the event
+        if event.user.id != request.user.id:
+            return JsonResponse({'status': 'error', 'message': 'You are not authorized to edit this event.'}, status=403)
+
+        # Update the event dates/times
+        event.event_date = start.split('T')[0]
+        event.event_start_time = start.split('T')[1]
+        if end:
+            event.event_end_time = end.split('T')[1]
+
+        # Convert event.event_date from string to date
+        event_date = datetime.strptime(event.event_date, '%Y-%m-%d').date()
+
+        # Get the current date
+        current_date = timezone.now().date()
+
+        # Determine event status based on date
+        if event_date > current_date:
+            event.event_status = 'Scheduled'
+        else:
+            event.event_status = 'Completed'
+        
+        event.save()
+        
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error'}, status=400)
 
 @login_required
 def add_event(request, pk):
@@ -4349,6 +4447,23 @@ def add_task(request, pk):
             task.save()
             task.member.set(members)
 
+            transaction = Transactions(
+                user=request.user,
+                project=project,
+                transaction_name=request.POST['task_name'],
+                transaction_details=request.POST['task_details'],
+                transaction_price=task_transaction_price,
+                transaction_quantity=1,
+                transaction_type=request.POST['transaction_type'],
+                transaction_category=request.POST['transaction_category'],            
+                total_transaction_price=task_transaction_price,
+                created_at=timezone.now(),
+                task_id=task.task_id,
+                transaction_status='Completed',
+                is_deleted=0
+            )
+            transaction.save()
+
             # Update project budget after adding task transaction
             project.actual_expenditure += task_transaction_price
             project.balance = project.estimated_budget - project.actual_expenditure
@@ -4368,22 +4483,26 @@ def add_task(request, pk):
 
 @login_required
 def delete_task(request, pk, task_id):
-    task = get_object_or_404(Tasks, pk=task_id, project__pk=pk)
+    try:
+        task = get_object_or_404(Tasks, task_id=task_id, project__pk=pk)
 
-    # Reverse the effect of each transaction and then delete it
-    for transaction in task.transactions.all():
-        # Reverse the transaction impact on project budget and balance
-        task.project.actual_expenditure -= transaction.total_transaction_price
-        task.project.balance += transaction.total_transaction_price
-        task.project.save()
+        # Reverse the effect of each transaction and then delete it
+        for transaction in task.transactions.all():
+            # Reverse the transaction impact on project budget and balance
+            task.project.actual_expenditure -= transaction.total_transaction_price
+            task.project.balance += transaction.total_transaction_price
+            task.project.save()
 
-        # Delete the transaction
-        transaction.delete()
+            # Delete the transaction
+            transaction.delete()
 
-    # Delete the task after reversing and deleting the transactions
-    task.delete()
+        # Delete the task after reversing and deleting the transactions
+        task.delete()
 
-    messages.success(request, 'Task and associated transactions deleted successfully.')
+        messages.success(request, 'Task and associated transactions deleted successfully.')
+    except Exception as e:
+        messages.error(request, f'Error occurred while deleting task: {e}')
+    
     return redirect('tasks', pk=pk)
 
 @login_required
@@ -4471,7 +4590,6 @@ def chat(request, pk):
     # Query for project members
     project_members = ProjectMembers.objects.filter(project=project, is_deleted=0)
 
-    # Retrieve user details for project members
     project_member_details = []
     for member in project_members:
         member_profile = Profile.objects.get(user_id=member.user_id)
@@ -4490,8 +4608,60 @@ def chat(request, pk):
         }
         project_member_details.append(member_info)
 
+    # Retrieve user details for project members
+    all_chat_members = []
+    
+    # Add leader if the current user is not the leader
+    if project.leader_id != user.id:
+        leader_info = {
+            'first_name': leader_profile.user.first_name,
+            'last_name': leader_profile.user.last_name,
+            'phone_number': leader_profile.phone_number,
+            'image': leader_profile.profile_picture.url if leader_profile.profile_picture else None,
+            'id': leader_profile.user.id,
+            'role': 'leader',  # Adding a specific role for leader
+            'online': leader_user.online,
+            'user_type': leader_profile.user_type,
+            'logged_in': leader_user.logged_in,
+            'logged_out': leader_user.logged_out,
+            'is_leader': True
+        }
+        all_chat_members.append(leader_info)
+
+    # Add other project members (excluding the current user)
+    for member in project_members:
+        if member.user_id != user.id:  # Exclude current user
+            member_profile = Profile.objects.get(user_id=member.user_id)
+            member_user = Users.objects.get(user_id=member.user_id)
+            member_info = {
+                'first_name': member_profile.user.first_name,
+                'last_name': member_profile.user.last_name,
+                'phone_number': member_profile.phone_number,
+                'image': member_profile.profile_picture.url if member_profile.profile_picture else None,
+                'id': member_profile.user.id,
+                'role': 'client' if member_profile.user_type == 'client' else 'contractor',
+                'online': member_user.online,
+                'user_type': member_profile.user_type,
+                'logged_in': member_user.logged_in,
+                'logged_out': member_user.logged_out,
+                'is_leader': False
+            }
+            all_chat_members.append(member_info)
+
     # Fetch chat messages for the current project
-    messages = Chat.objects.filter(group=project.groupchat, is_deleted=0).order_by('timestamp')
+    messages = Chat.objects.filter(
+        group=project.groupchat, 
+        is_deleted=0
+    ).filter(
+        Q(sender_user=user) |  # Include messages where the user is the sender
+        Exists(
+            ChatStatus.objects.filter(
+                chat=OuterRef('chat_id'),
+                user_id=user.id,
+                is_deleted=0
+            )
+        )  # Include messages where the user has a corresponding ChatStatus
+    ).order_by('timestamp')
     pinned_messages = Chat.objects.filter(group_id=project.groupchat, is_pinned=1, is_deleted=0).order_by('timestamp')
 
 
@@ -4499,6 +4669,15 @@ def chat(request, pk):
     bookmarked_chat_ids = bookmarks.values_list('item_id', flat=True)
     bookmarked_chats = Chat.objects.filter(chat_id__in=bookmarked_chat_ids)
     chat_messages = (messages | bookmarked_chats).distinct()
+
+    # After fetching chat messages
+    selected_members = request.GET.getlist('members[]')
+
+    if selected_members:
+        # Filter chat messages by selected member IDs
+        chat_messages = chat_messages.filter(            Q(sender_user=request.user.id, chatstatus__user_id__in=selected_members) |  # User sends to selected
+            Q(sender_user__in=selected_members, chatstatus__user_id=request.user.id)  # Selected sends to user
+            )
 
     leader_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=0)
     current_date = timezone.now().date()
@@ -4588,6 +4767,7 @@ def chat(request, pk):
         'leader_profile': leader_profile,
         'member_status': member.status,
         'project_member_details': project_member_details,
+        'all_chat_members': all_chat_members,        
         'chat_messages': chat_messages,  
         'pinned_messages': pinned_messages,
         'grouped_messages': grouped_messages,
@@ -5122,6 +5302,17 @@ def reply_message(request, pk):
 
         return redirect('chat', pk=project.pk)
 
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from django.core.files.storage import default_storage
+from django.contrib import messages
+from .models import Projects, Profile, Chat, Resources, ProjectMembers, ChatStatus
+import os
+import uuid
+from datetime import datetime
+from django.utils.encoding import smart_str
+
 @login_required
 def send_message(request, pk):
     user = request.user
@@ -5131,10 +5322,30 @@ def send_message(request, pk):
     project = get_object_or_404(Projects, pk=pk)
     leader_profile = Profile.objects.get(user_id=project.leader_id)
 
+    EXTENSION_TYPE_MAP = {
+        '.pdf': 'Document',
+        '.doc': 'Document',
+        '.docx': 'Document',
+        '.ppt': 'Document',
+        '.pptx': 'Document',
+        '.xls': 'Document',
+        '.xlsx': 'Document',
+        '.txt': 'Document',
+        '.jpg': 'Image',
+        '.jpeg': 'Image',
+        '.png': 'Image',
+        '.gif': 'Image',
+        '.mp4': 'Video',
+        '.mp3': 'Audio',
+        '.zip': 'Document',
+        '.wav': 'Audio',
+        '.m4a': 'Audio',
+        '.rar': 'Document',
+    }
+
     if request.method == 'POST':
-        # Get form data
         message1 = request.POST.get('message')
-        uid = request.POST.get('uid')
+        uid = request.POST.get('uid')  # This should correspond to the sender's ID
         file = request.FILES.get('file')
         scheduled_date = request.POST.get('scheduled_date')
         scheduled_time = request.POST.get('scheduled_time')
@@ -5146,108 +5357,123 @@ def send_message(request, pk):
             scheduled_at = datetime.strptime(f"{scheduled_date} {scheduled_time}", "%Y-%m-%d %H:%M")
 
         chat_file = None
-        if file:
-            profile_picture = file
-            unique_filename = str(uuid.uuid4()) + os.path.splitext(profile_picture.name)[1]
-            profile_picture_path = default_storage.save(unique_filename, profile_picture)
+        file_size_str = None
+        resource_type = 'unknown'  # Default resource type
 
-            # Move the image to the desired directory under MEDIA_ROOT
+        if file:
+            # Get file extension and unique filename
+            file_extension = os.path.splitext(file.name)[1].lower()
+            unique_filename = str(uuid.uuid4()) + file_extension
+            profile_picture_path = default_storage.save(unique_filename, file)
+
+            # Move the file to the desired directory under MEDIA_ROOT
             dest_path = os.path.join(settings.MEDIA_ROOT, 'chat_files', unique_filename)
 
             try:
                 os.makedirs(os.path.dirname(dest_path), exist_ok=True)
                 os.rename(os.path.join(settings.MEDIA_ROOT, profile_picture_path), dest_path)
                 chat_file = 'chat_files/' + unique_filename
+
+                # Get file size in human-readable format
+                file_size = file.size
+                if file_size < 1024:
+                    file_size_str = f"{file_size} B"
+                elif file_size < 1024 * 1024:
+                    file_size_str = f"{file_size / 1024:.2f} KB"
+                else:
+                    file_size_str = f"{file_size / (1024 * 1024):.2f} MB"
+
+                # Determine the resource type based on the file extension
+                resource_type = EXTENSION_TYPE_MAP.get(file_extension, 'file')  # Default to 'file' if unknown
+
             except Exception as e:
                 messages.error(request, f"Error saving project file: {str(e)}")
                 return redirect('chat', pk=project.pk)
 
-        sender_user = User.objects.get(pk=uid)
-        logger.info(f"Received message: {message1}")
+        # Ensure the sender_user is the currently logged-in user
+        sender_user = user  
         message = smart_str(message1)
-        logger.info(f"Encoded message: {message}")
-
-        # If a scheduled time is provided, set the timestamp to that time
         timestamp = scheduled_at if scheduled_at else timezone.now()
 
         original_message = None
         if reply_message_id:
-            # This is a reply to another message
             original_message = get_object_or_404(Chat, chat_id=reply_message_id)
 
-        # Create a new chat message
+        # Create new chat instance
         new_chat = Chat.objects.create(
             group=project.groupchat,
             sender_user=sender_user,
             message=message,
             timestamp=timestamp,
             is_deleted=0,
-            reply=original_message.message if original_message else None,  # Check if original_message exists
+            reply=original_message.message if original_message else None,
             scheduled_at=scheduled_at,
             file=chat_file
         )
 
-        new_chat.save()
-
-        # Add the uploaded file to the Resources model
+        # If there's a chat file, create a Resources entry
         if chat_file:
+            resource_name = os.path.basename(file.name)
             Resources.objects.create(
                 user=user,
                 project=project,
-                resource_name=file.name,
-                resource_details=message[:80],  # Use the first 80 characters of the message as resource details
+                resource_name=resource_name,
+                resource_details=message[:80],
                 resource_directory=chat_file,
                 created_at=timezone.now(),
                 updated_at=timezone.now(),
                 resource_status="active",
-                resource_type="file",
-                resource_size=str(file.size),
+                resource_type=resource_type,
+                resource_size=file_size_str,
                 is_deleted=0
             )
 
-        # Implementing the trigger logic
-        project_members = ProjectMembers.objects.filter(project=project, is_deleted=0).exclude(user=user)
-        logger.info(f"Project members found: {project_members.count()}")
+        # Notify selected members
+        # In your send_message view
+        selected_members = request.POST.getlist('selected_members[]')
 
-        for project_member in project_members:
-            existing_status = ChatStatus.objects.filter(
-                user_id=project_member.user_id,
-                group=new_chat.group,
-                chat=new_chat
-            ).exists()
-
-            if not existing_status:
-                chat_status = ChatStatus.objects.create(
-                    chat=new_chat,
-                    group=project.groupchat,
-                    user_id=project_member.user_id,
-                    status=1,
-                    is_deleted=0 
-                )
-                logger.info(f"Chat status created for user: {project_member.user.id}")
-
-        if user.id != project.leader_id:
-            existing_leader_status = ChatStatus.objects.filter(
-                user_id=project.leader_id,
-                group=new_chat.group,
-                chat=new_chat
-            ).exists()
-
-            if not existing_leader_status:
+        # Handle member selection
+        if 'all' in selected_members:
+            # Get all project members except the sender
+            project_members = ProjectMembers.objects.filter(
+                project=project, 
+                is_deleted=0
+            ).exclude(user_id=sender_user.id)
+            
+            # Include project leader if they're not the sender
+            if project.leader_id != sender_user.id:
                 ChatStatus.objects.create(
                     chat=new_chat,
                     group=project.groupchat,
                     user_id=project.leader_id,
                     status=1,
-                    is_deleted=0 
+                    is_deleted=0
                 )
-                logger.info(f"Chat status created for project leader: {project.leader_id}")
+            
+            # Create chat status for all other members
+            for member in project_members:
+                ChatStatus.objects.create(
+                    chat=new_chat,
+                    group=project.groupchat,
+                    user_id=member.user_id,
+                    status=1,
+                    is_deleted=0
+                )
+        else:
+            # Handle single member selection
+            member_id = selected_members[0]  # Since it's radio button, there will be only one
+            ChatStatus.objects.create(
+                chat=new_chat,
+                group=project.groupchat,
+                user_id=member_id,
+                status=1,
+                is_deleted=0
+            )
 
         return redirect('chat', pk=project.pk)
 
     clients_profiles = Profile.objects.filter(user_type='client').exclude(user=user)
     contractors_profiles = Profile.objects.filter(user_type='contractor').exclude(user=user)
-
     users = list(clients_profiles) + list(contractors_profiles)
 
     user_details = []
@@ -5273,6 +5499,33 @@ def send_message(request, pk):
         'user_details': user_details,
     }
     return render(request, 'chat.html', context)
+
+@login_required
+@csrf_exempt
+@require_http_methods(["POST"])
+def update_task_dates(request, project_id, task_id):
+    try:
+        data = json.loads(request.body)
+        start_date = data.get('start_date')
+        due_date = data.get('due_date')
+
+        if not start_date or not due_date:
+            return JsonResponse({'status': 'error', 'message': 'Missing start_date or due_date'}, status=400)
+
+        # Update your task model - adjust the field names to match your model
+        task = Tasks.objects.get(task_id=task_id, project_id=project_id)
+        task.task_given_date = start_date
+        task.task_due_date = due_date
+        task.save()
+
+        return JsonResponse({'status': 'success'})
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+    except Tasks.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Task not found'}, status=404)
+    except Exception as e:
+        print(f"Error updating task dates: {e}")
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
 @login_required
 def add_project_member(request, pk):

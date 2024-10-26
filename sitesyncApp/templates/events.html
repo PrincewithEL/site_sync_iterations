@@ -23,6 +23,14 @@
     <link href="{% static 'dashboard/dist/css/skins/skin-black.min.css' %}" rel="stylesheet" type="text/css" />
     <!-- Bootstrap WYSIHTML5 -->
     <link href="{% static 'dashboard/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.min.css' %}" rel="stylesheet" type="text/css" />
+       <!-- Make sure to load CSS first -->
+    <link href='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.css' rel='stylesheet' />
+    <link href='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.print.min.css' rel='stylesheet' media='print' />
+    
+    <!-- Load scripts in correct order -->
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.js'></script>
   </head>
       <style>
         .dropdown {
@@ -115,7 +123,7 @@
       <!-- Right side column. Contains the navbar and content of the page -->
       <div class="content-wrapper">
         <!-- Content Header (Page header) -->
-        <section class="content-header" style="position: relative; left: -680px;">
+        <section class="content-header" style="position: relative; left: -620px;">
           <h1>
             <small></small>
           </h1>
@@ -131,9 +139,21 @@
         <section class="content">
           <div class="row">
             <div class="col-md-3">
-              <a href="{% url 'client' %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Home</a>
-              <a href="#" onclick="printData();" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Generate Report</a> 
-              <a href="#" onclick="openForm();" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Add An Event</a>              
+            <div class="">
+              <a href="{% url 'client' %}"  onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Home <i class="fa fa-home"></i></a>
+              </div>
+            <div class="">
+              <a href="#" onclick="printData();" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Generate Report <i class="fa fa-print"></i></a>
+              </div>
+            <div class="">
+              <a href="#"  onclick="openForm();" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Add An Event <i class="fa fa-plus"></i></a>
+              </div>
+<!--             <div class="">
+              <a href="#"  onclick="openCalender();" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Event Calendar View <i class="fa fa-calendar"></i></a>
+              </div>  -->                     
+                          <div class="">
+              <a href="{% url 'project_detail' project.project_id %}"  onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Back <i class="fa fa-mail-reply"></i></a>
+              </div>        
               <div class="box box-solid">
                 <div class="box-header with-border">
                   <h3 class="box-title">List of Events</h3>
@@ -163,7 +183,6 @@
                               {% if project.leader_id == auth_user.id %}      
         <li id="trashEventNavItem"><a onclick="openTrashEvents();"><i class="fa fa-trash-o"></i> Trash <span class="label label-waring pull-right">{{ trash_events_count }}</span></a></li>
         {% endif %}
-                    <li><a href="{% url 'project_detail' project.pk %}"><i class="fa fa-mail-reply"></i> Back</a></li>
     </ul>
 </div>
               </div><!-- /. box -->
@@ -183,6 +202,21 @@
               <!-- /.box -->
             </div><!-- /.col -->
             <div class="col-md-9">
+<!--               <div class="box box-primary" id="myForm2">
+                <div class="box-header with-border">
+                  <h3 class="box-title">Events Calendar</h3>
+                                <button type="button" style="position: relative; right: -720px;" onclick="closeCalender();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
+                  <div class="box-tools pull-right">
+                    <br>
+                    <br>
+                    <br>
+                        <div id="calendar1" class="small-calendar"></div>
+                    <br>
+                    <br>
+                    <br>
+                </div>
+              </div>
+          </div> -->
               <div class="box box-primary" id="myTable">
                 <div class="box-header with-border">
                   <h3 class="box-title">My Events</h3>
@@ -265,7 +299,8 @@
                     <form method="post" id="events-action-form">
     {% csrf_token %}
     <input type="hidden" name="action" id="form-action" value="">
-                  <div class="table-responsive mailbox-messages">
+                  <div class="table-responsive mailbox-messages" style="height: 400px; position: relative;">
+                    <div class="col-md-7">
                     <table class="table table-hover table-striped" id="events">
                       <thead>
                         <th></th>
@@ -326,7 +361,19 @@
                       </tbody>
                     </table><!-- /.table -->
                   </div><!-- /.mail-box-messages -->
-                </form>
+
+                                <div class="col-md-5">
+                <!-- <div class="box-header with-border"> 
+                  <h3 class="box-title">Events Calendar</h3>
+                                 <button type="button" style="position: relative; right: -720px;" onclick="closeCalender();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button> -->
+                  <div class="box-tools pull-right">
+                    <br>
+                        <div id="calendar" class="small-calendar"></div>
+                    <br>
+                </div><!-- /.box-body -->
+              </div><!-- /. box -->
+              </div>
+                </form>              
                 </div><!-- /.box-body -->
               </div><!-- /. box -->
             </form>
@@ -400,7 +447,7 @@
                                         <div class="box box-primary" id="myForm">
                               <div class="box-header">
                                 <h3 class="box-title">Add An Event</h3>
-                                <button type="button" style="position: relative;" onclick="closeForm();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
+                                <button type="button" style="position: relative; right: -720px;" onclick="closeForm();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
                               </div><!-- /.box-header -->
                               <!-- form start -->
 <form action="{% url 'add_event' project.pk %}" method="POST">
@@ -451,17 +498,18 @@
         <strong>Copyright <span id="year"></span>. <a href="">The Bengal Tigers 🐅</a>.</strong>
       </footer>
     </div><!-- ./wrapper -->
-
 <script>
   function deleteE() {
   document.getElementByName("action1").value = "";
 }
   document.getElementById("myForm").style.display = "none";
-  document.getElementById("myForm1").style.display = "none";    
+  document.getElementById("myForm1").style.display = "none"; 
+  document.getElementById("myForm2").style.display = "none";      
 function openForm() {
   document.getElementById("myForm").style.display = "block";
   document.getElementById("myTable").style.display = "none";
   document.getElementById("myForm1").style.display = "none";
+  // document.getElementById("myForm2").style.display = "none";  
   document.getElementById("btnmyForm").style.display = "none";
 }
 
@@ -469,6 +517,23 @@ function closeForm() {
   document.getElementById("myForm").style.display = "none";
   document.getElementById("myTable").style.display = "block";
   document.getElementById("myForm1").style.display = "none";
+  // document.getElementById("myForm2").style.display = "none";  
+  document.getElementById("btnmyForm").style.display = "block";
+}
+
+function openCalender() {
+  document.getElementById("myForm").style.display = "none";
+  document.getElementById("myTable").style.display = "none";
+  document.getElementById("myForm1").style.display = "none";
+  document.getElementById("myForm2").style.display = "block";  
+  document.getElementById("btnmyForm").style.display = "none";
+}
+
+function closeCalender() {
+  document.getElementById("myForm").style.display = "none";
+  document.getElementById("myTable").style.display = "block";
+  document.getElementById("myForm1").style.display = "none";
+  document.getElementById("myForm2").style.display = "none";  
   document.getElementById("btnmyForm").style.display = "block";
 }
 
@@ -606,6 +671,159 @@ document.getElementById("year").innerHTML = new Date().getFullYear();
     $("body").addClass('sidebar-collapse'); // Add collapse class on page load
   });
       </script>
+   <!-- Make sure to load CSS first -->
+    <link href='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.css' rel='stylesheet' />
+    <link href='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.print.min.css' rel='stylesheet' media='print' />
+    
+    <!-- Load scripts in correct order -->
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.js'></script>
+<script>
+    $(document).ready(function() {
+        var projectId = '{{ project.project_id }}';
+        var currentUserId = '{{ request.user.id }}'; // Get current user ID
 
+        $('#calendar').fullCalendar({
+            header: {
+                left: 'prev,next',
+                center: 'title today',
+                right: 'month,agendaWeek,agendaDay'
+            },
+            editable: true, // Allow editing but check who can edit
+            eventLimit: true,
+            events: {
+                url: '/events/calendar/' + projectId,
+                type: 'GET',
+                error: function() {
+                    alert('There was an error fetching events!');
+                },
+                success: function(events) {
+                    return events.map(function(event) {
+                        return {
+                            id: event.event_id,
+                            title: event.event_name,
+                            start: moment(event.event_date + 'T' + event.event_start_time).format(),
+                            end: moment(event.event_date + 'T' + event.event_end_time).format(),
+                            description: event.event_details,
+                            createdBy: event.user_id // Add created_by field
+                        };
+                    });
+                }
+            },
+
+            eventRender: function(event, element) {
+                // Add tooltip for event details
+                element.attr('title', event.description);
+
+                // Check if the current user is the creator
+                if (event.createdBy == currentUserId) {
+                    // Allow double click to delete for the creator
+                    element.bind('dblclick', function() {
+                        if (confirm('Delete this event?')) {
+                            $.ajax({
+                                url: '/events/delete/' + projectId + '/' + event.id + '/',
+                                type: 'POST', 
+                                headers: {
+                                    'X-CSRFToken': getCookie('csrftoken')
+                                },
+                                success: function() {
+                                    $('#calendar').fullCalendar('removeEvents', event.id);
+                                    location.reload();
+                                },
+                                error: function() {
+                                    alert('Error deleting event');
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    // Prevent double click for non-creators
+                    element.css('cursor', 'not-allowed'); // Change cursor style
+                }
+            },
+
+            eventDrop: function(event, delta, revertFunc) {
+                // Only allow editing if the current user is the creator
+                if (event.createdBy == currentUserId) {
+                    $.ajax({
+                        url: '/events/update/',
+                        type: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        data: {
+                            event_id: event.id,
+                            start: event.start.format(),
+                            end: event.end ? event.end.format() : null
+                        },
+                        success: function(response) {
+                            location.reload();
+                        },
+                        error: function() {
+                            revertFunc();
+                            alert('Error updating event');
+                        }
+                    });
+                } else {
+                    revertFunc(); // Prevent drop if not creator
+                    alert('You are not authorized to edit this event.');
+                }
+            }
+        });
+
+        // CSRF token function for Django
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+</script>
+<style>
+    /* Adjust calendar size */
+    .small-calendar {
+        max-width: 500px; /* Adjust width as needed */
+        margin: 0 auto; /* Center the calendar */
+        font-size: 0.9em;
+        height: 15px;
+        text-align:center; /* Slightly smaller font size */
+    }
+
+    .fc-toolbar {
+        margin-bottom: 10px; /* Space between toolbar and calendar */
+    }
+
+    .fc-day-grid-event {
+        font-size: 0.8em; /* Smaller event text */
+        padding: 4px; /* Less padding for events */
+    }
+
+    .fc-event {
+        border-radius: 4px; /* Rounded corners */
+    }
+
+    .fc-day {
+        height: 80px; /* Adjust day height for a more compact look */
+    }
+
+    .fc-month-view, .fc-agendaWeek-view, .fc-agendaDay-view {
+        padding: 5px; /* Less padding for the overall calendar */
+    }
+
+    /* Optional: style for today's date */
+    .fc-today {
+        background-color: #f0f8ff; /* Light background for today's date */
+    }
+</style>
   </body>
 </html>

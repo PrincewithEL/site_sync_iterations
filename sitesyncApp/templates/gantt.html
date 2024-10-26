@@ -20,6 +20,9 @@
     <link href="{% static 'dashboard/dist/css/skins/skin-black.min.css' %}" rel="stylesheet" type="text/css" />
     <!-- bootstrap wysihtml5 - text editor -->
     <link href="{% static 'dashboard/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.min.css' %}" rel="stylesheet" type="text/css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.css" />
   </head>
       <style>
         .dropdown {
@@ -73,66 +76,165 @@
 }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <script type="text/javascript">
+    <script>
         $(document).ready(function() {
-            // Load the Google Charts library
-            google.charts.load('current', {'packages':['gantt']});
-            google.charts.setOnLoadCallback(fetchDataAndDrawChart);
-            var projectId = '{{ project.project_id }}';  // Ensure `project` is contextually available
-                
+            var projectId = '{{ project.project_id }}';
+
             function fetchDataAndDrawChart() {
                 $.ajax({
-                    url: '/projects/' + projectId + '/tasks1/', // URL to fetch data from
-                    method: 'GET',              // HTTP method
-                    dataType: 'json',           // Expecting JSON response
+                    url: '/projects/' + projectId + '/tasks1/',
+                    method: 'GET',
+                    dataType: 'json',
                     success: function(data) {
-                        drawChart(data);   // Call your chart drawing function
+                        drawChart(data);
                     },
                     error: function(jqXHR, textStatus, errorThrown) {
-                        // Handle errors
                         console.error('Error fetching data:', textStatus, errorThrown);
                     }
                 });
             }
 
-            function drawChart(data) {
-                // Create a DataTable and add columns
-                var chartData = new google.visualization.DataTable();
-                chartData.addColumn('string', 'Task ID');
-                chartData.addColumn('string', 'Task Name');
-                chartData.addColumn('string', 'Assigned To');
-                chartData.addColumn('date', 'Start Date');
-                chartData.addColumn('date', 'End Date');
-                chartData.addColumn('number', 'Duration');
-                chartData.addColumn('number', 'Percent Complete');
-                chartData.addColumn('string', 'Dependencies');
-
-                // Populate DataTable with data from AJAX response
-                data.tasks.forEach(task => {
-                    chartData.addRow([
-                        task[0],  // Task ID
-                        task[1],  // Task Name
-                        task[2],  // Resource
-                        new Date(task[3]),  // Start Date
-                        new Date(task[4]),  // End Date
-                        task[5],  // Duration
-                        task[6],  // Percent Complete
-                        task[7]   // Dependencies
-                    ]);
+            function updateTaskDates(task, start, end) {
+{% if project.leader_id == auth_user.id %}                
+                $.ajax({
+                    url: '/projects/' + projectId + '/tasks/' + task.id + '/update-dates/',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        start_date: start.toISOString().split('T')[0],
+                        due_date: end.toISOString().split('T')[0]
+                    }),
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')  // If using Django
+                    },
+                    success: function(response) {
+                        console.log('Task dates updated successfully');
+                        // Optionally refresh the chart
+                        fetchDataAndDrawChart();
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error('Error updating task dates:', textStatus, errorThrown);
+                        alert('Failed to update task dates. Please try again.');
+                        // Refresh to revert changes
+                        fetchDataAndDrawChart();
+                    }
                 });
 
-                // Instantiate and draw the chart
-                var chart = new google.visualization.Gantt(document.getElementById('chart_div'));
-                chart.draw(chartData, {
-                    height: 300,
-                    gantt: {
-                        trackHeight: 30
+                console.log('Sending data:', {
+    start_date: start.toISOString().split('T')[0],
+    due_date: end.toISOString().split('T')[0]
+});
+                {% else %}
+                fetchDataAndDrawChart();
+            {% endif %}
+            }
+
+            // Helper function to get CSRF token (for Django)
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            function drawChart(data) {
+                // Convert the data into Frappe Gantt format
+                const tasks = data.tasks.map(task => ({
+                    id: task[0],
+                    name: task[1],
+                    start: new Date(task[3]),
+                    end: new Date(task[4]),
+                    progress: task[6],
+                    dependencies: task[7] ? task[7].split(',') : [],
+                    custom_class: task[8] || 'custom-task'
+                }));
+
+                // Initialize Frappe Gantt
+                const gantt = new Gantt("#chart_div", tasks, {
+                    header_height: 50,
+                    column_width: 30,
+                    step: 24,
+                    view_modes: ['Quarter Day', 'Half Day', 'Day', 'Week', 'Month'],
+                    bar_height: 20,
+                    bar_corner_radius: 3,
+                    arrow_curve: 5,
+                    padding: 18,
+                    view_mode: 'Day',
+                    show_view_mode: true,
+                    date_format: 'YYYY-MM-DD',
+                    // Enable date change handler
+                    on_date_change: function(task, start, end) {
+                        updateTaskDates(task, start, end);
+                    },
+                    custom_popup_html: function(task) {
+                        return `
+                            <div class="details-container">
+                                <h5>${task.name}</h5>
+                                <p>Progress: ${task.progress}%</p>
+                                <p>Start: ${task.start.toDateString()}</p>
+                                <p>End: ${task.end.toDateString()}</p>
+                                <p><small>Drag to adjust dates</small></p>
+                            </div>
+                        `;
                     }
                 });
             }
+
+            // Initial load
+            fetchDataAndDrawChart();
         });
     </script>
+
+    <style>
+        #chart_div {
+            margin: 20px;
+        }
+        .details-container {
+            padding: 10px;
+            background: white;
+            border-radius: 3px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .custom-task {
+            fill: #a3a3ff;
+        }
+        /* Styles to indicate read-only state */
+        .readonly-gantt .bar-wrapper {
+            cursor: default !important;
+        }
+        .readonly-gantt .bar-wrapper .bar-progress {
+            cursor: default !important;
+        }
+        .readonly-gantt .bar-wrapper .handle {
+            display: none !important;
+        }
+        /* Remove hover effects */
+        .readonly-gantt .bar-wrapper:hover .bar {
+            fill: #a3a3ff !important;
+        }
+        .readonly-gantt .bar-wrapper:hover .bar-progress {
+            fill: #8989ff !important;
+        }
+        .custom-task {
+    background-color: #4caf50; /* Default color */
+}
+
+.custom-task.task-1 {
+    background-color: #ff5733; /* Color for task 1 */
+}
+
+.custom-task.task-2 {
+    background-color: #337ab7; /* Color for task 2 */
+}
+    </style>
   <body class="skin-black">
     <div class="wrapper">
       
@@ -173,7 +275,7 @@
       <!-- Right side column. Contains the navbar and content of the page -->
       <div class="content-wrapper">
         <!-- Content Header (Page header) -->
-        <section class="content-header" style="position: relative; left: -940px;">
+        <section class="content-header" style="position: relative; left: -890px;">
           <h1>
             <small></small>
           </h1>
@@ -191,10 +293,14 @@
           <div class="row">
             <div class="col-md-12">
                               <div class="box-header with-border">
-                  <h3 class="box-title">Gannt Chart</h3>
-                  <div class="box-tools pull-right">
-                    <button class="btn btn-default pull-right" style="background-color: #ff3300; color: black; font-weight: bold;"><a href="{% url 'client' %}" style="color: black;">Home</a></button>                    
-                    <button class="btn btn-default pull-right" style="background-color: #ff3300; color: black; font-weight: bold;"><a href="{% url 'tasks' project.project_id %}" style="color: black;">Back</a></button>
+                  <h3 class="box-title">Gantt Chart</h3>
+                  <div class="pull-right">
+              <div class="col-md-6">
+              <a href="{% url 'client' %}"  onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Home <i class="fa fa-home"></i></i></a>
+            </div>                  
+                                <div class="col-md-6">
+              <a href="{% url 'tasks' project.project_id %}"  onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Back <i class="fa fa-mail-reply"></i></a>
+              </div>
                   </div><!-- /.box-tools -->
                 </div><!-- /.box-header -->
               <div id="chart_div"></div>

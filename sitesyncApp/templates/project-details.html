@@ -133,8 +133,6 @@
               {% endif %} 
               {% if project.leader_id == auth_user.id %} 
               <a href="{% url 'dashboard' project.pk %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">View Analytics <i class="fa fa-bar-chart"></i></a>
-              {% elif  type == 'Client' or type == 'Quantity Surveyor' %} 
-              <a href="{% url 'dashboard' project.pk %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">View Analytics <i class="fa fa-bar-chart"></i></a>
               {% elif type == 'Contractor' and project.leader_id == user_id %}              
               <a href="{% url 'dashboard' project.pk %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">View Analytics <i class="fa fa-bar-chart"></i></a>
               {% endif %}               
@@ -142,7 +140,7 @@
                 <div class="box-header with-border">
                   <h3 class="box-title">List of <br>Project Members</h3>
                   {% if project.leader_id == auth_user.id %}
-                  <button class="btn btn-default pull-right" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" onclick="openPMembers();" style="background-color: #ff3300; color: white; font-weight: bold;"><i class="fa fa-user-plus" style="font-size:24px"></i></button>
+                  <button class="btn btn-default pull-right" title="Invite A Project Member" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" onclick="openPMembers();" style="background-color: #ff3300; color: white; font-weight: bold;"><i class="fa fa-user-plus" style="font-size:24px"></i></button>
                   {% endif %}
                 </div>
                 <div class="box-body no-padding">
@@ -168,7 +166,7 @@
                     </div><!-- /.direct-chat-msg -->
                     <div class="direct-chat-msg">
 {% for member in project_member_details %}
-  <div class="member-details">
+  <div class="member-details" style="margin-bottom: 25px;">
     <img class="direct-chat-img" src="{{ member.image }}" alt="{{ member.first_name }}'s profile picture" />
     <span class="direct-chat-name pull-left">{{ member.first_name }} ({{ member.user_type }})</span>
     
@@ -261,20 +259,21 @@
                   <div class="box-footer">
                       <button type="submit" class="btn btn-primary">Submit</button>
                       <button type="reset" class="btn btn-primary">Reset</button>
+                      <button onclick="closeForm();" class="btn btn-primary">Close</button>
                   </div>
               </form>
 <form name="delete_project_form" action="{% url 'delete_project' project.project_id %}" method="POST" enctype="multipart/form-data" >
 {% csrf_token %}
 <input type="hidden" value="{{ project.project_id }}" name="pid" required>
 <div class="box-footer">
-<button style="position: relative;" type="submit" onclick="return confirm('Are You Sure You Want To Remove This Project ?')" class="btn btn-primary">Delete</button>
+<button style="position: relative;" type="submit" onclick="return confirm('Are You Sure You Want To Remove This Project ?')" class="btn btn-primary">Delete This Project</button>
 </div>
 </form>
                             </div><!-- /.box -->
 
               <div class="box box-primary" id="myForm1">
                 <div class="box-header with-border">
-                  <h3 class="box-title">Add A Project Member</h3>
+                  <h3 class="box-title">Invite A Project Member</h3>
                   <button type="button" style="position: relative; right: -450px;" onclick="closePMembers();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
                   <div class="box-tools pull-right">
                     <div class="has-feedback">
@@ -320,7 +319,7 @@
                         <th></th> -->
                         <th>Name</th>
                         <th>Email Address</th>
-                        <th>User Type</th>
+                        <th>Position</th>
                         <!-- <th>Profile Picture</th> -->
                         <th></th>
                       </thead>
@@ -426,14 +425,14 @@
                     {% endif %}
                 {% endwith %}                
                   <br>
-                  <p><b>Duration:</b> {{ project.start_date }} <b>to</b> {{ project.end_date }}</p>
+                  <p style="position: relative; right: -10px;"><b>Duration:</b> {{ project.start_date }} <b>to</b> {{ project.end_date }}</p>
                   <br>           
-                  <p><b>Details: {{ project.project_details }}</b></p>
+                  <p style="position: relative; right: -10px;"><b>Details: {{ project.project_details }}</b></p>
                   <br>
                                     {% if  type == 'Client' or type == 'Quantity Surveyor' %} 
-                  <p><b>Project Finances: {{ project.actual_expenditure }} kshs. / {{ project.estimated_budget }} kshs. </b></p>
+                  <p style="position: relative; right: -10px;"><b>Project Finances: {{ project.actual_expenditure }} kshs. / {{ project.estimated_budget }} kshs. </b></p>
                                                   {% elif type == 'Contractor' and project.leader_id == user_id %} 
-                  <p><b>Project Finances: {{ project.actual_expenditure }} kshs. / {{ project.estimated_budget }} kshs. </b></p>
+                  <p style="position: relative; right: -10px;"><b>Project Finances: {{ project.actual_expenditure }} kshs. / {{ project.estimated_budget }} kshs. </b></p>
                                      {% endif %}
                   <br>                                    
                 </div><!-- /.box-body -->
@@ -600,6 +599,7 @@
     <!-- If the authenticated user is NOT the project leader -->
     {% if project.leader_id != auth_user.id %}
         {% for task in ptasks %}
+        {% if ptasks.member.id == auth_user.id %}
         <li>
             <!-- Task Name and Task Details -->
             <span class="text">{{ task.task_name }} - {{ task.task_details }}</span>
@@ -618,6 +618,7 @@
                 </a>
             </div>
         </li>
+        {% endif %}
         {% endfor %}
     {% endif %}
 </ul>
@@ -664,7 +665,7 @@
     </div><!-- /.box-body -->
     {% if project_membersC != 0 %}
     <div class="box-footer clearfix no-border">
-        <button class="btn btn-default pull-right" style="background-color: #ff3300; color: black; font-weight: bold;"><a href="{% url 'chat' project.pk %}" style="color: black;">View All</a></button>
+                      <a href="{% url 'chat' project.pk %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">View All <i class="fa fa-comments"></i></a>
     </div>
     {% endif %}
 </div><!--/.direct-chat -->

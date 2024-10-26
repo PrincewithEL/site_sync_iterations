@@ -23,6 +23,7 @@
     <link href="{% static 'dashboard/dist/css/skins/skin-black.min.css' %}" rel="stylesheet" type="text/css" />
     <!-- Bootstrap WYSIHTML5 -->
     <link href="{% static 'dashboard/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.min.css' %}" rel="stylesheet" type="text/css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ionicons/2.0.1/css/ionicons.min.css">
   </head>
       <style>
         .dropdown {
@@ -115,7 +116,7 @@
       <!-- Right side column. Contains the navbar and content of the page -->
       <div class="content-wrapper">
         <!-- Content Header (Page header) -->
-        <section class="content-header" style="position: relative; left: -650px;">
+        <section class="content-header" style="position: relative; left: -590px;">
           <h1>
             <small></small>
           </h1>
@@ -131,9 +132,18 @@
         <section class="content">
           <div class="row">
             <div class="col-md-3">
-              <a href="{% url 'client' %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Home</a>
-              <a href="#" onclick="printData();" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Generate Report</a> 
-              <a href="#" onclick="openForm();" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Add A Transaction</a>              
+                                        <div class="">
+              <a href="{% url 'client' %}"  onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Home <i class="fa fa-home"></i></a>
+              </div>      
+                                        <div class="">
+              <a href="#" onclick="printData();" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Generate Report <i class="fa fa-print"></i></a>
+              </div>      
+                          <div class="">
+              <a href="#" onclick="openForm();" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Add A Transaction <i class="fa fa-plus"></i></a>
+              </div>      
+                                        <div class="">
+              <a href="{% url 'project_detail' project.project_id %}"  onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Back <i class="fa fa-mail-reply"></i></a>
+              </div>                    
               <div class="box box-solid">
                 <div class="box-header with-border">
                   <h3 class="box-title">List of Transactions</h3>
@@ -163,16 +173,15 @@
                               {% if project.leader_id == auth_user.id %}      
         <li id="trashTransactionsNavItem"><a onclick="openTrashTransactions();"><i class="fa fa-trash-o"></i> Trash <span class="label label-waring pull-right">{{ trash_transactions_count }}</span></a></li>
         {% endif %}
-                    <li><a href="{% url 'project_detail' project.pk %}"><i class="fa fa-mail-reply"></i> Back</a></li>
     </ul>
 </div>
                 <div class="box-body no-padding">
-                  <ul class="nav nav-pills nav-stacked">
+<!--                   <ul class="nav nav-pills nav-stacked">
                     <li style="text-align: center;"><b><a href="#">Project Budget - {{ project.estimated_budget }} kshs.</a></b></li>
                     <li style="text-align: center;"><b><a href="#">Project Expenses - {{ project.actual_expenditure }} kshs.</a></b></li>
                     <li style="text-align: center;"><b><a href="#">Project Balance - {{ project.balance }} kshs.</a></b></li>
                     <br>
-                  </ul>
+                  </ul> -->
                 </div><!-- /.box-body -->
               </div><!-- /. box -->
 <!--               <div class="box box-solid">
@@ -194,13 +203,13 @@
               <div class="box box-primary" id="myTable">
                 <div class="box-header with-border">
                   <h3 class="box-title">My Project Transactions</h3>
-                      {% if messages %}
+<!--                       {% if messages %}
       <div class="messages">
         {% for message in messages %}
           <p style="font-weight: bold; color: black;" class="{{ message.tags }}">{{ message }}</p>
         {% endfor %}
       </div>
-    {% endif %}
+    {% endif %} -->
                   <div class="box-tools pull-right">
         <form method="get" action="{% url 'transactions' project.project_id %}" class="form-inline">
             <div class="input-group">
@@ -279,6 +288,42 @@
     </div><!-- /.btn-group -->
 </div><!-- /.pull-right -->
     </div><!-- /.mailbox-controls -->
+                    <div class="row">
+                      <br>
+                    <div class="col-lg-4 col-xs-6">
+                        <div class="small-box bg-aqua">
+                            <div class="inner">
+                                <h3>{{ project.estimated_budget|floatformat:2 }} kshs.</h3>
+                                <p>Project Budget</p>
+                            </div>
+                            <div class="icon">
+                                <i class="ion ion-cash"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-xs-6">
+                        <div class="small-box bg-green">
+                            <div class="inner">
+                                <h3>{{ project.balance|floatformat:2 }} kshs.</h3>
+                                <p>Project Balance</p>
+                            </div>
+                            <div class="icon">
+                                <i class="ion ion-cash"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-xs-6">
+                        <div class="small-box bg-yellow">
+                            <div class="inner">
+                                <h3>{{ project.actual_expenditure|floatformat:2 }} kshs.</h3>
+                                <p>Project Expenditure</p>
+                            </div>
+                            <div class="icon">
+                                <i class="ion ion-cash"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
     <form method="post" id="transaction-action-form">
     {% csrf_token %}
     <input type="hidden" name="action" id="form-action" value="">
@@ -421,7 +466,7 @@
                                         <div class="box box-primary" id="myForm">
                               <div class="box-header">
                                 <h3 class="box-title">Add A Transaction</h3>
-                                <button type="button" style="position: relative;" onclick="closeForm();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
+                                <button type="button" style="position: relative; right: -720px;" onclick="closeForm();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
                               </div><!-- /.box-header -->
                               <!-- form start -->
 <form action="{% url 'add_transaction' project.pk %}" method="POST">
@@ -436,29 +481,68 @@
             <textarea class="form-control" id="task_details" name="transaction_details" placeholder="Transaction Details" required></textarea>
         </div>
         <div class="form-group">
-            <label for="task_name">Transaction Price (in kshs.)</label>
+            <label for="task_name">Transaction Price Per Unit (in kshs.)</label>
             <input type="number" class="form-control" id="task_name" name="transaction_price" min="0" placeholder="Transaction Price" required>
         </div>
         <div class="form-group">
-            <label for="task_name">Transaction Quantity</label>
+            <label for="task_name">Transaction Quantity of Units</label>
             <input type="number" class="form-control" id="task_name" name="transaction_quantity" min="0" placeholder="Transaction Quantity" required>
         </div>
-        <div class="form-group">
-          <label for="task_name">Transaction Category</label>
-          <select required class="form-control" id="task_name" name="transaction_category">
-            <option selected value="" disabled>Select A Transaction Category</option>
-            <option value="Internal">Internal</option>
-            <option value="External">External</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="task_name">Transaction Type</label>
-          <select required class="form-control" id="task_name" name="transaction_type">
-            <option selected value="" disabled>Select A Transaction Type</option>
-            <option value="Machinery">Machinery</option>
-            <option value="Salary">Salary</option>
-          </select>
-        </div>        
+<div class="form-group">
+  <label for="transaction_category">Transaction Category</label>
+  <select required class="form-control" id="transaction_category" name="transaction_category">
+    <option selected value="" disabled>Select A Transaction Category</option>
+    <option value="Internal">Internal</option>
+    <option value="External">External</option>
+  </select>
+</div>
+<div class="form-group" id="transaction_type_group" style="display: none;">
+  <label for="transaction_type">Transaction Type</label>
+  <select required class="form-control" id="transaction_type" name="transaction_type">
+    <option selected value="" disabled>Select A Transaction Type</option>
+  </select>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const categorySelect = document.getElementById('transaction_category');
+    const typeGroup = document.getElementById('transaction_type_group');
+    const typeSelect = document.getElementById('transaction_type');
+
+    function updateTransactionTypeOptions() {
+        const selectedCategory = categorySelect.value;
+
+        // Clear previous options
+        typeSelect.innerHTML = '<option selected value="" disabled>Select A Transaction Type</option>';
+
+        if (selectedCategory === 'Internal') {
+            // Add options for Internal category
+            const internalOptions = ['Salary', 'Bonus'];
+            internalOptions.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option;
+                opt.textContent = option;
+                typeSelect.appendChild(opt);
+            });
+            typeGroup.style.display = 'block'; // Show the dropdown
+        } else if (selectedCategory === 'External') {
+            // Add options for External category
+            const externalOptions = ['Materials', 'Transport', 'Machinery'];
+            externalOptions.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option;
+                opt.textContent = option;
+                typeSelect.appendChild(opt);
+            });
+            typeGroup.style.display = 'block'; // Show the dropdown
+        } else {
+            typeGroup.style.display = 'none'; // Hide the dropdown if no category is selected
+        }
+    }
+
+    // Update options when the category changes
+    categorySelect.addEventListener('change', updateTransactionTypeOptions);
+});
+</script>   
     </div>
     <div class="box-footer">
         <button type="submit" class="btn btn-primary">Add Transaction</button>

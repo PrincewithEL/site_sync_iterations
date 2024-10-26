@@ -29,7 +29,7 @@ class DeletableManager(models.Manager):
 
 class Bookmarks(models.Model):
     bookmark_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, models.DO_NOTHING, default=0)
+    user = models.ForeignKey(User, models.DO_NOTHING)
     item_id = models.IntegerField()
     project_id = models.IntegerField(default=0)
     item_type = models.TextField(null=True, blank=True)
