@@ -527,7 +527,7 @@ tr:hover .mailbox-attachment1 {
 </div>
 {% endwith %}
                     </td>
-                    <td class="mailbox-attachment" title="Based on All Project Tasks & All Pending" style="text-align: center;">
+                    <td class="mailbox-attachment" title="Based on All Project Tasks (Pending & Completed)." style="text-align: center;">
 {% with progress=total_progress_percentages|get_item:project.project_id %}
     <div class="progress">
             {% if progress >= 100 %}

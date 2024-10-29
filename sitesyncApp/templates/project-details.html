@@ -102,7 +102,7 @@
       <!-- Right side column. Contains the navbar and content of the page -->
       <div class="content-wrapper">
         <!-- Content Header (Page header) -->  
-        <section class="content-header" style="position: relative; left: -715px;">
+        <section class="content-header" style="position: relative; left: -680px;">
           <h1>
             <small></small>
           </h1>
@@ -176,7 +176,7 @@
       </a>
     {% else %}
       <a class="status-indicator" href="#" title="Last Online At: {{ member.logged_out }}">
-         <i style="color: red;" class="fa fa-circle text-muted"></i>
+         <i style="color: black;" class="fa fa-circle text-muted"></i>
       </a>
     {% endif %}
 
@@ -402,7 +402,7 @@
 
 {% with progress=total_progress_percentage %}
             {% if all_pending_tasks.count < 0 %}
-                            <div class="progress" style="color: white; background-color: red;" title="Based on All Project Tasks & All Pending">
+                            <div class="progress" style="color: white; background-color: red;" title="Based on All Project Tasks (Pending & Completed).">
                               <p style="color: white;">100% Complete (Actual)</p>
                                 <div class="progress-bar" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
                                     <!-- {{ progress|floatformat:2 }}% -->
@@ -599,7 +599,7 @@
     <!-- If the authenticated user is NOT the project leader -->
     {% if project.leader_id != auth_user.id %}
         {% for task in ptasks %}
-        {% if ptasks.member.id == auth_user.id %}
+       {% if request.user in task.member.all %}
         <li>
             <!-- Task Name and Task Details -->
             <span class="text">{{ task.task_name }} - {{ task.task_details }}</span>

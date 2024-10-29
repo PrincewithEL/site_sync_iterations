@@ -337,7 +337,7 @@
                         <th>Category</th>
                         <th>Type</th>   
                         <th>Quantity</th>                     
-                        <th>Singular Price (in kshs.)</th>
+                        <th>Price Per Unit (in kshs.)</th>
                         <th>Total Price (in kshs.)</th>
                         <!-- <th>Votes (For/Against)</th>
                         <th></th>  -->
@@ -364,7 +364,7 @@
                           <td class="mailbox-name">{{ transaction.transaction_details }}</td>
                           <td class="mailbox-name">{{ transaction.transaction_category }}</td>
                           <td class="mailbox-name">{{ transaction.transaction_type }}</td>                          
-                          <td class="mailbox-name">{{ transaction.transaction_quantity }}</td>                          
+                          <td class="mailbox-name">{{ transaction.transaction_quantity }} {{ transaction.transaction_time }}</td>                          
                           <td class="mailbox-attachment">{{ transaction.transaction_price }} kshs.</td>
                           <td class="mailbox-attachment">{{ transaction.total_transaction_price }} kshs.</td>
                       {% if project.leader_id == auth_user.id %}
@@ -488,6 +488,20 @@
             <label for="task_name">Transaction Quantity of Units</label>
             <input type="number" class="form-control" id="task_name" name="transaction_quantity" min="0" placeholder="Transaction Quantity" required>
         </div>
+<div class="form-group">
+  <label for="transaction_unit">Transaction Item Unit</label>
+  <select required class="form-control" id="transaction_unit" name="transaction_unit">
+    <option selected value="" disabled>Select A Transaction Unit</option>
+    <option value="Cubic Meters">Cubic Meters (m³)</option>
+    <option value="Square Meters">Square Meters (m²)</option>
+    <option value="Kilograms">Kilograms (kg)</option>
+    <option value="Liters">Liters (L)</option>
+    <option value="Units">Units (pcs)</option>
+    <option value="Hours">Hours (h)</option>
+    <option value="Dollars">Dollars ($)</option>
+  </select>
+</div>
+
 <div class="form-group">
   <label for="transaction_category">Transaction Category</label>
   <select required class="form-control" id="transaction_category" name="transaction_category">

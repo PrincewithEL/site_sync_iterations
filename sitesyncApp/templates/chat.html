@@ -6,6 +6,7 @@
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
        {% load static %}
          {% include 'chatbot.html' %}
+         {% csrf_token %}
     <!-- Bootstrap 3.3.2 -->
     <link href="{% static 'dashboard/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css" />
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
@@ -121,6 +122,29 @@
             text-decoration: none;
             cursor: pointer;
         }
+        .date-heading {
+    color: #FF0000; /* Use red-orange, or replace with a preferred shade */
+    font-weight: bold;
+    text-align: center;
+    margin-top: 20px;
+/*    margin: 15px 0; */
+    font-size: 14px;
+/*    background-color: #fff7e6; 
+    padding: 5px 10px;
+    border-radius: 10px;
+    display: inline-block; */
+}
+
+
+.read {
+    background-color: green; /* Color for read */
+    border-radius: 50%;
+}
+
+.unread {
+    background-color: black; /* Color for unread */
+    border-radius: 50%;
+}
     </style>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -159,6 +183,15 @@
             });
         }
     });
+
+$(document).on('keydown', function(event) {
+    if (event.key === 'Enter' || $('#message').is(':focus')) {
+        event.preventDefault();
+        $('#send').click();  // Replace #send with the actual ID of your submit button
+    }
+});
+
+
 </script>
   <body class="skin-black">
     <div class="wrapper">
@@ -200,7 +233,7 @@
       <!-- Right side column. Contains the navbar and content of the page -->
       <div class="content-wrapper">
         <!-- Content Header (Page header) -->
-        <section class="content-header" style="position: relative; left: -750px;">
+        <section class="content-header" style="position: relative; left: -690px;">
           <h1>
             <small></small>
           </h1>
@@ -244,6 +277,13 @@
 {% else %}
 <a id="status" href="" title="Online"><i class="fa fa-circle text-success"></i> </a>
 {% endif %}
+                        <form method="GET" action="{% url 'chat' project.pk %}">
+                        <div>
+                            <input type="radio" style="display: none;" name="members[]" value="{{ leader_profile.user.id }}" id="member_{{ leader_profile.user.id }}" checked>
+                            <!-- <label for="member_{{ member.id }}">{{ member.first_name }} ({{ member.user_type }})</label> -->
+                        </div>
+                    <button type="submit" class="btn btn-primary" title="Filter Messages" style=" font-size: 12px;"><i class="fa fa-filter"></i></button>
+                </form>
 {% endif %}                  
                     </div><!-- /.direct-chat-msg -->
                     <div class="direct-chat-msg">
@@ -269,8 +309,21 @@
                               {% csrf_token %}
                               <input type="hidden" value="{{ member.id }}" name="uid" required>
                               <button type="submit" onclick="return confirm('Are You Sure You Want To Exit This Project ?')" class="btn btn-primary"style="font-size:12px;" title="Exit Project"><i class="fa fa-sign-out" ></i></button>
-                            </form>                        
+                            </form>                      
                         {% endif %}
+                                                <form method="GET" action="{% url 'chat' project.pk %}">
+
+                    {% if member.id != auth_user.id %}
+                        <div>
+                            <input type="checkbox" style="display: none;" name="members[]" value="{{ member.id }}" id="member_{{ member.id }}" checked>
+                            <!-- <label for="member_{{ member.id }}">{{ member.first_name }} ({{ member.user_type }})</label> -->
+                        </div>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary" title="Filter Messages" style=" font-size: 12px;"><i class="fa fa-filter"></i></button>
+                </form>
+                                                    <br>
+                            <br>  
+                            <br>
 {% endfor %}                      
                     </div><!-- /.direct-chat-msg -->
                   </div><!-- /.direct-chat-pane -->
@@ -278,7 +331,6 @@
               </div><!--/.direct-chat --></li>
                     <li class="{% if filter_type == 'all' %}active{% endif %}"><a href="?filter=all"><i class="fa fa-comment"></i> All Chats</a></li>
                     <li class="{% if filter_type == 'bookmarked' %}active{% endif %}"><a href="?filter=bookmarked"><i class="fa fa-star"></i> Starred Chats</a></li>
-                    <li><a href="{% url 'project_detail' project.project_id %}"><i class="fa fa-mail-reply"></i> Back</a></li>
                   </ul>
                 </div><!-- /.box-body -->
               </div><!-- /. box -->
@@ -295,7 +347,7 @@
 
 <!-- Pinned Messages Section -->
         <!-- New search form -->
-                        <form method="GET" action="{% url 'chat' project.pk %}">
+<!--                         <form method="GET" action="{% url 'chat' project.pk %}">
                     {% for member in project_member_details %}
                     {% if member.id != auth_user.id %}
                         <div>
@@ -305,7 +357,7 @@
                     {% endif %}
                     {% endfor %}
                     <button type="submit" class="btn btn-primary">Filter Messages</button>
-                </form>
+                </form> -->
         <form method="get" action="{% url 'chat' project.pk %}" class="form-inline" style="width: 300px; margin-top: 10px; margin-left: 720px;">
             <div class="input-group">
                 <input type="text" class="form-control input-sm" name="search" placeholder="Search Chat Message(s)..." value="{{ request.GET.search }}">
@@ -334,6 +386,7 @@
 </div>
 
 <!-- Chat Messages Section -->
+
 <div class="chat-messages" style="overflow-y: auto; box-sizing: border-box; max-height: 450px;">
     {% for date, messages in grouped_messages.items %}
     <br>
@@ -513,7 +566,7 @@
 
 
 <div class="box-footer">
-    <form method="POST" name="send_message_form" action="{% url 'send_message' project.pk %}" enctype="multipart/form-data" accept-charset="UTF-8">
+    <form method="POST" name="send_message_form" id="send_message_form" action="{% url 'send_message' project.pk %}" enctype="multipart/form-data" accept-charset="UTF-8">
         <div id="replySection" style="display: none; margin-bottom: 10px; padding: 10px; border-top: 1px solid #ddd;">
             <strong>Replying to: <span id="replyMessageContent"></span></strong>
             <button type="button" class="btn btn-secondary btn-sm" onclick="cancelReply()">Cancel Reply</button>
@@ -523,22 +576,23 @@
         {% csrf_token %}
         <div class="input-group">
             <span class="input-group-btn">
-                <label for="files" class="btn btn-warning btn-flat"><i class="fa fa-paperclip"></i></label>
+                <label title="Add An Attachment" for="files" class="btn btn-warning btn-flat"><i class="fa fa-paperclip"></i></label>
                 <div style="display: none;">
                     <input type="file" id="files" name="file" style="visibility:hidden;" class="btn btn-warning btn-flat">
+                    <input type="hidden" value="{{ auth_user.id }}" name="uid" required>
                 </div>
             </span>
 
-            <input class="form-control chat-input chatMessage" required id="message" name="message" placeholder="Type message..."/>
-            <input type="hidden" value="{{ auth_user.id }}" name="uid" required>
+        <input class="form-control chat-input chatMessage" required id="message" name="message" placeholder="Type message..."/>
+        <input type="hidden" value="{{ auth_user.id }}" name="uid" required>
             <span class="input-group-btn">
-                <button type="button" class="btn btn-warning btn-flat" onclick="prepareSubmission()"><i class="fa fa-send-o"></i></button>
+                <button type="submit" title="Send A Message" class="btn btn-warning btn-flat" id="send"><i class="fa fa-send-o"></i></button>
             </span>
             <span class="input-group-btn">
                 <button type="button" class="btn btn-warning btn-flat" title="Schedule A Message" onclick="toggleSchedule()"><i class="fa fa-clock-o"></i></button>
             </span>
             <span class="input-group-btn">
-                <button type="button" class="btn btn-warning btn-flat" title="Select Members" onclick="openSelectMembers()"><i class="fa fa-users"></i></button>
+                <button type="button" class="btn btn-warning btn-flat" title="Select Recipient(s)/Member(s)" onclick="openSelectMembers()"><i class="fa fa-users"></i></button>
             </span>
         </div>
 
@@ -595,8 +649,11 @@
 
     </form>
 </div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
+    const sendMessageUrl = "{% url 'send_message' project.pk %}";
+
 document.getElementById('files').addEventListener('change', function(event) {
     const file = event.target.files[0];
     const previewContent = document.getElementById('previewContent');
@@ -694,6 +751,168 @@ function getCookie(name) {
     }
     return cookieValue;
 }
+
+// $(document).ready(function() {
+//     $('#send_message_form').on('submit', function(event) {
+//         event.preventDefault(); // Prevent the form from submitting normally
+
+//         const messageInput = $('#message');
+//         const messageContent = messageInput.val().trim(); // Get message content
+
+//         // Get the selected members
+//         const selectedOption = $('input[name="selected_members[]"]:checked');
+        
+//         if (!selectedOption.length) {
+//             alert('Please select a recipient option');
+//             return;
+//         }
+
+//         const formData = $(this).serializeArray(); // Serialize form data
+
+//         // Determine the member selection
+//         if (selectedOption.val() === 'all') {
+//             // If "All Users" is selected
+//             formData.push({ name: 'selected_members[]', value: 'all' });
+//         } else {
+//             // Append the selected member ID
+//             formData.push({ name: 'selected_members[]', value: selectedOption.val() });
+//         }
+
+//         // Use the generated URL here
+//         const sendMessageUrl = "{% url 'send_message' project.pk %}"; // Adjust this if needed
+
+//         $.ajax({
+//             url: sendMessageUrl,
+//             type: 'POST',
+//             data: formData,
+//             headers: {
+//                 'X-CSRFToken': '{{ csrf_token }}', // Include CSRF token
+//             },
+//             success: function(data) {
+//                 // Handle successful message send
+//                 const messagesDiv = $('#messages');
+//                 const newMessageDiv = $('<div></div>').html(`<strong>${data.user}:</strong> ${data.content} <small>${data.timestamp}</small>`);
+//                 messagesDiv.append(newMessageDiv);
+                
+//                 // Clear the input
+//                 messageInput.val(''); // Clear the message input
+//                 closeSelectMembers(); // Close the modal if necessary
+//             },
+//             error: function(xhr, status, error) {
+//                 // Handle errors
+//                 console.error("Error:", error);
+//                 alert("There was a problem sending your message. Please try again.");
+//             }
+//         });
+//     });
+
+    // Add keydown event to submit the form when Enter is pressed
+// $(document).ready(function() {
+//     // Bind form submission to Enter key using keyup
+//     $('#send_message_form').on('keyup', function(event) {
+//         if (event.key === 'Enter') {
+//             event.preventDefault(); // Prevent default line break behavior
+//             $('#send_message_form').trigger('submit'); // Manually trigger form submission
+//         }
+//     });
+
+//     // Handle form submission
+//     $('#send_message_form').on('submit', function(event) {
+//         event.preventDefault(); // Prevent default submission for validation
+
+//         // Capture data for debugging
+//         const messageContent = $('#message').val().trim();
+//         const replyMessageId = $('#replyMessageId').val();
+//         const fileInput = $('#files').val();
+
+//         // Log data to ensure values are being captured
+//         console.log("Raw Message Content:", messageContent);
+//         console.log("Reply Message ID:", replyMessageId);
+//         console.log("File Input:", fileInput);
+
+//         // Check if required data (like message) is present
+//         if (!messageContent) {
+//             alert("Message cannot be empty.");
+//             return; // Stop the submission if the message is empty
+//         }
+
+//         // Submit the form after validation
+//         this.submit(); // Proceed with the form submission
+//     });
+// });
+
+// $(document).ready(function () {
+//     // Trigger form submission on Enter key press
+//     $('#send_message_form').on('keydown', function (event) {
+//         if (event.key === 'Enter') {
+//             event.preventDefault(); // Prevents default new line behavior
+//             $('#send_message_form').trigger('submit'); // Triggers form submission
+//             $('#send_message_form').trigger('submit');
+//             document.getElementById("send_message_form").reset();
+
+//         }
+//     });
+
+//     // Handle form submission
+//     $('#send_message_form').on('submit', function (event) {
+//         event.preventDefault(); // Prevent default form submission for AJAX handling
+
+//         // Retrieve form data
+//         const messageContent = $('#message').val().trim();
+//         const replyMessageId = $('#replyMessageId').val();
+//         const fileInput = $('#files')[0].files[0]; // Capture file from input
+
+//         console.log(messageContent);
+
+//         // Basic validation: Ensure message is not empty
+//         if (!messageContent) {
+//             return;
+//             $('#send_message_form').trigger('submit');
+//         }
+
+//         // Create a FormData object to handle the file upload and other data
+//         const formData = new FormData();
+//         formData.append('message', messageContent);
+//         formData.append('reply_message_id', replyMessageId || '');
+//         formData.append('uid', $('input[name="uid"]').val()); // Include user ID
+//         if (fileInput) {
+//             formData.append('file', fileInput);
+//         }
+
+//         // Append CSRF token
+//         formData.append('csrfmiddlewaretoken', $('input[name="csrfmiddlewaretoken"]').val());
+
+//         // Optional: Append schedule date and time if provided
+//         const scheduledDate = $('#date').val();
+//         const scheduledTime = $('#time').val();
+//         if (scheduledDate && scheduledTime) {
+//             formData.append('scheduled_date', scheduledDate);
+//             formData.append('scheduled_time', scheduledTime);
+//         }
+
+//         // Send AJAX request
+//         $.ajax({
+//             url: $('#send_message_form').attr('action'),
+//             method: 'POST',
+//             data: formData,
+//             processData: false, // Important for FormData
+//             contentType: false, // Important for FormData
+//             success: function (response) {
+//                 // Handle successful submission
+//                 console.log("Message sent successfully:", response);
+//                 $('#message').val(''); // Clear input field
+//                 $('#replyMessageId').val(''); // Clear reply ID if any
+//                 $('#files').val(''); // Reset file input
+//             },
+//             error: function (xhr) {
+//                 // Handle error
+//                 alert("An error occurred while sending the message.");
+//                 console.error("Error details:", xhr.responseText);
+//             }
+//         });
+//     });
+// });
+
 </script>
 
 <style>
@@ -736,14 +955,6 @@ function getCookie(name) {
     <script>
       $.widget.bridge('uibutton', $.ui.button);
     </script>
-<script>
-  $(document).ready(function() {
-    $('#message').emojioneArea({
-      pickerPosition: "down",
-            tonesStyle: "bullet"
-    });
-  });
-</script>
 <script type="text/javascript">
 function replyToMessage(messageId, messageContent) {
     document.getElementById('replySection').style.display = 'block';
@@ -757,6 +968,7 @@ function cancelReply() {
     document.getElementById('replyMessageContent').innerText = '';
 }
 </script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Bootstrap 3.3.2 JS -->
     <script src="{% static 'dashboard/bootstrap/js/bootstrap.min.js' %}" type="text/javascript"></script>    
     <!-- Morris.js charts -->
@@ -812,6 +1024,513 @@ $("#files").change(function() {
               $(document).ready(function() {
     $("body").addClass('sidebar-collapse'); // Add collapse class on page load
   });
+</script>
+<!-- Include jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Include EmojioneArea CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/emojionearea/3.1.0/emojionearea.min.css">
+
+<!-- Include EmojioneArea JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/emojionearea/3.1.0/emojionearea.min.js"></script>
+
+<script>
+$(document).ready(function() {
+  console.log("jQuery is loaded:", !!$);
+  console.log("emojioneArea is loaded:", !!$.fn.emojioneArea);
+  $('#message').emojioneArea({
+    pickerPosition: "down",
+    tonesStyle: "bullet"
+  });
+});
+
+</script>
+<script type="text/javascript">
+// let lastMessageId = 0;
+const currentUserId = {{ currentUserId }};
+const MEDIA_URL = '{{ MEDIA_URL }}';
+
+// Initialize event listeners
+function initializeEventListeners() {
+    document.addEventListener('contextmenu', function(e) {
+        const messageElement = e.target.closest('.direct-chat-msg');
+        if (messageElement) {
+            e.preventDefault();
+            hideAllButtons();
+
+            const actionForms = messageElement.querySelectorAll(
+                'form[id^="deletemessage_"], form[id^="editmessage_"], ' +
+                'form[id^="pinmessage_"], form[id^="pinmessage1_"], ' +
+                'form[id^="starmessage_"], form[id^="starmessage1_"]'
+            );
+
+            actionForms.forEach(form => {
+                form.style.display = (form.style.display === 'block') ? 'none' : 'block';
+            });
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.direct-chat-msg')) {
+            hideAllButtons();
+        }
+    });
+}
+
+function hideAllButtons() {
+    document.querySelectorAll(
+        'form[id^="deletemessage_"], form[id^="editmessage_"], ' +
+        'form[id^="pinmessage_"], form[id^="pinmessage1_"], ' +
+        'form[id^="starmessage_"], form[id^="starmessage1_"]'
+    ).forEach(form => {
+        form.style.display = 'none';
+    });
+}
+
+// Function to format each message and return HTML
+// Message formatter utility class
+class MessageFormatter {
+    constructor(currentUserId, mediaUrl) {
+        this.currentUserId = currentUserId;
+        this.mediaUrl = mediaUrl;
+        this.initializeEventListeners();
+    }
+
+    // Initialize global event listeners
+    initializeEventListeners() {
+        // Handle right-click on messages
+        document.addEventListener('contextmenu', (e) => {
+            const messageElement = e.target.closest('.direct-chat-msg');
+            if (messageElement) {
+                e.preventDefault();
+                this.hideAllActionForms();
+                
+                // Show action forms for the right-clicked message
+                const actionForms = messageElement.querySelectorAll(
+                    'form[id^="deletemessage_"], form[id^="editmessage_"], ' +
+                    'form[id^="pinmessage_"], form[id^="pinmessage1_"], ' +
+                    'form[id^="starmessage_"], form[id^="starmessage1_"]'
+                );
+                
+                actionForms.forEach(form => {
+                    form.style.display = 'block';
+                });
+            }
+        });
+
+        // Hide action forms when clicking outside messages
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.direct-chat-msg')) {
+                this.hideAllActionForms();
+            }
+        });
+    }
+
+    // Hide all action forms
+    hideAllActionForms() {
+        document.querySelectorAll(
+            'form[id^="deletemessage_"], form[id^="editmessage_"], ' +
+            'form[id^="pinmessage_"], form[id^="pinmessage1_"], ' +
+            'form[id^="starmessage_"], form[id^="starmessage1_"]'
+        ).forEach(form => {
+            form.style.display = 'none';
+        });
+    }
+
+    // Format message and return HTML
+// Define lastDisplayedDate at the class level (outside of the function)
+lastDisplayedDate = null;
+
+// Format message and return HTML with date heading
+formatMessage(message, projectPk) {
+    const isOwnMessage = message.sender_user.id === this.currentUserId;
+    const messageDate = new Date(message.timestamp);
+    // const messageDateString = messageDate.toLocaleDateString(undefined, { 
+    //     day: 'numeric', month: 'short', year: 'numeric' 
+    // });
+    const day = messageDate.getDate(); // Get the day of the month (1-31)
+const monthIndex = messageDate.getMonth(); // Get the month index (0-11)
+const year = messageDate.getFullYear(); // Get the full year (YYYY)
+
+// Create an array of short month names
+const shortMonthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// Construct the date string
+const messageDateString = `${day} ${shortMonthNames[monthIndex]} ${year}`;
+
+
+    const messageContainer = document.createElement('div');
+
+    // If this message's date is different from the last displayed date, add a date heading
+    if (this.lastDisplayedDate !== messageDateString) {
+        const dateHeading = document.createElement('div');
+        dateHeading.className = 'date-heading';
+        dateHeading.textContent = messageDateString;
+
+        messageContainer.appendChild(dateHeading);
+        this.lastDisplayedDate = messageDateString;  // Update last displayed date
+    }
+
+    // Create main message container
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `direct-chat-msg ${isOwnMessage ? 'right' : ''}`;
+    messageDiv.style.width = isOwnMessage ? '92%' : '45%';
+    messageDiv.dataset.messageId = message.chat_id;
+    messageDiv.title = "Right Click Me to Edit!";
+
+    if (!isOwnMessage) {
+        messageDiv.style.position = 'relative';
+        messageDiv.style.left = '12px';
+    }
+
+    // Construct message HTML
+    messageDiv.innerHTML = `
+        ${this.createMessageHeader(message, isOwnMessage, messageDate)}
+        ${this.createUserAvatar(message)}
+        ${this.createMessageContent(message, isOwnMessage)}
+        ${this.createActionForms(message, projectPk, isOwnMessage)}
+    `;
+
+    // Append message to the message container
+    messageContainer.appendChild(messageDiv);
+
+    return messageContainer;
+}
+
+    // Create message header
+    createMessageHeader(message, isOwnMessage, messageDate) {
+        return `
+            <div class='direct-chat-info clearfix'>
+                <span class='direct-chat-name ${isOwnMessage ? 'pull-right' : 'pull-left'}'>
+                    ${isOwnMessage ? 'Me' : message.sender_user.first_name}
+                </span>
+                <span class='direct-chat-timestamp ${isOwnMessage ? 'pull-right' : 'pull-left'}'
+                      style="${isOwnMessage ? 'position: relative; right: 30px;' : ''}">
+                    ${messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+            </div>
+        `;
+    }
+
+    // Create user avatar
+    createUserAvatar(message) {
+        const profilePicture = message.sender_user.profile_picture || '${this.mediaUrl}default-profile.png';
+        return `
+            <img class="direct-chat-img" 
+                 src="${profilePicture}" 
+                 alt="message user image" />
+        `;
+    }
+
+
+    // Create message content
+    createMessageContent(message, isOwnMessage) {
+        console.log('Is Bookmarked:', message.is_bookmarked);
+        return `
+            <div class="direct-chat-text ${isOwnMessage ? 'pull-right' : ''}">
+                ${this.createReplyPreview(message)}
+                ${message.message}
+                ${this.createFileAttachment(message)}
+                ${this.createEditedTimestamp(message, isOwnMessage)}
+                ${this.createStarForm(message, message.projectPk, isOwnMessage)}
+                ${isOwnMessage ? this.createReadReceipts(message) : ''}
+            </div>
+        `;
+    }
+
+// Create read receipts (ticks)
+createReadReceipts(message) {
+    let receipts = '';
+    if (message.read_status && Array.isArray(message.read_status)) {
+        // Filter users by read/unread status
+        const readUsers = message.read_status
+            .filter(userStatus => userStatus.status === 0)
+            .map(userStatus => userStatus.username)
+            .join(', ');
+
+        const unreadUsers = message.read_status
+            .filter(userStatus => userStatus.status === 1)
+            .map(userStatus => userStatus.username)
+            .join(', ');
+
+        // Tooltip text for read and unread statuses
+        const titleText = unreadUsers 
+            ? `Unread by: ${unreadUsers}` 
+            : `Read by: ${readUsers}`;
+
+        // Show checkmark if all have read, X if any have not read
+        const tick = unreadUsers 
+            ? `<span class="tick unread" title="${titleText}">&#10007;</span>`  // X if unread
+            : `<span class="tick read" title="${titleText}">&#10003;</span>`;   // ✓ if all read
+
+        receipts += `<div class="user-read-status">${tick}</div>`;
+    }
+    return `
+        <div class="read-receipts">
+            ${receipts}
+        </div>
+    `;
+}
+
+    // Create action forms
+    createActionForms(message, projectPk, isOwnMessage) {
+        if (isOwnMessage) {
+            return `
+                <div class="message-actions" style="position: relative; ${isOwnMessage ? 'right: 20px;' : ''}">
+                    ${this.createDeleteForm(message, projectPk)}
+                    ${this.createEditForm(message, projectPk)}
+                    ${this.createPinForm(message, projectPk)}
+                    ${this.createStarForm1(message, projectPk)}
+                    ${this.createStarForm(message, projectPk, false)}
+                    ${this.createReplyButton(message)}
+                </div>
+            `;
+        } else {
+            return `
+                <div class="message-actions">
+                    ${this.createPinForm(message, projectPk, true)}
+                   ${this.createStarForm1(message, projectPk)}
+                    ${this.createStarForm(message, projectPk, true)}
+                    ${this.createReplyButton(message)}
+                </div>
+            `;
+        }
+    }
+
+    // Other helper methods remain the same as in previous version...
+    createReplyPreview(message) {
+        if (!message.reply) return '';
+        return `
+            <div class="reply-preview" style="background-color: #f1f1f1; padding: 5px; margin-bottom: 5px; color: black;">
+                <strong>Replying to:</strong> ${message.reply}
+            </div>
+        `;
+    }
+
+    createFileAttachment(message) {
+        if (!message.file) return '';
+
+        let fileContent = '';
+        if (['png', 'jpg', 'jpeg'].includes(message.file_extension)) {
+            fileContent = `<img src="${this.mediaUrl}${message.file}" alt="Image preview" 
+                              style="max-width: 100px; max-height: 100px; margin-right: 10px;">`;
+        } else {
+            const iconClass = {
+                'pdf': 'fa-file-pdf-o',
+                'doc': 'fa-file-word-o',
+                'docx': 'fa-file-word-o',
+                'xls': 'fa-file-excel-o',
+                'xlsx': 'fa-file-excel-o'
+            }[message.file_extension] || 'fa-file-o';
+            
+            fileContent = `<i class="fa ${iconClass}" style="font-size: 24px; margin-right: 10px;"></i>`;
+        }
+
+        return `
+            <hr>
+            <div style="display: flex; align-items: center;" title="Click To Download Me!">
+                <a href="${this.mediaUrl}${message.file}" style="color: white; font-weight: bold;" download>
+                    ${fileContent}
+                </a>
+            </div>
+        `;
+    }
+
+    createEditedTimestamp(message, isOwnMessage) {
+        if (!message.updated_at) return '';
+        return `
+            <br>
+            <span class='direct-chat-timestamp pull-right' 
+                  style="color: ${isOwnMessage ? 'white' : 'black'}; font-size: 8px;">
+                Edited At: ${new Date(message.updated_at)
+                    .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+        `;
+    }
+
+    createDeleteForm(message, projectPk) {
+        return `
+            <form method="POST" 
+                  action="/projects/${projectPk}/deletemessage/"
+                  id="deletemessage_${message.chat_id}" 
+                  style="display: none;">
+                <input type="hidden" value="${message.chat_id}" name="mid" required>
+
+                <button type="submit" 
+                        onclick="return confirm('Are You Sure You Want To Delete This Message?')"
+                        class="btn btn-primary">
+                    <i class="fa fa-trash-o"></i>
+                </button>
+            </form>
+        `;
+    }
+
+    createEditForm(message, projectPk) {
+        return `
+            <form method="POST" 
+                  action="/projects/${projectPk}/edit_message/"
+                  id="editmessage_${message.chat_id}" 
+                  style="display: none;">
+                <input type="hidden" value="${message.chat_id}" name="mid" required>
+
+                <input type="text" name="edited_message" value="${message.message.replace(/"/g, '&quot;')}" required>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa fa-edit"></i>
+                </button>
+            </form>
+        `;
+    }
+
+createStarForm1(message, projectPk, isOtherUser = false) {
+    const formId = isOtherUser ? `starmessage1_${message.chat_id}` : `starmessage_${message.chat_id}`;
+    const style = isOtherUser ? 
+        'display: none; position: relative; left: 90px; top: -45px;' : 
+        'display: none;';
+        
+    return `
+        <form method="POST" 
+              action="/projects/${projectPk}/bookmark_message/"
+              id="${formId}" 
+              style="${style}" 
+              class="pull-right">
+            <input type="hidden" name="chat_id" value="${message.chat_id}">
+
+            <button class="btn btn-warning" title="Star A Message">
+                <span class="glyphicon glyphicon-star"></span>
+            </button>
+        </form>
+    `;
+}
+
+
+    createPinForm(message, projectPk, isOtherUser = false) {
+        const formId = isOtherUser ? `pinmessage1_${message.chat_id}` : `pinmessage_${message.chat_id}`;
+        const style = isOtherUser ? 
+            'display: none; position: relative; left: 90px; top: -45px;' : 
+            'display: none;';
+            
+        return `
+            <form method="POST" 
+                  action="/projects/${projectPk}/pin_message/"
+                  id="${formId}" 
+                  style="${style}" 
+                  class="pull-right">
+                <input type="hidden" name="chat_id" value="${message.chat_id}">
+
+                <button class="btn btn-primary" title="Pin A Message">
+                    <span class="glyphicon glyphicon-pushpin"></span>
+                </button>
+            </form>
+        `;
+    }
+
+createStarForm(message, projectPk, isOwnMessage) {
+    // Only show the star form if the message is bookmarked
+    if (!message.is_bookmarked) {
+        return ''; // Return an empty string if the message is not bookmarked
+    }
+
+    // Check if projectPk is valid
+    if (!projectPk) {
+        console.error('projectPk is undefined'); // Log error if projectPk is not defined
+        return ''; // Return nothing if projectPk is not available
+    }
+
+    const formAction = `/projects/${projectPk}/unbookmark_message/`; // Set the action for unbookmarking
+    const chatIdInput = `<input type="hidden" name="chat_id" value="${message.chat_id}">`;
+    const starColor = isOwnMessage ? 'black' : 'red'; // Set star color based on the sender
+    const starIcon = `<i class="fa fa-star" style="color: ${starColor};"></i>`; // Star icon with dynamic color
+
+    return `
+        <form method="POST" action="${formAction}">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"> <!-- Assuming CSRF token is available in your context -->
+            ${chatIdInput}
+            <button type="submit" class="btn btn-link" style="padding: 0; border: none; background: none;">
+                ${starIcon}
+            </button>
+        </form>
+    `;
+}
+
+    createReplyButton(message) {
+        return `
+            <button class="btn btn-secondary btn-sm" 
+                    onclick="replyToMessage(${message.chat_id}, '${message.message.replace(/'/g, "\\'")}')">
+                Reply
+            </button>
+        `;
+    }
+}
+
+// Usage:
+const formatter = new MessageFormatter(currentUserId, MEDIA_URL);
+let lastMessageId = 0;
+let isFetching = false;
+
+function updateMessages(messages, projectPk) {
+    const chatMessages = document.querySelector('.chat-messages');
+    const shouldScroll = chatMessages.scrollTop + chatMessages.clientHeight >= chatMessages.scrollHeight - 100;
+
+    // Clear all existing messages in the chat container
+    chatMessages.innerHTML = '';
+
+    // Append each message in the fetched batch
+    messages.forEach(message => {
+        const messageElement = formatter.formatMessage(message, projectPk);
+        messageElement.setAttribute('data-chat-id', message.chat_id); // Track message ID on the element
+        chatMessages.appendChild(messageElement);
+        
+        // Update lastMessageId to the highest ID found in this batch
+        lastMessageId = Math.max(lastMessageId, message.chat_id);
+    });
+
+    if (shouldScroll) {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+}
+
+function fetchNewMessages() {
+    if (isFetching) return;
+    isFetching = true;
+
+    const chatUrl = window.location.pathname;
+    const projectPk = chatUrl.split('/')[2];
+
+    $.ajax({
+        url: chatUrl,
+        type: 'GET',
+        data: { last_message_id: lastMessageId },
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        success: function(response) {
+            if (response.success && Array.isArray(response.messages)) {
+                updateMessages(response.messages, projectPk);
+                console.log(response.messages);
+            } else {
+                console.error("Unexpected response format:", response);
+            }
+            isFetching = false;
+        },
+        error: function(xhr, status, error) {
+            console.error('Error fetching messages:', error);
+            isFetching = false;
+        }
+    });
+}
+
+
+
+
+// Initialize fetching messages on document ready
+$(document).ready(function() {
+    initializeEventListeners();
+    {% if filter_type != 'bookmarked' %}
+    setInterval(fetchNewMessages, 3000);
+    {% endif %}
+});
+
 </script>
   </body>
 </html>

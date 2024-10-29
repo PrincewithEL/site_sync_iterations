@@ -76,6 +76,158 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.css" />
+<script>
+    $(document).ready(function() {
+        var projectId = '{{ project.project_id }}';
+        
+        // Set gantt as a global variable
+        window.gantt = null;
+
+        function fetchDataAndDrawChart() {
+            $.ajax({
+                url: '/projects/' + projectId + '/tasks1/',
+                method: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    drawChart(data);
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error('Error fetching data:', textStatus, errorThrown);
+                }
+            });
+        }
+
+        function updateTaskDates(task, start, end) {
+            {% if project.leader_id == auth_user.id %}
+            $.ajax({
+                url: '/projects/' + projectId + '/tasks/' + task.id + '/update-dates/',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    start_date: start.toISOString().split('T')[0],
+                    due_date: end.toISOString().split('T')[0]
+                }),
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken') // If using Django
+                },
+                success: function(response) {
+                    console.log('Task dates updated successfully');
+                    fetchDataAndDrawChart();
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error('Error updating task dates:', textStatus, errorThrown);
+                    alert('Failed to update task dates. Please try again.');
+                    fetchDataAndDrawChart();
+                }
+            });
+            {% else %}
+            fetchDataAndDrawChart();
+            {% endif %}
+        }
+
+        // Helper function to get CSRF token (for Django)
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+function drawChart(data) {
+    const tasks = data.tasks.map(task => ({
+        id: task[0],
+        name: task[1],
+        start: new Date(task[3]),
+        end: new Date(task[4]),
+        progress: task[6],
+        dependencies: task[7] || '',
+        // Apply color based on the status or custom attribute
+        custom_class: task[8] || (task[6] === 100 ? 'completed-task' : 'in-progress-task')
+    }));
+
+    // Initialize Frappe Gantt with customized bar classes
+    window.gantt = new Gantt("#chart_div", tasks, {
+        header_height: 50,
+        column_width: 30,
+        step: 24,
+        view_modes: ['Quarter Day', 'Half Day', 'Day', 'Week', 'Month'],
+        bar_height: 20,
+        bar_corner_radius: 3,
+        arrow_curve: 5,
+        padding: 18,
+        view_mode: 'Day',
+        show_view_mode: true,
+        date_format: 'YYYY-MM-DD',
+        on_date_change: function(task, start, end) {
+            updateTaskDates(task, start, end);
+        },
+        custom_popup_html: function(task) {
+            return `
+                <div class="details-container">
+                    <h5>${task.name}</h5>
+                    <p>Progress: ${task.progress}%</p>
+                    <p>Start: ${task.start.toDateString()}</p>
+                    <p>End: ${task.end.toDateString()}</p>
+                    <p><small>Drag to adjust dates</small></p>
+                </div>
+            `;
+        }
+    });
+}
+
+        // Initial load
+        fetchDataAndDrawChart();
+    });
+
+    // Define changeViewMode globally
+    function changeViewMode(mode) {
+        console.log("Changing view mode to:", mode); // Debug log
+        if (window.gantt) {
+            window.gantt.change_view_mode(mode);
+            console.log("View mode changed to:", mode); // Debug log
+        } else {
+            console.error("Gantt chart not initialized.");
+        }
+    }
+</script>
+<style>
+    .chart_div .bar.completed-task {
+        fill: #4caf50; /* Green for completed tasks */
+    }
+    
+    .chart_div .bar.in-progress-task {
+        fill: #ff9800; /* Orange for in-progress tasks */
+    }
+    
+    .chart_div .bar.custom-task {
+        fill: #2196f3; /* Blue for a generic task */
+    }
+
+    /* Custom styling for the popup */
+    .details-container {
+        background-color: #f5f5f5;
+        border-radius: 5px;
+        padding: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        font-family: Arial, sans-serif;
+        color: #333;
+    }
+
+    /* Styling for Gantt chart header */
+    .chart_div .header {
+        background-color: #3f51b5;
+        color: white;
+    }
+</style>
+
   <body class="skin-black">
     <div class="wrapper">
       
@@ -329,10 +481,24 @@
                   <div class="box-tools pull-right">
                                 <div class="">
               <a href="{% url 'gantt' project.project_id %}"  onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;"><i class="fa fa-expand"></i> Full View</a>
+              <br>
               </div>
                   </div><!-- /.box-tools -->
                 </div><!-- /.box-header -->
+<div id="viewModeButtons">
+                                <div class="col-md-4">
+    <button class="btn btn-primary btn-block margin-bottom" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;" onclick="changeViewMode('Day')">Daily</button>
+</div>
+<div class="col-md-4">
+    <button class="btn btn-primary btn-block margin-bottom" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;" onclick="changeViewMode('Week')">Weekly</button>
+</div>
+<div class="col-md-4">
+    <button class="btn btn-primary btn-block margin-bottom" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;" onclick="changeViewMode('Month')">Monthly</button>
+</div>
+</div>
+<div class="col-md-12">
               <div id="chart_div"></div>
+          </div>
             </div>
             </div>
             <div class="col-md-6">
@@ -801,22 +967,61 @@
             <label for="transaction_price">Task Price</label>
             <input type="number" min="0" class="form-control" id="transaction_price" name="transaction_price" placeholder="Task Price" required>
         </div>
-                <div class="form-group">
-          <label for="task_name">Task Transaction Category</label>
-          <select required class="form-control" id="task_name" name="transaction_category">
-            <option selected value="" disabled>Select A Task Transaction Category</option>
-            <option value="Internal">Internal</option>
-            <option value="External">External</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="task_name">Task Transaction Type</label>
-          <select required class="form-control" id="task_name" name="transaction_type">
-            <option selected value="" disabled>Select A Task Transaction Type</option>
-            <option value="Machinery">Machinery</option>
-            <option value="Salary">Salary</option>
-          </select>
-        </div>
+<div class="form-group">
+  <label for="transaction_category">Transaction Category</label>
+  <select required class="form-control" id="transaction_category" name="transaction_category">
+    <option selected value="" disabled>Select A Transaction Category</option>
+    <option value="Internal">Internal</option>
+    <option value="External">External</option>
+  </select>
+</div>
+<div class="form-group" id="transaction_type_group" style="display: none;">
+  <label for="transaction_type">Transaction Type</label>
+  <select required class="form-control" id="transaction_type" name="transaction_type">
+    <option selected value="" disabled>Select A Transaction Type</option>
+  </select>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const categorySelect = document.getElementById('transaction_category');
+    const typeGroup = document.getElementById('transaction_type_group');
+    const typeSelect = document.getElementById('transaction_type');
+
+    function updateTransactionTypeOptions() {
+        const selectedCategory = categorySelect.value;
+
+        // Clear previous options
+        typeSelect.innerHTML = '<option selected value="" disabled>Select A Transaction Type</option>';
+
+        if (selectedCategory === 'Internal') {
+            // Add options for Internal category
+            const internalOptions = ['Salary', 'Bonus'];
+            internalOptions.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option;
+                opt.textContent = option;
+                typeSelect.appendChild(opt);
+            });
+            typeGroup.style.display = 'block'; // Show the dropdown
+        } else if (selectedCategory === 'External') {
+            // Add options for External category
+            const externalOptions = ['Materials', 'Transport', 'Machinery'];
+            externalOptions.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option;
+                opt.textContent = option;
+                typeSelect.appendChild(opt);
+            });
+            typeGroup.style.display = 'block'; // Show the dropdown
+        } else {
+            typeGroup.style.display = 'none'; // Hide the dropdown if no category is selected
+        }
+    }
+
+    // Update options when the category changes
+    categorySelect.addEventListener('change', updateTransactionTypeOptions);
+});
+</script>
         <!-- User Assignment Section -->
         <div id="user-assignments">
             <div class="form-group">
@@ -1059,123 +1264,6 @@ document.getElementById("year").innerHTML = new Date().getFullYear();
     $("body").addClass('sidebar-collapse'); // Add collapse class on page load
   });
       </script>
-
-    <script>
-        $(document).ready(function() {
-            var projectId = '{{ project.project_id }}';
-
-            function fetchDataAndDrawChart() {
-                $.ajax({
-                    url: '/projects/' + projectId + '/tasks1/',
-                    method: 'GET',
-                    dataType: 'json',
-                    success: function(data) {
-                        drawChart(data);
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        console.error('Error fetching data:', textStatus, errorThrown);
-                    }
-                });
-            }
-
-            function updateTaskDates(task, start, end) {
-{% if project.leader_id == auth_user.id %}                
-                $.ajax({
-                    url: '/projects/' + projectId + '/tasks/' + task.id + '/update-dates/',
-                    method: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({
-                        start_date: start.toISOString().split('T')[0],
-                        due_date: end.toISOString().split('T')[0]
-                    }),
-                    headers: {
-                        'X-CSRFToken': getCookie('csrftoken')  // If using Django
-                    },
-                    success: function(response) {
-                        console.log('Task dates updated successfully');
-                        // Optionally refresh the chart
-                        fetchDataAndDrawChart();
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        console.error('Error updating task dates:', textStatus, errorThrown);
-                        alert('Failed to update task dates. Please try again.');
-                        // Refresh to revert changes
-                        fetchDataAndDrawChart();
-                    }
-                });
-
-                console.log('Sending data:', {
-    start_date: start.toISOString().split('T')[0],
-    due_date: end.toISOString().split('T')[0]
-});
-                {% else %}
-                fetchDataAndDrawChart();
-            {% endif %}
-            }
-
-            // Helper function to get CSRF token (for Django)
-            function getCookie(name) {
-                let cookieValue = null;
-                if (document.cookie && document.cookie !== '') {
-                    const cookies = document.cookie.split(';');
-                    for (let i = 0; i < cookies.length; i++) {
-                        const cookie = cookies[i].trim();
-                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                            break;
-                        }
-                    }
-                }
-                return cookieValue;
-            }
-
-            function drawChart(data) {
-                // Convert the data into Frappe Gantt format
-                const tasks = data.tasks.map(task => ({
-                    id: task[0],
-                    name: task[1],
-                    start: new Date(task[3]),
-                    end: new Date(task[4]),
-                    progress: task[6],
-                    dependencies: task[7] ? task[7].split(',') : [],
-                    custom_class: task[8] || 'custom-task'
-                }));
-
-                // Initialize Frappe Gantt
-                const gantt = new Gantt("#chart_div", tasks, {
-                    header_height: 50,
-                    column_width: 30,
-                    step: 24,
-                    view_modes: ['Quarter Day', 'Half Day', 'Day', 'Week', 'Month'],
-                    bar_height: 20,
-                    bar_corner_radius: 3,
-                    arrow_curve: 5,
-                    padding: 18,
-                    view_mode: 'Day',
-                    show_view_mode: true,
-                    date_format: 'YYYY-MM-DD',
-                    // Enable date change handler
-                    on_date_change: function(task, start, end) {
-                        updateTaskDates(task, start, end);
-                    },
-                    custom_popup_html: function(task) {
-                        return `
-                            <div class="details-container">
-                                <h5>${task.name}</h5>
-                                <p>Progress: ${task.progress}%</p>
-                                <p>Start: ${task.start.toDateString()}</p>
-                                <p>End: ${task.end.toDateString()}</p>
-                                <p><small>Drag to adjust dates</small></p>
-                            </div>
-                        `;
-                    }
-                });
-            }
-
-            // Initial load
-            fetchDataAndDrawChart();
-        });
-    </script>
 
     <style>
         #chart_div {

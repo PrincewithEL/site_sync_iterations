@@ -246,6 +246,8 @@ LOGIN_REDIRECT_URL = '/verify_otp/'
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+ASGI_APPLICATION = 'core.asgi.application'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 

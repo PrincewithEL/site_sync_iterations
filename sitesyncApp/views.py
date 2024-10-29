@@ -61,6 +61,21 @@ from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_http_methods
 from django.db.models import Exists, OuterRef
+import nltk
+from nltk.corpus import stopwords
+from wordcloud import WordCloud
+from django.http import JsonResponse
+from .models import Chat
+import re
+from collections import Counter
+
+# Download NLTK stopwords if not already downloaded
+nltk.download("stopwords")
+stop_words = set(stopwords.words("english"))
+
+# Define positive and negative keywords (you can expand these lists)
+POSITIVE_WORDS = {"happy", "great", "excellent", "good", "fantastic", "positive"}
+NEGATIVE_WORDS = {"sad", "bad", "terrible", "poor", "negative"}
 
 logger = logging.getLogger(__name__)
 
@@ -440,7 +455,8 @@ class ClientProjectsAPI(APIView):
                     total_days = (project.end_date - project.start_date).days
                     days_left = (project.end_date - now).days
                     progress_percentage = ((total_days - days_left) / total_days) * 100 if total_days > 0 else 0
-                    progress = progress_percentage if progress_percentage > 0 else 0
+                    progress = int(progress_percentage) if progress_percentage > 0 else 0  # Converts to integer to remove decimal points
+
                     
                 except GroupChat.DoesNotExist:
                     unread_count = 0
@@ -2367,23 +2383,25 @@ def tasks1(request, project_id):
             f"{member.first_name} ({member.profile.user_type})" for member in task.member.all()
         )
 
-        dependencies = ','.join(str(dep.task_id) for dep in task.dependant_tasks.all())
+        # List task dependencies by task_id
+        # dependencies = ','.join(str(dep.task_id) for dep in task.dependant_tasks.all())
+        dependencies = str(task.dependant_task_id) if task.dependant_task_id else ''
 
         if task.task_status in ['Completed Early', 'Completed Late', 'Completed Today']:
             expected_percentage = 100.0
         else:
-            expected_percentage = task.expected_percentage_complete
+            expected_percentage = int(task.expected_percentage_complete)
 
         task_data.append([
-            str(task.task_id),  # Task ID
-            task.task_name,  # Task Name
-            members_info,  # Resource
+            str(task.task_id),            # Task ID
+            task.task_name,               # Task Name
+            members_info,                 # Resource
             task.task_given_date.strftime('%Y-%m-%d'),  # Start Date
-            task.task_due_date.strftime('%Y-%m-%d'),  # End Date
+            task.task_due_date.strftime('%Y-%m-%d'),    # End Date
             (task.task_due_date - task.task_given_date).days,  # Duration
-            expected_percentage,  # Percent Complete
-            # ', '.join(str(dep.id) for dep in task.dependant_tasks.all()) 
-            str(dependencies), # Dependencies
+            expected_percentage,          # Percent Complete
+            dependencies if dependencies else None,   # Dependencies (or None if no dependencies)
+            task.custom_class if hasattr(task, 'custom_class') else 'custom-task'  # Custom class
         ])
 
     # Return JSON response
@@ -2839,6 +2857,8 @@ def hide_transaction(request, pk, transaction_id):
 
 @login_required
 def add_transaction(request, pk):
+    now = date.today()
+    today = now.strftime('%Y-%m-%d')
     if request.method == 'POST':
         project = get_object_or_404(Projects, pk=pk)
         tp = float(request.POST['transaction_price']) * int(request.POST['transaction_quantity'])
@@ -2856,8 +2876,10 @@ def add_transaction(request, pk):
             transaction_details=request.POST['transaction_details'],
             transaction_price=float(request.POST['transaction_price']),
             transaction_quantity=int(request.POST['transaction_quantity']),
+            transaction_time=request.POST['transaction_unit'],
             transaction_type=request.POST['transaction_type'],
-            transaction_category=request.POST['transaction_category'],            
+            transaction_category=request.POST['transaction_category'],
+            transaction_date=today,            
             total_transaction_price=float(request.POST['transaction_price']) * int(request.POST['transaction_quantity']),
             created_at=timezone.now(),
             transaction_status='Completed',
@@ -3094,17 +3116,17 @@ def transactions(request, pk):
     date_filter = request.GET.get('date_filter')
     if date_filter:
         if date_filter == 'today':
-            all_projects = all_projects.filter(created_at__date=current_date)
+            all_transactions = all_transactions.filter(created_at__date=current_date)
             date_filter_display = "Today"
         elif date_filter == 'this_week':
             start_of_week = current_date - timedelta(days=current_date.weekday())
-            all_projects = all_projects.filter(created_at__date__gte=start_of_week)
+            all_transactions = all_transactions.filter(created_at__date__gte=start_of_week)
             date_filter_display = "This Week"
         elif date_filter == 'this_month':
-            all_projects = all_projects.filter(created_at__year=current_date.year, created_at__month=current_date.month)
+            all_transactions = all_transactions.filter(created_at__year=current_date.year, created_at__month=current_date.month)
             date_filter_display = "This Month"
         elif date_filter == 'this_year':
-            all_projects = all_projects.filter(created_at__year=current_date.year)
+            all_transactions = all_transactions.filter(created_at__year=current_date.year)
             date_filter_display = "This Year"
 
     # Get the filter type from the query parameters (default to 'all')
@@ -3192,6 +3214,7 @@ def transactions(request, pk):
     return render(request, 'transactions.html', context)
 
 @login_required
+@csrf_exempt
 def edit_message(request, pk):
     if request.method == 'POST':
         message_id = request.POST.get('mid')
@@ -3379,6 +3402,7 @@ def tasks(request, pk):
                 message__in=chats.values_list('message', flat=True),
                 timestamp__in=chats.values_list('timestamp', flat=True),
                 chatstatus__status=1,
+                chatstatus__user_id=request.user.id,
             )
             all_unread_chats1 = chats.filter(
                 message__in=chats.values_list('message', flat=True),
@@ -3710,6 +3734,7 @@ def dashboard(request, pk):
                 message__in=chats.values_list('message', flat=True),
                 timestamp__in=chats.values_list('timestamp', flat=True),
                 chatstatus__status=1,
+                chatstatus__user_id=request.user.id,
             )
             all_unread_chats1 = chats.filter(
                 message__in=chats.values_list('message', flat=True),
@@ -3722,9 +3747,9 @@ def dashboard(request, pk):
 
         # Count pending tasks
         all_pending_tasks = Tasks.objects.filter(
-            project=project1,
+            project=project,
             is_deleted=0,
-            task_status='Ongoing',
+            task_status='Ongoing'
         )
         pending_tasks_counts = all_pending_tasks.count()
 
@@ -3913,6 +3938,56 @@ def dashboard(request, pk):
     online_labels = ['Online Users', 'Total Users']
     online_data_values = [online_users_count + 1, total_users_count]
 
+    # Word Cloud Logic
+    chats = Chat.objects.filter(group=project.project_id)  
+    chat_messages = chats.values_list('message', flat=True)
+
+    # Join all chat messages into a single string
+    word_list = ' '.join(chat_messages)
+
+    # Tokenize the messages into words/phrases
+    # You might want to use a more sophisticated tokenizer depending on your needs
+    words = word_list.split()  # This splits by whitespace; adjust if you need to consider punctuation
+
+    # Count word frequency using Counter for efficiency
+    word_counts = Counter(words)
+
+    # Sort by frequency and take the top 50 words
+    sorted_words = word_counts.most_common(20)
+
+    # Prepare the data for the word cloud (adjust to fit your front-end needs)
+    word_cloud_data = [{'word': word, 'count': count} for word, count in sorted_words]
+
+    tasks = Tasks.objects.all().values('task_name', 'task_transaction_price')
+
+    # Prepare data for the histogram
+    task_names = [task['task_name'] for task in tasks]
+    transaction_prices = [task['task_transaction_price'] for task in tasks]
+
+    # Retrieve all events and their locations
+    events = Events.objects.values('event_location')
+
+    # Count the number of events per location
+    location_counts = Counter(event['event_location'] for event in events)
+
+    # Prepare data for the chart
+    locations = list(location_counts.keys())
+    counts = list(location_counts.values())
+
+    # Fetch the project
+    project = Projects.objects.get(project_id=project_id)
+
+    # Get transactions for the project, grouped by date
+    transactions = Transactions.objects.filter(project=project).values(
+        'transaction_date'
+    ).annotate(
+        total_transaction_price=Sum('total_transaction_price')
+    ).order_by('transaction_date')
+
+    # Prepare data for the chart
+    dates = [transaction['transaction_date'] for transaction in transactions]
+    total_prices = [transaction['total_transaction_price'] for transaction in transactions]
+
     # Filter chats for the specific project
     chats = Chat.objects.filter(
         group__project_id=project_id,
@@ -3953,6 +4028,8 @@ def dashboard(request, pk):
         'online_data_values': online_data_values,
         'unread_labels': unread_labels,
         'unread_data_values': unread_data_values,
+        'task_names': task_names,
+        'transaction_prices': transaction_prices,
         # 'total_tasks': 150,
         # 'month_to_date_expenses': 5000.00,
         # 'last_month_expenses': 4500.00,
@@ -3977,6 +4054,12 @@ def dashboard(request, pk):
         'unread_count': unread_count,
         'all_unread_chats': all_unread_chats,
         'all_pending_tasks': all_pending_tasks,
+        'word_cloud_data': word_cloud_data,
+        'locations': locations,
+        'counts': counts,
+        'project': project,
+        'dates': dates,
+        'total_prices': total_prices,
         }
 
     return render(request, 'project-dashboard.html', context)
@@ -4050,6 +4133,7 @@ def events(request, pk):
                 message__in=chats.values_list('message', flat=True),
                 timestamp__in=chats.values_list('timestamp', flat=True),
                 chatstatus__status=1,
+                chatstatus__user_id=request.user.id,
             )
             all_unread_chats1 = chats.filter(
                 message__in=chats.values_list('message', flat=True),
@@ -4469,7 +4553,7 @@ def add_task(request, pk):
             project.balance = project.estimated_budget - project.actual_expenditure
             project.save()
 
-            messages.success(request, 'Task and transaction added successfully.')
+            # messages.success(request, 'Task and transaction added successfully.')
         else:
             messages.error(request, 'Transaction price exceeds project budget.')
             return redirect('transactions', pk=pk)
@@ -4499,7 +4583,7 @@ def delete_task(request, pk, task_id):
         # Delete the task after reversing and deleting the transactions
         task.delete()
 
-        messages.success(request, 'Task and associated transactions deleted successfully.')
+        messages.success(request, '')
     except Exception as e:
         messages.error(request, f'Error occurred while deleting task: {e}')
     
@@ -4650,13 +4734,14 @@ def chat(request, pk):
 
     # Fetch chat messages for the current project
     messages = Chat.objects.filter(
-        group=project.groupchat, 
+        group_id=project.groupchat, 
         is_deleted=0
     ).filter(
-        Q(sender_user=user) |  # Include messages where the user is the sender
+        Q(sender_user=user, group_id=project.groupchat) |  # Include messages where the user is the sender
         Exists(
             ChatStatus.objects.filter(
                 chat=OuterRef('chat_id'),
+                group_id=project.groupchat, 
                 user_id=user.id,
                 is_deleted=0
             )
@@ -4667,7 +4752,7 @@ def chat(request, pk):
 
     bookmarks = Bookmarks.objects.filter(is_deleted=0, item_type='Chat', user_id=request.user.id)
     bookmarked_chat_ids = bookmarks.values_list('item_id', flat=True)
-    bookmarked_chats = Chat.objects.filter(chat_id__in=bookmarked_chat_ids)
+    bookmarked_chats = Chat.objects.filter(chat_id__in=bookmarked_chat_ids, group_id=project.groupchat)
     chat_messages = (messages | bookmarked_chats).distinct()
 
     # After fetching chat messages
@@ -4754,12 +4839,89 @@ def chat(request, pk):
         else:
             message.file_extension = ''
 
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        user = request.user  # Assuming you are getting the user from the request
+        # Retrieve the messages as JSON
+        messages = Chat.objects.filter(
+            group_id=project.groupchat, 
+            is_deleted=0
+        ).filter(
+            Q(sender_user=user, group_id=project.groupchat) |  # Include messages where the user is the sender
+            Exists(
+                ChatStatus.objects.filter(
+                    chat=OuterRef('chat_id'),
+                    group_id=project.groupchat, 
+                    user_id=user.id,
+                    is_deleted=0
+                )
+            )  # Include messages where the user has a corresponding ChatStatus
+        ).order_by('timestamp')
+        bookmarked_ids = set(Bookmarks.objects.filter(user=request.user, project_id=project.project_id, is_deleted=0, item_type='Chat').values_list('item_id', flat=True))
+        # Fetch chat statuses for messages sent by the current user
+        # Get all users’ read statuses for messages sent by the current user
+        # Filter to get the statuses for messages sent by the current user
+        chat_statuses = ChatStatus.objects.filter(
+            chat__sender_user_id=request.user.id,
+            chat__in=messages,
+            is_deleted=0
+        ).select_related('chat')  # Only use select_related on the 'chat' foreign key
+
+        # Dictionary to hold read statuses for each message by user
+        read_status = {}
+
+        # Get usernames for each unique user_id to avoid querying in the loop
+        user_ids = set(status.user_id for status in chat_statuses)
+        usernames = {user.id: user.first_name for user in User.objects.filter(id__in=user_ids)}
+
+        # Populate read_status with each user's read status per chat_id
+        for status in chat_statuses:
+            if status.chat.chat_id not in read_status:
+                read_status[status.chat.chat_id] = []
+            read_status[status.chat.chat_id].append({
+                'user_id': status.user_id,
+                'username': usernames.get(status.user_id, "Unknown User"),  # Use username lookup
+                'status': status.status  # 0 for read, 1 for unread
+            })
+
+
+        # Example debug print of the read_status structure
+        # print(read_status)
+
+        # Serialize the messages to a list of dictionaries
+        messages_data = []
+        for message in messages:
+            messages_data.append({
+                'chat_id': message.chat_id,
+                'sender_user': {
+                    'id': message.sender_user.id,
+                    'first_name': message.sender_user.first_name,
+                    # Convert the profile picture field to a URL string
+                    'profile_picture': message.sender_user.profile.profile_picture.url if message.sender_user.profile.profile_picture else None
+                },
+                'message': message.message,
+                'timestamp': message.timestamp.isoformat(),  # Convert datetime to ISO format
+                'reply': message.reply,  # Assuming this is a field in your Chat model
+                # Convert the file field to a URL string, if applicable
+                'file': message.file if message.file else None,  # Assuming this is a field in your Chat model
+                'updated_at': message.updated_at.isoformat() if message.updated_at else None,  # Handle the updated_at field if it exists
+                'is_bookmarked': message.chat_id in bookmarked_ids,
+                'read_status': read_status.get(message.chat_id, 1)
+            })
+
+        response_data = {
+            'success': True,
+            'messages': messages_data  # Use the serialized data
+        }
+        return JsonResponse(response_data)
+
     context = {
         'auth_user': request.user,
         'fname': user.first_name,
         'image1': profile.profile_picture.url if profile.profile_picture else None,
         'type': profile.user_type,
         'MEDIA_URL': settings.MEDIA_URL,
+        'currentUserId': request.user.id,
+        'filter_type': filter_type,
         'day': today,
         'user_id': profile.user_id,
         'project': project,
@@ -4782,6 +4944,7 @@ def chat(request, pk):
     return render(request, 'chat.html', context)
 
 @login_required
+@csrf_exempt
 def pin_message(request, project_id):
     if request.method == "POST":
         chat_id = request.POST.get('chat_id')
@@ -4791,6 +4954,7 @@ def pin_message(request, project_id):
     return redirect('chat', pk=project_id)
 
 @login_required
+@csrf_exempt
 def unpin_message(request, project_id):
     if request.method == "POST":
         chat_id = request.POST.get('chat_id')
@@ -4800,6 +4964,7 @@ def unpin_message(request, project_id):
     return redirect('chat', pk=project_id)
 
 @login_required
+@csrf_exempt
 def bookmark_message(request, project_id):
     if request.method == "POST":
         chat_id = request.POST.get('chat_id')
@@ -4815,6 +4980,7 @@ def bookmark_message(request, project_id):
     return redirect('chat', pk=project_id)
 
 @login_required
+@csrf_exempt
 def unbookmark_message(request, project_id):
     if request.method == "POST":
         chat_id = request.POST.get('chat_id')
@@ -5209,6 +5375,7 @@ def update_project(request, pk):
     return render(request, 'project-details.html', context)
 
 @login_required
+@csrf_exempt
 def delete_message(request, pk):
     user = request.user
     now = date.today()
@@ -5281,6 +5448,7 @@ def delete_message(request, pk):
     return render(request, 'chat.html', context)
 
 @login_required
+@csrf_exempt
 def reply_message(request, pk):
     user = request.user
     project = get_object_or_404(Projects, pk=pk)
@@ -5301,17 +5469,6 @@ def reply_message(request, pk):
         )
 
         return redirect('chat', pk=project.pk)
-
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from django.utils import timezone
-from django.core.files.storage import default_storage
-from django.contrib import messages
-from .models import Projects, Profile, Chat, Resources, ProjectMembers, ChatStatus
-import os
-import uuid
-from datetime import datetime
-from django.utils.encoding import smart_str
 
 @login_required
 def send_message(request, pk):
@@ -5433,7 +5590,7 @@ def send_message(request, pk):
         selected_members = request.POST.getlist('selected_members[]')
 
         # Handle member selection
-        if 'all' in selected_members:
+        if not selected_members or 'all' in selected_members:
             # Get all project members except the sender
             project_members = ProjectMembers.objects.filter(
                 project=project, 
@@ -5461,7 +5618,7 @@ def send_message(request, pk):
                 )
         else:
             # Handle single member selection
-            member_id = selected_members[0]  # Since it's radio button, there will be only one
+            member_id = selected_members[0]  # Single selection from radio button
             ChatStatus.objects.create(
                 chat=new_chat,
                 group=project.groupchat,
@@ -5470,7 +5627,19 @@ def send_message(request, pk):
                 is_deleted=0
             )
 
-        return redirect('chat', pk=project.pk)
+
+        response_data = {
+            'id': new_chat.chat_id,
+            'user': user.first_name,
+            'content': message1,
+            'timestamp': new_chat.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+        }
+
+    #     return JsonResponse(response_data, status=201)  # Return JSON response
+
+    # return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    return redirect('chat', pk=project.pk)
 
     clients_profiles = Profile.objects.filter(user_type='client').exclude(user=user)
     contractors_profiles = Profile.objects.filter(user_type='contractor').exclude(user=user)
@@ -5879,7 +6048,7 @@ def client(request):
                 timestamp__in=chats.values_list('timestamp', flat=True),
             )            
             all_unread_chats1 = chatstatus
-            unread_chat_counts[project.project_id] = all_unread_chats1.count()     
+            unread_chat_counts[project.project_id] = all_unread_chats.count()     
             unread_count = all_unread_chats1.count() 
         except GroupChat.DoesNotExist:
             unread_chat_counts[project.project_id] = 0  
@@ -6372,6 +6541,7 @@ def profile(request):
                 message__in=chats.values_list('message', flat=True),
                 timestamp__in=chats.values_list('timestamp', flat=True),
                 chatstatus__status=1,
+                chatstatus__user_id=request.user.id,
             )
             all_unread_chats1 = chats.filter(
                 message__in=chats.values_list('message', flat=True),

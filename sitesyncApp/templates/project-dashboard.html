@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Site Sync - {{ type }} Module - Project BI Dashboard</title>
+    <title>Site Sync - {{ type }} Module - Project Analytics</title>
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
     {% load static %}
     {% load custom_filters %}
@@ -34,6 +34,7 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.0/dist/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ionicons/2.0.1/css/ionicons.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.0.1/wordcloud2.js"></script>
   </head>
 <body class="skin-black">
     <div class="wrapper">
@@ -62,7 +63,7 @@
                         <!-- Sign Out -->
                         <li class="dropdown tasks-menu">
                             <a href="{% url 'logout' %}" class="dropdown-toggle">
-                                <i class="fa fa-mail-forward"></i>
+                                <i class="fa fa-power-off"></i>
                             </a>
                         </li>
                     </ul>
@@ -78,21 +79,32 @@
         <!-- Right side column -->
         <div class="content-wrapper">
             <!-- Content Header -->
-            <section class="content-header" style="position: relative; left: -920px;">
+            <section class="content-header" style="position: relative; left: -900px;">
                 <h1>
-                    Dashboard (for current month)
+                    Analytics 
                 </h1>
                 <ol class="breadcrumb">
                     <li><a href="{% url 'client' %}"><i class="fa fa-dashboard"></i> Home</a></li>
                     <li><a href="{% url 'client' %}">My Projects</a></li>
                     <li><a href="{% url 'project_detail' project.pk %}">{{ project.project_name }}</a></li>
-                    <li class="active">BI Dashboard</li>
+                    <li class="active">Project Analytics</li>
                 </ol>
             </section>
 
             <!-- Main content -->
             <section class="content">
                 <!-- Small boxes (Stat box) -->
+                <div class="row">
+                                <div class="col-md-4">
+              <a href="{% url 'client' %}"  onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Home <i class="fa fa-home"></i></a>
+              </div>
+            <div class="col-md-4">
+              <a href="#" id="downloadPdf" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Generate Report <i class="fa fa-print"></i></a>
+              </div>                  
+                          <div class="col-md-4">
+              <a href="{% url 'project_detail' project.project_id %}"  onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Back <i class="fa fa-mail-reply"></i></a>
+              </div>   
+                </div>
                 <div class="row">
                     <div class="col-lg-3 col-xs-6">
                         <div class="small-box bg-aqua">
@@ -147,12 +159,12 @@
                 <!-- Graphs and Charts -->
                 <div class="row">
                     <div class="col-md-6">
-                                    <a href="{% url 'client' %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Home</a>
+<!--                                     <a href="{% url 'client' %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Home</a>
                                     <button id="downloadPdf" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Generate Report</button>                          
-              <a href="{% url 'project_detail' project.project_id %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Back</a>
+              <a href="{% url 'project_detail' project.project_id %}" class="btn btn-primary btn-block margin-bottom" style="color: black; font-weight: bold;">Back</a> -->
 
                         <!-- Bar Chart for Unread Messages -->
-                        <div class="box box-primary">
+                        <div class="box box-primary" data-group="messages">
                             <div class="box-header">
                                 <h3 class="box-title">Unread Messages</h3>
                             </div>
@@ -161,8 +173,18 @@
                             </div>
                         </div>
 
+                        <!-- Word Cloud -->
+                        <div class="box box-primary" data-group="messages">
+                            <div class="box-header">
+                                <h3 class="box-title">Word Cloud</h3>
+                            </div>
+                            <div class="box-body">
+                                <canvas id="wordCloud" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+
                         <!-- Bar Chart for Work Load Per Member -->
-                        <div class="box box-primary">
+                        <div class="box box-primary" data-group="tasks">
                             <div class="box-header">
                                 <h3 class="box-title">Work Load Per Member</h3>
                             </div>
@@ -171,8 +193,18 @@
                             </div>
                         </div>
 
+                        <!-- Histogram Chart for Tasks and Transactions -->
+                        <div class="box box-primary" data-group="tasks">
+                            <div class="box-header">
+                                <h3 class="box-title">Transaction Price for Tasks</h3>
+                            </div>
+                            <div class="box-body">
+                                <canvas id="taskTransactionHistogram" style="width:100%;max-width:600px"></canvas>
+                            </div>
+                        </div>                        
+
                         <!-- Pie Chart for Types of Transactions -->
-                        <div class="box box-primary">
+                        <div class="box box-primary" data-group="transactions">
                             <div class="box-header">
                                 <h3 class="box-title">Categories of Transactions</h3>
                             </div>
@@ -207,7 +239,7 @@
 </div>
 
                         <!-- Bar Chart for Online Activity -->
-                        <div class="box box-primary">
+                        <div class="box box-primary" data-group="messages">
                             <div class="box-header">
                                 <h3 class="box-title">Online Activity</h3>
                             </div>
@@ -217,7 +249,7 @@
                         </div>
 
                         <!-- Line Chart for Events Timeline -->
-                        <div class="box box-primary">
+                        <div class="box box-primary" data-group="events">
                             <div class="box-header">
                                 <h3 class="box-title">Events Timeline {{events_data_values}}</h3>
                             </div>
@@ -226,8 +258,18 @@
                             </div>
                         </div>
 
+                        <!-- Bubble Chart for Event Locations -->
+<!--                          <div class="box box-primary">
+                            <div class="box-header">
+                                <h3 class="box-title">Bubble Chart for Event Locations</h3>
+                            </div>
+                            <div class="box-body">
+                                <canvas id="eventLocationHeatmap" style="width:100%;max-width:600px"></canvas>
+                            </div>
+                        </div>   -->                      
+
                         <!-- Bar Chart for Month to Date -->
-                        <div class="box box-primary">
+                        <div class="box box-primary" data-group="transactions">
                             <div class="box-header">
                                 <h3 class="box-title">Month to Date</h3>
                             </div>
@@ -237,12 +279,22 @@
                         </div>
 
                         <!-- Bar Chart for Month to Date -->
-                        <div class="box box-primary">
+                        <div class="box box-primary" data-group="tasks">
                             <div class="box-header">
                                 <h3 class="box-title">Task Status</h3>
                             </div>
                             <div class="box-body">
                                 <canvas id="taskStatusChart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Line Chart for Project Finances Over Time -->
+                        <div class="box box-primary" data-group="transactions">
+                            <div class="box-header">
+                                <h3 class="box-title">Project Finances Over Time for {{ project.project_name }}</h3>
+                            </div>
+                            <div class="box-body">
+                                <canvas id="financeChart" width="400" height="200"></canvas>
                             </div>
                         </div>
 
@@ -314,6 +366,186 @@ const onlineLabels = {{ online_labels|safe }};  // From recent login activity
 const onlineDataValues = {{ online_data_values|safe }};  // From recent login activity
 const unreadLabels = {{ unread_labels|safe }};  // For unread messages
 const unreadDataValues = {{ unread_data_values|safe }};  // For unread messages
+const wordCloudData = {{ word_cloud_data|safe }}; // Ensure this is a list of [word, frequency] pairs
+const wordCloudContainer = document.getElementById('wordCloud'); // Ensure you have a container with this ID in your HTML
+const taskNames = {{ task_names|safe }};
+const transactionPrices = {{ transaction_prices|safe }};
+const locations = {{ locations|safe }};
+const counts = {{ counts|safe }};
+        // Data passed from Django context
+        const dates = {{ dates|safe }};
+        const totalPrices = {{ total_prices|safe }};
+
+        // Create the line chart
+        const ctx = document.getElementById('financeChart').getContext('2d');
+        const financeChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Total Transaction Price',
+                    data: totalPrices,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    fill: true,
+                    tension: 0.1 // Smooth line curve
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Transaction Date'
+                        },
+                        ticks: {
+                            autoSkip: true,
+                            maxTicksLimit: 10
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Total Transaction Price'
+                        },
+                        ticks: {
+                            stepSize: 1000 // Adjust based on your data range
+                        }
+                    }
+                }
+            }
+        });
+
+        // // Create a bubble chart for event locations
+        // const data = {
+        //     datasets: [{
+        //         label: 'Events per Location',
+        //         data: locations.map((location, index) => ({
+        //             x: index + 1, // Use index for x-axis position
+        //             y: counts[index],
+        //             r: counts[index] * 5, // Bubble size based on event count
+        //             location: location // Add location name to data point
+        //         })),
+        //         backgroundColor: 'rgba(75, 192, 192, 0.6)',
+        //         borderColor: 'rgba(75, 192, 192, 1)',
+        //         borderWidth: 1,
+        //     }]
+        // };
+
+        // // Initialize the bubble chart
+        // new Chart(document.getElementById('eventLocationHeatmap').getContext('2d'), {
+        //     type: 'bubble',
+        //     data: data,
+        //     options: {
+        //         responsive: true,
+        //         scales: {
+        //             x: {
+        //                 title: {
+        //                     display: true,
+        //                     text: 'Location Index'
+        //                 }
+        //             },
+        //             y: {
+        //                 beginAtZero: true,
+        //                 title: {
+        //                     display: true,
+        //                     text: 'Number of Events'
+        //                 }
+        //             }
+        //         }
+        //     }
+        // });
+
+
+        // Create the histogram for task transaction prices
+        new Chart(document.getElementById('taskTransactionHistogram').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: taskNames,
+                datasets: [{
+                    label: 'Task Transaction Price',
+                    data: transactionPrices,
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Task Transaction Price (Ksh)'
+                        },
+                        ticks: {
+                            stepSize: 1000 // Adjust this step size based on your data range
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Tasks'
+                        }
+                    }
+                }
+            }
+        });
+
+const wordCloud = {};
+
+// Validate and process the word cloud data
+if (Array.isArray(wordCloudData)) {
+    // Check the structure of the data
+    if (wordCloudData[0] && typeof wordCloudData[0] === 'object' && 'word' in wordCloudData[0]) {
+        // Handle object format: [{word: 'example', count: 1}]
+        wordCloudData.forEach(({ word, count }) => {
+            if (word && count) {
+                wordCloud[word] = count;
+            }
+        });
+    } else if (Array.isArray(wordCloudData[0])) {
+        // Handle array format: [['example', 1]]
+        wordCloudData.forEach(([word, freq]) => {
+            if (word && freq) {
+                wordCloud[word] = freq;
+            }
+        });
+    } else {
+        console.error('Invalid word cloud data format:', wordCloudData);
+    }
+} else {
+    console.error('wordCloudData is not an array:', wordCloudData);
+  
+}
+
+// Create Word Cloud (make sure WordCloud library is loaded)
+if (typeof WordCloud === 'undefined') {
+    console.error('WordCloud library is not loaded');
+
+}
+
+try {
+    WordCloud(wordCloudContainer, {
+        list: Object.entries(wordCloud),
+        gridSize: 24,
+        weightFactor: 7,
+        color: '#ff6347',
+        backgroundColor: 'white',
+        rotateRatio: 0.5,
+        shape: 'circle',
+        fontFamily: 'Arial',
+        minSize: 12,
+        drawOutOfBound: true,
+        shrinkToFit: true
+    });
+} catch (error) {
+    console.error('Error creating word cloud:', error);
+}
+
 
 // Bar Chart for Online Activity of Users
 new Chart(document.getElementById('onlineActivityChart').getContext('2d'), {
@@ -525,69 +757,71 @@ new Chart(document.getElementById('eventsTimelineChart').getContext('2d'), {
 </script>
 <script>
 document.getElementById('downloadPdf').addEventListener('click', function() {
-  // Create a new instance of jsPDF
-  const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
-  
-  // Get current date and time for the filename
-  const now = new Date();
-  const dateTime = now.toISOString().replace(/[:.]/g, '-').slice(0, -5); // Format: YYYY-MM-DDTHH-mm
-  
-  // List of chart IDs to capture
-  const chartIds = [
-    'onlineActivityChart',
-    'unreadMessagesChart',
-    'taskStatusChart',
-    'workLoadChart',
-    'transactionTypeChart',
-    'eventsTimelineChart',
-    'monthToDateChart'
-  ];
-  
-  // Function to capture charts and add them to the PDF
-  function addChartToPdf(chartId, pageIndex) {
-    return html2canvas(document.getElementById(chartId), {
-      scale: 2 // Increase scale for better quality
-    }).then(canvas => {
-      if (pageIndex > 0) {
-        pdf.addPage();
-      }
-      
-      const imgData = canvas.toDataURL('image/png');
-      
-      // Calculate dimensions to fit the page while maintaining aspect ratio
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const aspectRatio = canvas.width / canvas.height;
-      
-      let imgWidth = pageWidth - 20; // 10mm margin on each side
-      let imgHeight = imgWidth / aspectRatio;
-      
-      // If height exceeds page height, scale it down
-      if (imgHeight > pageHeight - 20) {
-        imgHeight = pageHeight - 20;
-        imgWidth = imgHeight * aspectRatio;
-      }
-      
-      // Center the image on the page
-      const x = (pageWidth - imgWidth) / 2;
-      const y = (pageHeight - imgHeight) / 2;
-      
-      pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
-      
-      // Add chart title
-      pdf.setFontSize(16);
-      pdf.text(chartId, pageWidth / 2, 10, { align: 'center' });
+    // Create a new instance of jsPDF
+    const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
+    
+    // Get current date and time for the filename
+    const now = new Date();
+    const dateTime = now.toISOString().replace(/[:.]/g, '-').slice(0, -5); // Format: YYYY-MM-DDTHH-mm
+    
+    // Get the selected group from the dropdown
+    const selectedGroup = document.getElementById('chartGroupSelect').value;
+    
+    // Function to capture charts and add them to the PDF
+    function addChartToPdf(chartId, pageIndex) {
+        return html2canvas(document.getElementById(chartId), {
+            scale: 2 // Increase scale for better quality
+        }).then(canvas => {
+            if (pageIndex > 0) {
+                pdf.addPage();
+            }
+            
+            const imgData = canvas.toDataURL('image/png');
+            
+            // Calculate dimensions to fit the page while maintaining aspect ratio
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const aspectRatio = canvas.width / canvas.height;
+            
+            let imgWidth = pageWidth - 20; // 10mm margin on each side
+            let imgHeight = imgWidth / aspectRatio;
+            
+            // If height exceeds page height, scale it down
+            if (imgHeight > pageHeight - 20) {
+                imgHeight = pageHeight - 20;
+                imgWidth = imgHeight * aspectRatio;
+            }
+            
+            // Center the image on the page
+            const x = (pageWidth - imgWidth) / 2;
+            const y = (pageHeight - imgHeight) / 2;
+            
+            pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+            
+            // Add chart title
+            pdf.setFontSize(16);
+            pdf.text(chartId, pageWidth / 2, 10, { align: 'center' });
+        });
+    }
+    
+    // Capture only visible charts based on the selected group
+    const chartBoxes = document.querySelectorAll('.box');
+    let promiseArray = [];
+
+    chartBoxes.forEach(box => {
+        const group = box.getAttribute('data-group');
+        if (selectedGroup === 'all' || group === selectedGroup) {
+            const chartId = box.querySelector('canvas').id; // Get the ID of the canvas inside the box
+            promiseArray.push(addChartToPdf(chartId, promiseArray.length)); // Push the promise to the array
+        }
     });
-  }
-  
-  // Capture each chart and add to the PDF
-  let promiseArray = chartIds.map((chartId, index) => addChartToPdf(chartId, index));
-  
-  // Once all charts are added to the PDF, save it
-  Promise.all(promiseArray).then(() => {
-    pdf.save(`charts_${dateTime}.pdf`);
-  });
+    
+    // Once all charts are added to the PDF, save it
+    Promise.all(promiseArray).then(() => {
+        pdf.save(`charts_${dateTime}.pdf`);
+    });
 });
+
 </script>
 <script>
     console.log("Work Load Labels:", {{ work_load_labels|safe }});
@@ -597,6 +831,7 @@ document.getElementById('downloadPdf').addEventListener('click', function() {
     console.log("Events Labels:", {{ events_labels|safe }});
     console.log("Events Data:", {{ events_data|safe }});
     console.log("Month to Date Data:", {{ month_to_date_data|safe }});
+    console.log('Word Cloud Data:', {{ word_cloud_data|safe }}); 
               $(document).ready(function() {
     $("body").addClass('sidebar-collapse'); // Add collapse class on page load
   });

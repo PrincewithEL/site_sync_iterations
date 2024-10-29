@@ -76,122 +76,127 @@
 }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            var projectId = '{{ project.project_id }}';
+  <script>
+    $(document).ready(function() {
+        var projectId = '{{ project.project_id }}';
+        
+        // Set gantt as a global variable
+        window.gantt = null;
 
-            function fetchDataAndDrawChart() {
-                $.ajax({
-                    url: '/projects/' + projectId + '/tasks1/',
-                    method: 'GET',
-                    dataType: 'json',
-                    success: function(data) {
-                        drawChart(data);
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        console.error('Error fetching data:', textStatus, errorThrown);
-                    }
-                });
-            }
+        function fetchDataAndDrawChart() {
+            $.ajax({
+                url: '/projects/' + projectId + '/tasks1/',
+                method: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    drawChart(data);
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error('Error fetching data:', textStatus, errorThrown);
+                }
+            });
+        }
 
-            function updateTaskDates(task, start, end) {
-{% if project.leader_id == auth_user.id %}                
-                $.ajax({
-                    url: '/projects/' + projectId + '/tasks/' + task.id + '/update-dates/',
-                    method: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({
-                        start_date: start.toISOString().split('T')[0],
-                        due_date: end.toISOString().split('T')[0]
-                    }),
-                    headers: {
-                        'X-CSRFToken': getCookie('csrftoken')  // If using Django
-                    },
-                    success: function(response) {
-                        console.log('Task dates updated successfully');
-                        // Optionally refresh the chart
-                        fetchDataAndDrawChart();
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        console.error('Error updating task dates:', textStatus, errorThrown);
-                        alert('Failed to update task dates. Please try again.');
-                        // Refresh to revert changes
-                        fetchDataAndDrawChart();
-                    }
-                });
-
-                console.log('Sending data:', {
-    start_date: start.toISOString().split('T')[0],
-    due_date: end.toISOString().split('T')[0]
-});
-                {% else %}
-                fetchDataAndDrawChart();
+        function updateTaskDates(task, start, end) {
+            {% if project.leader_id == auth_user.id %}
+            $.ajax({
+                url: '/projects/' + projectId + '/tasks/' + task.id + '/update-dates/',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    start_date: start.toISOString().split('T')[0],
+                    due_date: end.toISOString().split('T')[0]
+                }),
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken') // If using Django
+                },
+                success: function(response) {
+                    console.log('Task dates updated successfully');
+                    fetchDataAndDrawChart();
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error('Error updating task dates:', textStatus, errorThrown);
+                    alert('Failed to update task dates. Please try again.');
+                    fetchDataAndDrawChart();
+                }
+            });
+            {% else %}
+            fetchDataAndDrawChart();
             {% endif %}
-            }
+        }
 
-            // Helper function to get CSRF token (for Django)
-            function getCookie(name) {
-                let cookieValue = null;
-                if (document.cookie && document.cookie !== '') {
-                    const cookies = document.cookie.split(';');
-                    for (let i = 0; i < cookies.length; i++) {
-                        const cookie = cookies[i].trim();
-                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                            break;
-                        }
+        // Helper function to get CSRF token (for Django)
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
                     }
                 }
-                return cookieValue;
             }
+            return cookieValue;
+        }
 
-            function drawChart(data) {
-                // Convert the data into Frappe Gantt format
-                const tasks = data.tasks.map(task => ({
-                    id: task[0],
-                    name: task[1],
-                    start: new Date(task[3]),
-                    end: new Date(task[4]),
-                    progress: task[6],
-                    dependencies: task[7] ? task[7].split(',') : [],
-                    custom_class: task[8] || 'custom-task'
-                }));
+        function drawChart(data) {
+            const tasks = data.tasks.map(task => ({
+                id: task[0],
+                name: task[1],
+                start: new Date(task[3]),
+                end: new Date(task[4]),
+                progress: task[6],
+                dependencies: task[7] || '',
+                custom_class: task[8] || 'custom-task'
+            }));
 
-                // Initialize Frappe Gantt
-                const gantt = new Gantt("#chart_div", tasks, {
-                    header_height: 50,
-                    column_width: 30,
-                    step: 24,
-                    view_modes: ['Quarter Day', 'Half Day', 'Day', 'Week', 'Month'],
-                    bar_height: 20,
-                    bar_corner_radius: 3,
-                    arrow_curve: 5,
-                    padding: 18,
-                    view_mode: 'Day',
-                    show_view_mode: true,
-                    date_format: 'YYYY-MM-DD',
-                    // Enable date change handler
-                    on_date_change: function(task, start, end) {
-                        updateTaskDates(task, start, end);
-                    },
-                    custom_popup_html: function(task) {
-                        return `
-                            <div class="details-container">
-                                <h5>${task.name}</h5>
-                                <p>Progress: ${task.progress}%</p>
-                                <p>Start: ${task.start.toDateString()}</p>
-                                <p>End: ${task.end.toDateString()}</p>
-                                <p><small>Drag to adjust dates</small></p>
-                            </div>
-                        `;
-                    }
-                });
-            }
+            // Initialize Frappe Gantt
+            window.gantt = new Gantt("#chart_div", tasks, {
+                header_height: 50,
+                column_width: 30,
+                step: 24,
+                view_modes: ['Quarter Day', 'Half Day', 'Day', 'Week', 'Month'],
+                bar_height: 20,
+                bar_corner_radius: 3,
+                arrow_curve: 5,
+                padding: 18,
+                view_mode: 'Day', // Default view mode
+                show_view_mode: true,
+                date_format: 'YYYY-MM-DD',
+                on_date_change: function(task, start, end) {
+                    updateTaskDates(task, start, end);
+                },
+                custom_popup_html: function(task) {
+                    return `
+                        <div class="details-container">
+                            <h5>${task.name}</h5>
+                            <p>Progress: ${task.progress}%</p>
+                            <p>Start: ${task.start.toDateString()}</p>
+                            <p>End: ${task.end.toDateString()}</p>
+                            <p><small>Drag to adjust dates</small></p>
+                        </div>
+                    `;
+                }
+            });
+        }
 
-            // Initial load
-            fetchDataAndDrawChart();
-        });
-    </script>
+        // Initial load
+        fetchDataAndDrawChart();
+    });
+
+    // Define changeViewMode globally
+    function changeViewMode(mode) {
+        console.log("Changing view mode to:", mode); // Debug log
+        if (window.gantt) {
+            window.gantt.change_view_mode(mode);
+            console.log("View mode changed to:", mode); // Debug log
+        } else {
+            console.error("Gantt chart not initialized.");
+        }
+    }
+</script>
 
     <style>
         #chart_div {
@@ -300,10 +305,24 @@
             </div>                  
                                 <div class="col-md-6">
               <a href="{% url 'tasks' project.project_id %}"  onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Back <i class="fa fa-mail-reply"></i></a>
+              <br>
               </div>
                   </div><!-- /.box-tools -->
                 </div><!-- /.box-header -->
+                <div id="viewModeButtons">
+                                <div class="col-md-4">
+    <button class="btn btn-primary btn-block margin-bottom" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;" onclick="changeViewMode('Day')">Daily</button>
+</div>
+<div class="col-md-4">
+    <button class="btn btn-primary btn-block margin-bottom" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;" onclick="changeViewMode('Week')">Weekly</button>
+</div>
+<div class="col-md-4">
+    <button class="btn btn-primary btn-block margin-bottom" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;" onclick="changeViewMode('Month')">Monthly</button>
+</div>
+</div>
+<div class="col-md-12">
               <div id="chart_div"></div>
+          </div>
             </div><!-- /.col -->
           </div><!-- /.row -->
 
