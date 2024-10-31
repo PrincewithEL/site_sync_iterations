@@ -116,7 +116,7 @@
       <!-- Right side column. Contains the navbar and content of the page -->
       <div class="content-wrapper">
         <!-- Content Header (Page header) -->
-        <section class="content-header" style="position: relative; left: -590px;">
+        <section class="content-header" style="position: relative; left: -560px;">
           <h1>
             <small></small>
           </h1>
@@ -293,7 +293,7 @@
                     <div class="col-lg-4 col-xs-6">
                         <div class="small-box bg-aqua">
                             <div class="inner">
-                                <h3>{{ project.estimated_budget|floatformat:2 }} kshs.</h3>
+                                <h3 style="font-size: 32px;">{{ project.estimated_budget|floatformat:2 }} kshs.</h3>
                                 <p>Project Budget</p>
                             </div>
                             <div class="icon">
@@ -304,7 +304,7 @@
                     <div class="col-lg-4 col-xs-6">
                         <div class="small-box bg-green">
                             <div class="inner">
-                                <h3>{{ project.balance|floatformat:2 }} kshs.</h3>
+                                <h3 style="font-size: 32px;">{{ project.balance|floatformat:2 }} kshs.</h3>
                                 <p>Project Balance</p>
                             </div>
                             <div class="icon">
@@ -315,7 +315,7 @@
                     <div class="col-lg-4 col-xs-6">
                         <div class="small-box bg-yellow">
                             <div class="inner">
-                                <h3>{{ project.actual_expenditure|floatformat:2 }} kshs.</h3>
+                                <h3 style="font-size: 32px;">{{ project.actual_expenditure|floatformat:2 }} kshs.</h3>
                                 <p>Project Expenditure</p>
                             </div>
                             <div class="icon">
@@ -498,7 +498,8 @@
     <option value="Liters">Liters (L)</option>
     <option value="Units">Units (pcs)</option>
     <option value="Hours">Hours (h)</option>
-    <option value="Dollars">Dollars ($)</option>
+    <option value="Kshs">Kenyan Shillings (Kshs)</option>
+    <option value="">None</option>    
   </select>
 </div>
 

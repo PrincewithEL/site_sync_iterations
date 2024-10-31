@@ -135,7 +135,8 @@
               <a href="{% url 'dashboard' project.pk %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">View Analytics <i class="fa fa-bar-chart"></i></a>
               {% elif type == 'Contractor' and project.leader_id == user_id %}              
               <a href="{% url 'dashboard' project.pk %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">View Analytics <i class="fa fa-bar-chart"></i></a>
-              {% endif %}               
+              {% endif %}            
+              <a href="{% url 'chat' project.pk %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">View Chatroom <i class="fa fa-comments"></i></a>             
               <div class="box box-solid">
                 <div class="box-header with-border">
                   <h3 class="box-title">List of <br>Project Members</h3>
@@ -430,9 +431,9 @@
                   <p style="position: relative; right: -10px;"><b>Details: {{ project.project_details }}</b></p>
                   <br>
                                     {% if  type == 'Client' or type == 'Quantity Surveyor' %} 
-                  <p style="position: relative; right: -10px;"><b>Project Finances: {{ project.actual_expenditure }} kshs. / {{ project.estimated_budget }} kshs. </b></p>
+                  <p style="position: relative; right: -10px;"><b>Project Finances Used: {{ project.actual_expenditure }} kshs. out of {{ project.estimated_budget }} kshs. </b></p>
                                                   {% elif type == 'Contractor' and project.leader_id == user_id %} 
-                  <p style="position: relative; right: -10px;"><b>Project Finances: {{ project.actual_expenditure }} kshs. / {{ project.estimated_budget }} kshs. </b></p>
+                  <p style="position: relative; right: -10px;"><b>Project Finances Used: {{ project.actual_expenditure }} kshs. out of {{ project.estimated_budget }} kshs. </b></p>
                                      {% endif %}
                   <br>                                    
                 </div><!-- /.box-body -->

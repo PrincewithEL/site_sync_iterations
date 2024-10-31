@@ -123,7 +123,7 @@
       <!-- Right side column. Contains the navbar and content of the page -->
       <div class="content-wrapper">
         <!-- Content Header (Page header) -->
-        <section class="content-header" style="position: relative; left: -620px;">
+        <section class="content-header" style="position: relative; left: -590px;">
           <h1>
             <small></small>
           </h1>
@@ -469,6 +469,20 @@
             <label for="event_end_time">End Time</label>
             <input type="time" class="form-control" id="event_end_time"placeholder="Event End Time"  name="event_end_time" required>
         </div>
+        <script>
+    document.getElementById("event_start_time").addEventListener("change", function() {
+        const startTime = this.value;
+        const endTimeInput = document.getElementById("event_end_time");
+        
+        // Set the minimum value of end time to the selected start time
+        endTimeInput.min = startTime;
+        
+        // If the currently selected end time is earlier than the new start time, reset end time
+        if (endTimeInput.value && endTimeInput.value < startTime) {
+            endTimeInput.value = ""; // Clear the end time input
+        }
+    });
+</script>
         <div class="form-group">
             <label for="event_details">Event Details</label>
             <textarea class="form-control" rows="4" id="event_details"placeholder="Event Details..."  name="event_details" required placeholder="Enter Event Details..."></textarea>

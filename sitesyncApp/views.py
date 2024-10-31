@@ -2149,6 +2149,9 @@ def transaction_update(request, pk, transaction_id):
 def transaction_destroy(request, pk, transaction_id):
     if request.method == 'DELETE':
         transaction = get_object_or_404(Transactions, transaction_id=transaction_id)
+        transaction.project.actual_expenditure -= transaction.total_transaction_price
+        transaction.project.balance += transaction.total_transaction_price
+        transaction.project.save()
         transaction.is_deleted = 1  # Soft delete
         transaction.save()
         return JsonResponse({
@@ -2900,7 +2903,6 @@ def add_transaction(request, pk):
 def delete_transaction(request, pk, transaction_id):
     project = get_object_or_404(Projects, pk=pk)
     transactions = get_object_or_404(Transactions, pk=transaction_id, project__pk=pk)
-    project.estimated_budget += transactions.total_transaction_price
     project.actual_expenditure -= transactions.total_transaction_price 
     project.balance = project.estimated_budget - project.actual_expenditure 
     project.save()
@@ -3810,10 +3812,19 @@ def dashboard(request, pk):
     end_date = request.GET.get('end_date')
 
     # If no date range is provided, set default to the current month
-    if not start_date or not end_date:
-        now = datetime.now()
-        start_date = now.strftime('%Y-%m-01')  # Start of current month
-        end_date = now.strftime('%Y-%m-30')  # Today
+    # if not start_date or not end_date:
+    #     now = datetime.now()
+    #     start_date = now.strftime('%Y-%m-01')  # Start of current month
+    #     end_date = now.strftime('%Y-%m-30')  # Today
+    if start_date:
+        start_date = timezone.datetime.strptime(start_date, '%Y-%m-%d')  # Adjust format as needed
+    else:
+        start_date = timezone.now() - timedelta(days=30)  # Default to last 30 days
+
+    if end_date:
+        end_date = timezone.datetime.strptime(end_date, '%Y-%m-%d')  # Adjust format as needed
+    else:
+        end_date = timezone.now()  # Default to current time
 
     # Filter Tasks, Transactions, and Events based on the selected date range
 
@@ -3958,7 +3969,7 @@ def dashboard(request, pk):
     # Prepare the data for the word cloud (adjust to fit your front-end needs)
     word_cloud_data = [{'word': word, 'count': count} for word, count in sorted_words]
 
-    tasks = Tasks.objects.all().values('task_name', 'task_transaction_price')
+    tasks = Tasks.objects.filter(project_id=project.project_id).values('task_name', 'task_transaction_price')
 
     # Prepare data for the histogram
     task_names = [task['task_name'] for task in tasks]
@@ -5211,7 +5222,7 @@ def project_detail(request, pk):
         open_pmembers = True
 
     # Implement pagination (4 user details per page)
-    paginator = Paginator(user_details, 4)
+    paginator = Paginator(user_details, 8)
     page_number = request.GET.get('page', 1)  # Default to page 1 if not provided
     try:
         page_number = int(page_number)
@@ -5948,18 +5959,49 @@ def client(request):
     user_id = profile.user_id
     today = now.strftime('%Y-%m-%d')
 
-    # Fetch projects where the current user is the leader or a member
-    leader_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=0, project_status='Active')
-    current_date = timezone.now().date()
-    # leader_projects.filter(end_date__lt=current_date, project_status__in=['Active']).update(project_status='Completed')
-    trash_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=1)
-    member_projects = Projects.objects.filter(
-        project_id__in=ProjectMembers.objects.filter(user_id=user.id, is_deleted=0, status='Accepted').values_list('project_id', flat=True),
-        is_deleted=0
+    # Leader projects
+    leader_projects = Projects.objects.filter(
+        leader_id=user_id, 
+        is_deleted=0, 
+        project_status='Active'
+    ).annotate(
+        has_members=Exists(ProjectMembers.objects.filter(project_id=OuterRef('project_id'), is_deleted=0))
     )
-    bookmarks = Bookmarks.objects.filter(is_deleted=0, item_type='Project', user_id=request.user.id)
+
+    # Trash projects
+    trash_projects = Projects.objects.filter(
+        leader_id=user_id, 
+        is_deleted=1
+    ).annotate(
+        has_members=Exists(ProjectMembers.objects.filter(project_id=OuterRef('project_id'), is_deleted=0))
+    )
+
+    # Member projects
+    member_projects = Projects.objects.filter(
+        project_id__in=ProjectMembers.objects.filter(
+            user_id=user.id, 
+            is_deleted=0, 
+            status='Accepted'
+        ).values_list('project_id', flat=True),
+        is_deleted=0
+    ).annotate(
+        has_members=Exists(ProjectMembers.objects.filter(project_id=OuterRef('project_id'), is_deleted=0))
+    )
+
+    # Bookmarked projects
+    bookmarks = Bookmarks.objects.filter(
+        is_deleted=0, 
+        item_type='Project', 
+        user_id=user.id
+    )
     bookmarked_project_ids = bookmarks.values_list('item_id', flat=True)
-    bookmarked_projects = Projects.objects.filter(project_id__in=bookmarked_project_ids)
+    bookmarked_projects = Projects.objects.filter(
+        project_id__in=bookmarked_project_ids
+    ).annotate(
+        has_members=Exists(ProjectMembers.objects.filter(project_id=OuterRef('project_id'), is_deleted=0))
+    )
+
+    # Combine all projects
     all_projects = (leader_projects | member_projects | bookmarked_projects).distinct()
 
     # Calculate counts for each category

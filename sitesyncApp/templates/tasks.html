@@ -267,7 +267,7 @@ function drawChart(data) {
       <!-- Right side column. Contains the navbar and content of the page -->
       <div class="content-wrapper">
         <!-- Content Header (Page header) -->
-        <section class="content-header" style="position: relative; left: -950px;">
+        <section class="content-header" style="position: relative; left: -890px;">
           <h1>
             <small></small>
           </h1>
@@ -286,16 +286,23 @@ function drawChart(data) {
             <div class="col-md-12">
               <div id="myTable">
               <div class="col-md-6">
+                               {% if project.leader_id == auth_user.id %}
               <div class="col-md-4">
               <a href="{% url 'client' %}"  onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Home <i class="fa fa-home"></i></i></a>
             </div>
             <div class="col-md-4">
               <a href="{% url 'project_detail' project.project_id %}"  onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Back <i class="fa fa-mail-reply"></i></a>
               </div> 
-               {% if project.leader_id == auth_user.id %}
               <div class="col-md-4">
               <a href="#" onclick="openForm1();"  onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Add A Task <i class="fa fa-plus"></i></a>
             </div>
+                                           {% else %}
+              <div class="col-md-6">
+              <a href="{% url 'client' %}"  onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Home <i class="fa fa-home"></i></i></a>
+            </div>
+            <div class="col-md-6">
+              <a href="{% url 'project_detail' project.project_id %}"  onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Back <i class="fa fa-mail-reply"></i></a>
+              </div> 
                 {% endif %}
             <div class="col-md-12">
                <div class="box box-primary">

@@ -188,6 +188,7 @@ $(document).on('keydown', function(event) {
     if (event.key === 'Enter' || $('#message').is(':focus')) {
         event.preventDefault();
         $('#send').click();  // Replace #send with the actual ID of your submit button
+        document.getElementById('message').value = '';
     }
 });
 
@@ -566,7 +567,7 @@ $(document).on('keydown', function(event) {
 
 
 <div class="box-footer">
-    <form method="POST" name="send_message_form" id="send_message_form" action="{% url 'send_message' project.pk %}" enctype="multipart/form-data" accept-charset="UTF-8">
+    <form method="POST" name="send_message_form" id="send_message_form" accept-charset="UTF-8" onsubmit="clearMessageInput()">
         <div id="replySection" style="display: none; margin-bottom: 10px; padding: 10px; border-top: 1px solid #ddd;">
             <strong>Replying to: <span id="replyMessageContent"></span></strong>
             <button type="button" class="btn btn-secondary btn-sm" onclick="cancelReply()">Cancel Reply</button>
@@ -586,7 +587,7 @@ $(document).on('keydown', function(event) {
         <input class="form-control chat-input chatMessage" required id="message" name="message" placeholder="Type message..."/>
         <input type="hidden" value="{{ auth_user.id }}" name="uid" required>
             <span class="input-group-btn">
-                <button type="submit" title="Send A Message" class="btn btn-warning btn-flat" id="send"><i class="fa fa-send-o"></i></button>
+                <button type="submit" title="Send A Message" onclick="sendMessage(event);" class="btn btn-warning btn-flat" id="send"><i class="fa fa-send-o"></i></button>
             </span>
             <span class="input-group-btn">
                 <button type="button" class="btn btn-warning btn-flat" title="Schedule A Message" onclick="toggleSchedule()"><i class="fa fa-clock-o"></i></button>
@@ -650,7 +651,118 @@ $(document).on('keydown', function(event) {
     </form>
 </div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    function clearMessageInput() {
+        const messageInput = document.getElementById('message');
+        if (messageInput) {
+            messageInput.value = ''; // Clear the input field
+        }
+    }
+</script>
+<script>
+function sendMessage(event) {
+    event.preventDefault();
+    
+    console.log("Form submission started");
+    
+    const form = document.getElementById('send_message_form');
+    if (!form) {
+        console.error("Form not found");
+        return;
+    }
+    
+    const formData = new FormData(form);
+    
+    fetch("{% url 'send_message' project.pk %}", {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData,
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Response received:", data);
+        
+        // Try to get message element
+        const messageElement = document.getElementById('message');
+        console.log("Message element:", messageElement);
+        
+        if (messageElement) {
+            try {
+                messageElement.innerHTML = '';
+                console.log("Message cleared");
+            } catch (e) {
+                console.error("Error clearing message:", e);
+            }
+        }
+        
+        // Try to clear file input
+        const fileInput = document.getElementById('files');
+        console.log("File input:", fileInput);
+        
+        if (fileInput) {
+            try {
+                fileInput.value = '';
+                console.log("File input cleared");
+            } catch (e) {
+                console.error("Error clearing file input:", e);
+            }
+        }
+        
+        // Try form reset
+        try {
+            form.reset();
+            console.log("Form reset completed");
+        } catch (e) {
+            console.error("Error resetting form:", e);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
 
+// Add this to your document ready or window load event
+document.addEventListener('DOMContentLoaded', function() {
+    // Attach the event listener to the form
+    const form = document.getElementById('send_message_form');
+    if (form) {
+        form.addEventListener('submit', sendMessage);
+    }
+
+    // Optional: Add reset confirmation
+    const resetButton = form.querySelector('button[type="reset"]');
+    if (resetButton) {
+        resetButton.addEventListener('click', function(e) {
+            if (!confirm('Are you sure you want to clear the form?')) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+
+
+// Add this to your document ready or window load event
+document.addEventListener('DOMContentLoaded', function() {
+    // Attach the event listener to the form
+    const form = document.getElementById('send_message_form');
+    if (form) {
+        form.addEventListener('submit', sendMessage);
+    }
+
+    // Optional: Add reset confirmation
+    const resetButton = form.querySelector('button[type="reset"]');
+    if (resetButton) {
+        resetButton.addEventListener('click', function(e) {
+            if (!confirm('Are you sure you want to clear the form?')) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+</script>
 <script>
     const sendMessageUrl = "{% url 'send_message' project.pk %}";
 
@@ -701,11 +813,8 @@ function submitMemberSelection() {
     formData.delete('selected_members[]');
     
     if (selectedOption.value === 'all') {
-        // If "All Users" is selected, don't append any specific member IDs
-        // The backend will handle this case
         formData.append('selected_members[]', 'all');
     } else {
-        // Append the selected member ID
         formData.append('selected_members[]', selectedOption.value);
     }
 
@@ -715,26 +824,121 @@ function submitMemberSelection() {
         body: formData,
         headers: {
             'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'  // Add this to identify AJAX request
         },
         credentials: 'same-origin'
     })
     .then(response => {
-        if (response.ok) {
-            window.location.href = form.action.replace('send_message', 'chat');
-        } else {
-            response.text().then(text => {
-                console.error('Error sending message:', text);
-                alert('Error sending message. Please try again.');
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Reset form fields
+            form.reset();
+            
+            // Clear specific inputs
+            document.getElementById('message').value = '';
+            document.getElementById('files').value = '';
+            document.getElementById('replyMessageId').value = '';
+            
+            // Clear member selection
+            const memberSelects = document.querySelectorAll('[name="selected_members[]"]');
+            memberSelects.forEach(select => {
+                if (select.type === 'radio') {
+                    select.checked = false;
+                } else if (select.type === 'checkbox') {
+                    select.checked = false;
+                }
             });
+
+            // Clear any preview elements
+            const previewContainer = document.getElementById('file-preview');
+            if (previewContainer) {
+                previewContainer.innerHTML = '';
+            }
+
+            // Add the new message to the chat display
+            if (typeof updateChatDisplay === 'function') {
+                updateChatDisplay(data);
+            }
+
+            // Close the member selection modal
+            closeSelectMembers();
+
+            // Optional: Show success message
+            // const successMessage = document.createElement('div');
+            // successMessage.className = 'alert alert-success';
+            // successMessage.textContent = 'Message sent successfully';
+            // document.querySelector('.chat-container').prepend(successMessage);
+            
+            // Remove success message after 3 seconds
+            setTimeout(() => {
+                successMessage.remove();
+            }, 3000);
+        } else if (data.error) {
+            alert(data.error);
         }
     })
     .catch(error => {
         console.error('Error:', error);
         alert('Error sending message. Please try again.');
     });
-
-    closeSelectMembers();
 }
+
+// function submitMemberSelection() {
+//     // Get the form and create FormData
+//     const form = document.forms['send_message_form'];
+//     const formData = new FormData(form);
+    
+//     // Get selected radio button value
+//     const selectedOption = document.querySelector('input[name="selected_members[]"]:checked');
+    
+//     if (!selectedOption) {
+//         alert('Please select a recipient option');
+//         return;
+//     }
+    
+//     // Clear any existing selected_members entries
+//     formData.delete('selected_members[]');
+    
+//     if (selectedOption.value === 'all') {
+//         // If "All Users" is selected, don't append any specific member IDs
+//         // The backend will handle this case
+//         formData.append('selected_members[]', 'all');
+//     } else {
+//         // Append the selected member ID
+//         formData.append('selected_members[]', selectedOption.value);
+//     }
+
+//     // Send the request
+//     fetch(form.action, {
+//         method: 'POST',
+//         body: formData,
+//         headers: {
+//             'X-CSRFToken': getCookie('csrftoken'),
+//         },
+//         credentials: 'same-origin'
+//     })
+//     .then(response => {
+//         if (response.ok) {
+//             window.location.href = form.action.replace('send_message', 'chat');
+//         } else {
+//             response.text().then(text => {
+//                 console.error('Error sending message:', text);
+//                 alert('Error sending message. Please try again.');
+//             });
+//         }
+//     })
+//     .catch(error => {
+//         console.error('Error:', error);
+//         alert('Error sending message. Please try again.');
+//     });
+
+//     closeSelectMembers();
+// }
 
 // Helper function to get CSRF token
 function getCookie(name) {
@@ -1349,38 +1553,28 @@ createReadReceipts(message) {
         `;
     }
 
-    createDeleteForm(message, projectPk) {
-        return `
-            <form method="POST" 
-                  action="/projects/${projectPk}/deletemessage/"
-                  id="deletemessage_${message.chat_id}" 
-                  style="display: none;">
-                <input type="hidden" value="${message.chat_id}" name="mid" required>
+createDeleteForm(message, projectPk) {
+    return `
+        <form method="POST" id="deletemessage_${message.chat_id}" style="display: none;" onsubmit="deleteMessage(event, ${message.chat_id}, ${projectPk})">
+            <input type="hidden" value="${message.chat_id}" name="mid" required>
+            <button type="submit" class="btn btn-primary">
+                <i class="fa fa-trash-o"></i>
+            </button>
+        </form>
+    `;
+}
 
-                <button type="submit" 
-                        onclick="return confirm('Are You Sure You Want To Delete This Message?')"
-                        class="btn btn-primary">
-                    <i class="fa fa-trash-o"></i>
-                </button>
-            </form>
-        `;
-    }
-
-    createEditForm(message, projectPk) {
-        return `
-            <form method="POST" 
-                  action="/projects/${projectPk}/edit_message/"
-                  id="editmessage_${message.chat_id}" 
-                  style="display: none;">
-                <input type="hidden" value="${message.chat_id}" name="mid" required>
-
-                <input type="text" name="edited_message" value="${message.message.replace(/"/g, '&quot;')}" required>
-                <button type="submit" class="btn btn-primary">
-                    <i class="fa fa-edit"></i>
-                </button>
-            </form>
-        `;
-    }
+createEditForm(message, projectPk) {
+    return `
+        <form method="POST" id="editmessage_${message.chat_id}" style="display: none;" onsubmit="editMessage(event, ${message.chat_id}, ${projectPk})">
+            <input type="hidden" value="${message.chat_id}" name="mid" required>
+            <input type="text" name="edited_message" value="${message.message.replace(/"/g, '&quot;')}" required>
+            <button type="submit" class="btn btn-primary">
+                <i class="fa fa-edit"></i>
+            </button>
+        </form>
+    `;
+}
 
 createStarForm1(message, projectPk, isOtherUser = false) {
     const formId = isOtherUser ? `starmessage1_${message.chat_id}` : `starmessage_${message.chat_id}`;
@@ -1530,6 +1724,63 @@ $(document).ready(function() {
     setInterval(fetchNewMessages, 3000);
     {% endif %}
 });
+
+</script>
+<script type="text/javascript">
+    function deleteMessage(event, messageId, projectPk) {
+    event.preventDefault(); // Prevent default form submission
+
+    if (confirm('Are You Sure You Want To Delete This Message?')) {
+        const form = document.getElementById(`deletemessage_${messageId}`);
+        const formData = new FormData(form);
+
+        fetch(`/projects/${projectPk}/deletemessage/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken'), // Include CSRF token
+            },
+            body: formData,
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove the message from the DOM
+                document.getElementById(`message_${messageId}`).remove(); // Adjust the selector as needed
+                alert('Message deleted successfully.');
+            } else {
+                alert(data.error || 'An error occurred while deleting the message.');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+}
+
+function editMessage(event, messageId, projectPk) {
+    event.preventDefault(); // Prevent default form submission
+
+    const form = document.getElementById(`editmessage_${messageId}`);
+    const formData = new FormData(form);
+
+    fetch(`/projects/${projectPk}/edit_message/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken'), // Include CSRF token
+        },
+        body: formData,
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the message in the DOM
+            const messageElement = document.getElementById(`message_content_${messageId}`); // Adjust the selector as needed
+            messageElement.textContent = data.updated_message; // Update the message text
+            alert('Message edited successfully.');
+        } else {
+            alert(data.error || 'An error occurred while editing the message.');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
 
 </script>
   </body>
