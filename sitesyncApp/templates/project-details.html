@@ -123,7 +123,7 @@
               {% endif %}
               <a href="{% url 'resources' project.pk %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">View Files <i class="fa fa-files-o"></i></a>
               <a href="{% url 'tasks' project.pk %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">View Tasks <i class="fa fa-tasks"></i></a>
-              <a href="{% url 'events' project.pk %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">View Events <i class="fa fa-calendar"></i></a> 
+              <a href="{% url 'events' project.pk %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">View Meetings <i class="fa fa-calendar"></i></a> 
               {% if project.leader_id == auth_user.id %} 
               <a href="{% url 'transactions' project.pk %}" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">View Transactions <i class="fa fa-money"></i></a> 
               {% elif  type == 'Client' or type == 'Quantity Surveyor' %} 

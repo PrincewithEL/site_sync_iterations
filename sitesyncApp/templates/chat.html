@@ -188,7 +188,6 @@ $(document).on('keydown', function(event) {
     if (event.key === 'Enter' || $('#message').is(':focus')) {
         event.preventDefault();
         $('#send').click();  // Replace #send with the actual ID of your submit button
-        document.getElementById('message').value = '';
     }
 });
 
@@ -567,7 +566,7 @@ $(document).on('keydown', function(event) {
 
 
 <div class="box-footer">
-    <form method="POST" name="send_message_form" id="send_message_form" accept-charset="UTF-8" onsubmit="clearMessageInput()">
+    <form method="POST" name="send_message_form" action="{% url 'send_message' project.pk %}" id="send_message_form" accept-charset="UTF-8">
         <div id="replySection" style="display: none; margin-bottom: 10px; padding: 10px; border-top: 1px solid #ddd;">
             <strong>Replying to: <span id="replyMessageContent"></span></strong>
             <button type="button" class="btn btn-secondary btn-sm" onclick="cancelReply()">Cancel Reply</button>
@@ -584,7 +583,8 @@ $(document).on('keydown', function(event) {
                 </div>
             </span>
 
-        <input class="form-control chat-input chatMessage" required id="message" name="message" placeholder="Type message..."/>
+        <input class="form-control" required id="message" name="message" placeholder="Type message..."/>
+        <input type="reset" style="display: none;" name="reset" id="reset">
         <input type="hidden" value="{{ auth_user.id }}" name="uid" required>
             <span class="input-group-btn">
                 <button type="submit" title="Send A Message" onclick="sendMessage(event);" class="btn btn-warning btn-flat" id="send"><i class="fa fa-send-o"></i></button>
@@ -652,25 +652,18 @@ $(document).on('keydown', function(event) {
 </div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    function clearMessageInput() {
-        const messageInput = document.getElementById('message');
-        if (messageInput) {
-            messageInput.value = ''; // Clear the input field
-        }
-    }
-</script>
-<script>
 function sendMessage(event) {
     event.preventDefault();
-    
     console.log("Form submission started");
-    
+
     const form = document.getElementById('send_message_form');
     if (!form) {
         console.error("Form not found");
         return;
     }
     
+    // Try getting input by class name instead
+    const input = document.querySelector('.chat-input');
     const formData = new FormData(form);
     
     fetch("{% url 'send_message' project.pk %}", {
@@ -685,83 +678,13 @@ function sendMessage(event) {
     .then(data => {
         console.log("Response received:", data);
         
-        // Try to get message element
-        const messageElement = document.getElementById('message');
-        console.log("Message element:", messageElement);
-        
-        if (messageElement) {
-            try {
-                messageElement.innerHTML = '';
-                console.log("Message cleared");
-            } catch (e) {
-                console.error("Error clearing message:", e);
-            }
-        }
-        
-        // Try to clear file input
-        const fileInput = document.getElementById('files');
-        console.log("File input:", fileInput);
-        
-        if (fileInput) {
-            try {
-                fileInput.value = '';
-                console.log("File input cleared");
-            } catch (e) {
-                console.error("Error clearing file input:", e);
-            }
-        }
-        
-        // Try form reset
-        try {
-            form.reset();
-            console.log("Form reset completed");
-        } catch (e) {
-            console.error("Error resetting form:", e);
-        }
+        window.location.reload();
+
     })
     .catch(error => {
         console.error('Error:', error);
     });
 }
-
-// Add this to your document ready or window load event
-document.addEventListener('DOMContentLoaded', function() {
-    // Attach the event listener to the form
-    const form = document.getElementById('send_message_form');
-    if (form) {
-        form.addEventListener('submit', sendMessage);
-    }
-
-    // Optional: Add reset confirmation
-    const resetButton = form.querySelector('button[type="reset"]');
-    if (resetButton) {
-        resetButton.addEventListener('click', function(e) {
-            if (!confirm('Are you sure you want to clear the form?')) {
-                e.preventDefault();
-            }
-        });
-    }
-});
-
-
-// Add this to your document ready or window load event
-document.addEventListener('DOMContentLoaded', function() {
-    // Attach the event listener to the form
-    const form = document.getElementById('send_message_form');
-    if (form) {
-        form.addEventListener('submit', sendMessage);
-    }
-
-    // Optional: Add reset confirmation
-    const resetButton = form.querySelector('button[type="reset"]');
-    if (resetButton) {
-        resetButton.addEventListener('click', function(e) {
-            if (!confirm('Are you sure you want to clear the form?')) {
-                e.preventDefault();
-            }
-        });
-    }
-});
 </script>
 <script>
     const sendMessageUrl = "{% url 'send_message' project.pk %}";
@@ -796,98 +719,6 @@ function closeSelectMembers() {
     document.getElementById('selectMembersModal').style.display = 'none';
 }
 
-function submitMemberSelection() {
-    // Get the form and create FormData
-    const form = document.forms['send_message_form'];
-    const formData = new FormData(form);
-    
-    // Get selected radio button value
-    const selectedOption = document.querySelector('input[name="selected_members[]"]:checked');
-    
-    if (!selectedOption) {
-        alert('Please select a recipient option');
-        return;
-    }
-    
-    // Clear any existing selected_members entries
-    formData.delete('selected_members[]');
-    
-    if (selectedOption.value === 'all') {
-        formData.append('selected_members[]', 'all');
-    } else {
-        formData.append('selected_members[]', selectedOption.value);
-    }
-
-    // Send the request
-    fetch(form.action, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken'),
-            'X-Requested-With': 'XMLHttpRequest'  // Add this to identify AJAX request
-        },
-        credentials: 'same-origin'
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            // Reset form fields
-            form.reset();
-            
-            // Clear specific inputs
-            document.getElementById('message').value = '';
-            document.getElementById('files').value = '';
-            document.getElementById('replyMessageId').value = '';
-            
-            // Clear member selection
-            const memberSelects = document.querySelectorAll('[name="selected_members[]"]');
-            memberSelects.forEach(select => {
-                if (select.type === 'radio') {
-                    select.checked = false;
-                } else if (select.type === 'checkbox') {
-                    select.checked = false;
-                }
-            });
-
-            // Clear any preview elements
-            const previewContainer = document.getElementById('file-preview');
-            if (previewContainer) {
-                previewContainer.innerHTML = '';
-            }
-
-            // Add the new message to the chat display
-            if (typeof updateChatDisplay === 'function') {
-                updateChatDisplay(data);
-            }
-
-            // Close the member selection modal
-            closeSelectMembers();
-
-            // Optional: Show success message
-            // const successMessage = document.createElement('div');
-            // successMessage.className = 'alert alert-success';
-            // successMessage.textContent = 'Message sent successfully';
-            // document.querySelector('.chat-container').prepend(successMessage);
-            
-            // Remove success message after 3 seconds
-            setTimeout(() => {
-                successMessage.remove();
-            }, 3000);
-        } else if (data.error) {
-            alert(data.error);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error sending message. Please try again.');
-    });
-}
-
 // function submitMemberSelection() {
 //     // Get the form and create FormData
 //     const form = document.forms['send_message_form'];
@@ -905,11 +736,8 @@ function submitMemberSelection() {
 //     formData.delete('selected_members[]');
     
 //     if (selectedOption.value === 'all') {
-//         // If "All Users" is selected, don't append any specific member IDs
-//         // The backend will handle this case
 //         formData.append('selected_members[]', 'all');
 //     } else {
-//         // Append the selected member ID
 //         formData.append('selected_members[]', selectedOption.value);
 //     }
 
@@ -919,26 +747,121 @@ function submitMemberSelection() {
 //         body: formData,
 //         headers: {
 //             'X-CSRFToken': getCookie('csrftoken'),
+//             'X-Requested-With': 'XMLHttpRequest'  // Add this to identify AJAX request
 //         },
 //         credentials: 'same-origin'
 //     })
 //     .then(response => {
-//         if (response.ok) {
-//             window.location.href = form.action.replace('send_message', 'chat');
-//         } else {
-//             response.text().then(text => {
-//                 console.error('Error sending message:', text);
-//                 alert('Error sending message. Please try again.');
+//         if (!response.ok) {
+//             throw new Error('Network response was not ok');
+//         }
+//         return response.json();
+//     })
+//     .then(data => {
+//         if (data.success) {
+//             // Reset form fields
+//             form.reset();
+            
+//             // Clear specific inputs
+//             document.getElementById('message').value = '';
+//             document.getElementById('files').value = '';
+//             document.getElementById('replyMessageId').value = '';
+            
+//             // Clear member selection
+//             const memberSelects = document.querySelectorAll('[name="selected_members[]"]');
+//             memberSelects.forEach(select => {
+//                 if (select.type === 'radio') {
+//                     select.checked = false;
+//                 } else if (select.type === 'checkbox') {
+//                     select.checked = false;
+//                 }
 //             });
+
+//             // Clear any preview elements
+//             const previewContainer = document.getElementById('file-preview');
+//             if (previewContainer) {
+//                 previewContainer.innerHTML = '';
+//             }
+
+//             // Add the new message to the chat display
+//             if (typeof updateChatDisplay === 'function') {
+//                 updateChatDisplay(data);
+//             }
+
+//             // Close the member selection modal
+//             closeSelectMembers();
+
+//             // Optional: Show success message
+//             // const successMessage = document.createElement('div');
+//             // successMessage.className = 'alert alert-success';
+//             // successMessage.textContent = 'Message sent successfully';
+//             // document.querySelector('.chat-container').prepend(successMessage);
+            
+//             // Remove success message after 3 seconds
+//             setTimeout(() => {
+//                 successMessage.remove();
+//             }, 3000);
+//         } else if (data.error) {
+//             alert(data.error);
 //         }
 //     })
 //     .catch(error => {
 //         console.error('Error:', error);
 //         alert('Error sending message. Please try again.');
 //     });
-
-//     closeSelectMembers();
 // }
+
+function submitMemberSelection() {
+    // Get the form and create FormData
+    const form = document.forms['send_message_form'];
+    const formData = new FormData(form);
+    
+    // Get selected radio button value
+    const selectedOption = document.querySelector('input[name="selected_members[]"]:checked');
+    
+    if (!selectedOption) {
+        alert('Please select a recipient option');
+        return;
+    }
+    
+    // Clear any existing selected_members entries
+    formData.delete('selected_members[]');
+    
+    if (selectedOption.value === 'all') {
+        // If "All Users" is selected, don't append any specific member IDs
+        // The backend will handle this case
+        formData.append('selected_members[]', 'all');
+    } else {
+        // Append the selected member ID
+        formData.append('selected_members[]', selectedOption.value);
+    }
+
+    // Send the request
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (response.ok) {
+            window.location.href = form.action.replace('send_message', 'chat');
+        } else {
+            response.text().then(text => {
+                console.error('Error sending message:', text);
+                alert('Error sending message. Please try again.');
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error sending message. Please try again.');
+    });
+
+    closeSelectMembers();
+}
 
 // Helper function to get CSRF token
 function getCookie(name) {

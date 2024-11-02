@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>Site Sync - {{ type }} Module - Events Page</title>
+    <title>Site Sync - {{ type }} Module - Meetings Page</title>
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
        {% load static %}
        {% load custom_filters %}
@@ -131,7 +131,7 @@
             <li><a href="{% url 'client' %}"><i class="fa fa-dashboard"></i> Home</a></li>
             <li><a href="{% url 'client' %}">My Projects</a></li>
             <li><a href="{% url 'project_detail' project.pk %}">{{ project.project_name }}</a></li>
-            <li class="active">My Events</li>
+            <li class="active">My Meeting</li>
           </ol>
         </section>
 
@@ -146,7 +146,7 @@
               <a href="#" onclick="printData();" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Generate Report <i class="fa fa-print"></i></a>
               </div>
             <div class="">
-              <a href="#"  onclick="openForm();" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Add An Event <i class="fa fa-plus"></i></a>
+              <a href="#"  onclick="openForm();" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Add A Meeting <i class="fa fa-plus"></i></a>
               </div>
 <!--             <div class="">
               <a href="#"  onclick="openCalender();" onMouseOver="this.style.color='black'" onMouseOut="this.style.color='white'" class="btn btn-primary btn-block margin-bottom" style="color: white; font-weight: bold;">Event Calendar View <i class="fa fa-calendar"></i></a>
@@ -156,12 +156,12 @@
               </div>        
               <div class="box box-solid">
                 <div class="box-header with-border">
-                  <h3 class="box-title">List of Events</h3>
+                  <h3 class="box-title">List of My Meetings</h3>
                 </div>
 <div class="box-body no-padding">
     <ul class="nav nav-pills nav-stacked">
         <li id="allEventNavItem" class="{% if filter_type == 'all' %}active{% endif %}">
-            <a href="?filter=all"><i class="fa fa-calendar"></i> All Events 
+            <a href="?filter=all"><i class="fa fa-calendar"></i> All Meetings 
                 <span class="label label-primary pull-right">{{ ecounts }}</span>
             </a>
         </li>
@@ -219,11 +219,11 @@
           </div> -->
               <div class="box box-primary" id="myTable">
                 <div class="box-header with-border">
-                  <h3 class="box-title">My Events</h3>
+                  <h3 class="box-title">My Meetings</h3>
                   <div class="box-tools pull-right">
         <form method="get" action="{% url 'events' project.project_id %}" class="form-inline">
             <div class="input-group">
-                <input type="text" class="form-control input-sm" name="search" placeholder="Search Event(s)..." value="{{ request.GET.search }}">
+                <input type="text" class="form-control input-sm" name="search" placeholder="Search My Meetings..." value="{{ request.GET.search }}">
                 <span class="input-group-btn">
                     <button type="submit" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-search"></span></button>
                 </span>
@@ -264,10 +264,10 @@
           <div class="form-group">
             <label for="filter" class="sr-only">Status Filter:</label>
             <select name="filter" id="filter" class="form-control input-sm">
-              <option value="all" {% if current_status_filter == 'all' %}selected{% endif %}>All Events</option>
-              <option value="completed" {% if current_status_filter == 'internal' %}selected{% endif %}>Completed Events</option>
-              <option value="active" {% if current_status_filter == 'active' %}selected{% endif %}>Active Events</option>
-              <option value="bookmarked" {% if current_status_filter == 'bookmarked' %}selected{% endif %}>Starred Events</option>
+              <option value="all" {% if current_status_filter == 'all' %}selected{% endif %}>All Meetings</option>
+              <option value="completed" {% if current_status_filter == 'internal' %}selected{% endif %}>Completed Meetings</option>
+              <option value="active" {% if current_status_filter == 'active' %}selected{% endif %}>Active Meetings</option>
+              <option value="bookmarked" {% if current_status_filter == 'bookmarked' %}selected{% endif %}>Starred Meetings</option>
             </select>
           </div>
           <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
@@ -326,7 +326,7 @@
                     <form method="POST" action="{% url 'events' pk=event.project_id %}">
     {% csrf_token %}
                         <button type="submit" class="btn btn-link" style="padding: 0; border: none; background: none;"
-                            onclick="return confirm('Are You Sure You Want To {% if event.event_id in bookmarked_events_ids %}Remove The Star For{% else %}Star{% endif %} This Event?')">
+                            onclick="return confirm('Are You Sure You Want To {% if event.event_id in bookmarked_events_ids %}Remove The Star For{% else %}Star{% endif %} This Meeting?')">
                             <input type="hidden" id="inputs" name="selected_event" value="{{ event.event_id }}">
                             <input type="hidden" name="action1" value="{% if event.event_id in bookmarked_events_ids %}unbookmark1{% else %}bookmark1{% endif %}">
                             <i class="fa {% if event.event_id in bookmarked_events_ids %}fa-star{% else %}fa-star-o{% endif %} text-yellow"></i>
@@ -351,7 +351,7 @@
         {% if user_id == event.user_id %}
                           <td class="mailbox-name"><form method="POST" action="{% url 'delete_event' pk=event.project_id event_id=event.event_id %}">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-primary btn-xs pull-right" onclick="return confirm('Are You Sure You Want To Remove This Event?'); deleteE();">
+                        <button type="submit" class="btn btn-primary btn-xs pull-right" onclick="return confirm('Are You Sure You Want To Remove This Meeting?'); deleteE();">
                             <i class="fa fa-trash-o"></i>
                         </button>
                     </form></td> 
@@ -381,11 +381,11 @@
 
               <div class="box box-primary" id="myForm1">
                 <div class="box-header with-border">
-                  <h3 class="box-title">My Trash Events</h3>
+                  <h3 class="box-title">My Trash Meetings</h3>
                   <button type="button" style="position: relative;" onclick="closeTrashEvents();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
                   <div class="box-tools pull-right">
                     <div class="has-feedback">
-                      <input type="text" class="form-control input-sm" id="myInput" onkeyup="searchTable();"  placeholder="Search My Events..."/>
+                      <input type="text" class="form-control input-sm" id="myInput" onkeyup="searchTable();"  placeholder="Search My Meetings..."/>
                       <span class="glyphicon glyphicon-search form-control-feedback"></span>
                     </div>
                   </div><!-- /.box-tools -->
@@ -407,8 +407,8 @@
                       <thead>
                         <!-- <th></th> -->
                         <th>Name</th>
-                        <th>Event Details</th>
-                        <th>Event Date</th>
+                        <th>Details</th>
+                        <th>Date</th>
                         <th>Days Until Permanent Deletion</th>
                         <th></th>
                         <th></th>
@@ -427,13 +427,13 @@
                             <td class="mailbox-attachment">
                             <form method="POST" name="update_project_member_form" action="{% url 'restore_event' pk=trash_event.project_id  event_id=trash_event.event_id %}" enctype="multipart/form-data">
                               {% csrf_token %}
-                              <button type="submit" class="btn btn-primary" onclick="return confirm('Are You Sure You Want To Restore This Event ?')">Restore</button>
+                              <button type="submit" class="btn btn-primary" onclick="return confirm('Are You Sure You Want To Restore This Meeting ?')">Restore</button>
                             </form>
                         </td>
                                                   <td class="mailbox-attachment">
                             <form method="POST" name="update_project_member_form" action="{% url 'hide_event' pk=trash_event.project_id event_id=trash_event.event_id %}" enctype="multipart/form-data">
                               {% csrf_token %}
-                              <button type="submit" class="btn btn-primary" onclick="return confirm('Are You Sure You Want To Permanently Remove This Event ?')">Remove</button>
+                              <button type="submit" class="btn btn-primary" onclick="return confirm('Are You Sure You Want To Permanently Remove This Meeting ?')">Remove</button>
                             </form>
                         </td>
     </tr>
@@ -446,7 +446,7 @@
 
                                         <div class="box box-primary" id="myForm">
                               <div class="box-header">
-                                <h3 class="box-title">Add An Event</h3>
+                                <h3 class="box-title">Add A Meeting</h3>
                                 <button type="button" style="position: relative; right: -720px;" onclick="closeForm();" class="btn btn-primary"><i class="fa fa-window-close" style="font-size:12px"></i></button>
                               </div><!-- /.box-header -->
                               <!-- form start -->
@@ -454,20 +454,20 @@
     {% csrf_token %}
     <div class="box-body">
         <div class="form-group col-md-6">
-            <label for="event_name">Event Name</label>
-            <input type="text" class="form-control" id="event_name" name="event_name"placeholder="Event Name"  required>
+            <label for="event_name">Meeting Name</label>
+            <input type="text" class="form-control" id="event_name" name="event_name"placeholder="Meeting Name"  required>
         </div>
         <div class="form-group col-md-6">
-            <label for="event_date">Event Date</label>
-    <input type="date" min="{{ day|date:'Y-m-d' }}" class="form-control" id="event_date" placeholder="Event Date" name="event_date" required>
+            <label for="event_date">Meeting Date</label>
+    <input type="date" min="{{ day|date:'Y-m-d' }}" class="form-control" id="event_date" placeholder="Meeting Date" name="event_date" required>
         </div>
         <div class="form-group col-md-6">
             <label for="event_start_time">Start Time</label>
-            <input type="time" class="form-control" id="event_start_time"placeholder="Event Start Time"  name="event_start_time" required>
+            <input type="time" class="form-control" id="event_start_time"placeholder="Meeting Start Time"  name="event_start_time" required>
         </div>
         <div class="form-group col-md-6">
             <label for="event_end_time">End Time</label>
-            <input type="time" class="form-control" id="event_end_time"placeholder="Event End Time"  name="event_end_time" required>
+            <input type="time" class="form-control" id="event_end_time"placeholder="Meeting End Time"  name="event_end_time" required>
         </div>
         <script>
     document.getElementById("event_start_time").addEventListener("change", function() {
@@ -484,20 +484,20 @@
     });
 </script>
         <div class="form-group">
-            <label for="event_details">Event Details</label>
-            <textarea class="form-control" rows="4" id="event_details"placeholder="Event Details..."  name="event_details" required placeholder="Enter Event Details..."></textarea>
+            <label for="event_details">Meeting Details</label>
+            <textarea class="form-control" rows="4" id="event_details" name="event_details" required placeholder="Enter Meeting Details..."></textarea>
         </div>
         <div class="form-group col-md-6">
-            <label for="event_location">Event Location (optional)</label>
-            <input type="text" class="form-control" id="event_location"placeholder="Event Location"  name="event_location">
+            <label for="event_location">Meeting Location (optional)</label>
+            <input type="text" class="form-control" id="event_location"placeholder="Meeting Location"  name="event_location">
         </div>
         <div class="form-group col-md-6">
-            <label for="event_link">Event Link (optional)</label>
-            <input type="url" class="form-control" id="event_link" placeholder="Event Link" name="event_link">
+            <label for="event_link">Meeting Link (optional)</label>
+            <input type="url" class="form-control" id="event_link" placeholder="Meeting Link" name="event_link">
         </div>
     </div>
     <div class="box-footer">
-        <button type="submit" class="btn btn-primary">Add Event</button>
+        <button type="submit" class="btn btn-primary">Add Meeting</button>
         <button type="reset" class="btn btn-primary">Reset</button>
     </div>
 </form>
