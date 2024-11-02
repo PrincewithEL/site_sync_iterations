@@ -1245,6 +1245,7 @@ def chat_room_view(request, pk):
             'receiver_type': receiver_user_type,
             'is_starred': message.chat_id in bookmarked_chat_ids,
             'file': message.file.url if message.file else None,
+            'replying_to_message': message.reply if message.reply else None,
             'file_extension': os.path.splitext(message.file.name)[1].lower().strip('.') if message.file else '',
             'is_read': is_read,
         })
@@ -1293,7 +1294,7 @@ def send_message_api(request, pk):
             }, status=400)
 
         message = data.get('message')
-        selected_users = data.get('selected_users')  # List of user IDs
+        # selected_users = data.get('selected_users')  # List of user IDs
         reply_message_id = data.get('reply_message_id')
         
         # Handle file upload
@@ -1357,21 +1358,31 @@ def send_message_api(request, pk):
             )
 
         # Send to selected users
-        for user_id in selected_users:
-            existing_status = ChatStatus.objects.filter(
-                user_id=user_id,
-                group=new_chat.group,
-                chat=new_chat
-            ).exists()
-
-            if not existing_status:
-                ChatStatus.objects.create(
-                    chat=new_chat,
-                    group=project.groupchat,
-                    user_id=user_id,
-                    status=1,
-                    is_deleted=0 
-                )
+        # Get all project members except the sender
+        project_members = ProjectMembers.objects.filter(
+            project=project, 
+            is_deleted=0
+        ).exclude(user_id=user.id)
+            
+        # Include project leader if they're not the sender
+        if project.leader_id != user.id:
+            ChatStatus.objects.create(
+                chat=new_chat,
+                group=project.groupchat,
+                user_id=project.leader_id,
+                status=1,
+                is_deleted=0
+            )
+            
+        # Create chat status for all other members
+        for member in project_members:
+            ChatStatus.objects.create(
+                chat=new_chat,
+                group=project.groupchat,
+                user_id=member.user_id,
+                status=1,
+                is_deleted=0
+            )
 
         return JsonResponse({
             "message": "Message sent successfully.",
