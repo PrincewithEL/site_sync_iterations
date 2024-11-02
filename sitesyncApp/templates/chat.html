@@ -240,7 +240,8 @@ $(document).on('keydown', function(event) {
           <ol class="breadcrumb">
             <li><a href="{% url 'client' %}"><i class="fa fa-dashboard"></i> Home</a></li>
             <li><a href="{% url 'client' %}">My Projects</a></li>
-            <li class="active">{{ project.project_name }}</li>
+            <li><a href="{% url 'project_detail' project.pk %}">{{ project.project_name }}</a></li>
+            <li class="active">Group Chat</li>
           </ol>
         </section>
 
