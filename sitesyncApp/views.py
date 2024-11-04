@@ -1280,7 +1280,7 @@ def chat_room_view(request, pk):
 @csrf_exempt  # Allow requests without CSRF token
 def send_message_api(request, pk):
     if request.method == 'POST':
-        user = request.user
+        # user = request.user
         project = get_object_or_404(Projects, pk=pk)
 
         # Parse JSON body data
@@ -1292,6 +1292,10 @@ def send_message_api(request, pk):
                 "status_code": 400,
                 "data": {}
             }, status=400)
+
+        user_id = data.get('user_id')
+
+        user = get_object_or_404(User, id=user_id)
 
         message = data.get('message')
         # selected_users = data.get('selected_users')  # List of user IDs
