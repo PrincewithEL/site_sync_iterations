@@ -116,6 +116,7 @@ def SignInView(request):
                 # Fetch user profile and details
                 profile = user.profile
                 user_details = {
+                    'user_id': user.id,
                     'fullname': user.first_name,
                     'email_address': user.email,
                     'profile_picture': request.build_absolute_uri(profile.profile_picture.url) if profile.profile_picture else None,
@@ -1212,7 +1213,7 @@ def chat_room_view(request, pk):
         project_member_details.append(member_info)
 
     # Fetch chat messages
-    messages = Chat.objects.filter(group=project.groupchat, is_deleted=0).order_by('timestamp')
+    messages = Chat.objects.filter(group=project.groupchat, is_deleted=0).order_by('-timestamp')
     
     # Handle bookmarks for chat messages
     bookmarks = Bookmarks.objects.filter(is_deleted=0, item_type='Chat', user_id=request.user.id)
@@ -4504,6 +4505,7 @@ def delete_event(request, pk, event_id):
     ).update(is_deleted=1)
     return redirect('events', pk=pk)
 
+@login_required
 def add_task(request, pk):
     if request.method == 'POST':
         project = get_object_or_404(Projects, pk=pk)
