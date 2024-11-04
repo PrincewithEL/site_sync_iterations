@@ -567,7 +567,7 @@ $(document).on('keydown', function(event) {
 
 
 <div class="box-footer">
-    <form method="POST" name="send_message_form" action="{% url 'send_message' project.pk %}" id="send_message_form" accept-charset="UTF-8">
+    <form method="POST" name="send_message_form" id="send_message_form" accept-charset="UTF-8">
         <div id="replySection" style="display: none; margin-bottom: 10px; padding: 10px; border-top: 1px solid #ddd;">
             <strong>Replying to: <span id="replyMessageContent"></span></strong>
             <button type="button" class="btn btn-secondary btn-sm" onclick="cancelReply()">Cancel Reply</button>
@@ -584,7 +584,7 @@ $(document).on('keydown', function(event) {
                 </div>
             </span>
 
-        <input class="form-control" required id="message" name="message" placeholder="Type message..."/>
+        <input class="form-control" required name="message" placeholder="Type message..." id="messageInput"/>
         <input type="reset" style="display: none;" name="reset" id="reset">
         <input type="hidden" value="{{ auth_user.id }}" name="uid" required>
             <span class="input-group-btn">
@@ -678,8 +678,12 @@ function sendMessage(event) {
     .then(response => response.json())
     .then(data => {
         console.log("Response received:", data);
-        
-        window.location.reload();
+            const messageInput = document.getElementById("messageInput");
+    
+    // Here you can handle the form submission, like sending data with AJAX if needed
+    
+    messageInput.value = "";
+        // window.location.reload();
 
     })
     .catch(error => {
@@ -719,98 +723,6 @@ function openSelectMembers() {
 function closeSelectMembers() {
     document.getElementById('selectMembersModal').style.display = 'none';
 }
-
-// function submitMemberSelection() {
-//     // Get the form and create FormData
-//     const form = document.forms['send_message_form'];
-//     const formData = new FormData(form);
-    
-//     // Get selected radio button value
-//     const selectedOption = document.querySelector('input[name="selected_members[]"]:checked');
-    
-//     if (!selectedOption) {
-//         alert('Please select a recipient option');
-//         return;
-//     }
-    
-//     // Clear any existing selected_members entries
-//     formData.delete('selected_members[]');
-    
-//     if (selectedOption.value === 'all') {
-//         formData.append('selected_members[]', 'all');
-//     } else {
-//         formData.append('selected_members[]', selectedOption.value);
-//     }
-
-//     // Send the request
-//     fetch(form.action, {
-//         method: 'POST',
-//         body: formData,
-//         headers: {
-//             'X-CSRFToken': getCookie('csrftoken'),
-//             'X-Requested-With': 'XMLHttpRequest'  // Add this to identify AJAX request
-//         },
-//         credentials: 'same-origin'
-//     })
-//     .then(response => {
-//         if (!response.ok) {
-//             throw new Error('Network response was not ok');
-//         }
-//         return response.json();
-//     })
-//     .then(data => {
-//         if (data.success) {
-//             // Reset form fields
-//             form.reset();
-            
-//             // Clear specific inputs
-//             document.getElementById('message').value = '';
-//             document.getElementById('files').value = '';
-//             document.getElementById('replyMessageId').value = '';
-            
-//             // Clear member selection
-//             const memberSelects = document.querySelectorAll('[name="selected_members[]"]');
-//             memberSelects.forEach(select => {
-//                 if (select.type === 'radio') {
-//                     select.checked = false;
-//                 } else if (select.type === 'checkbox') {
-//                     select.checked = false;
-//                 }
-//             });
-
-//             // Clear any preview elements
-//             const previewContainer = document.getElementById('file-preview');
-//             if (previewContainer) {
-//                 previewContainer.innerHTML = '';
-//             }
-
-//             // Add the new message to the chat display
-//             if (typeof updateChatDisplay === 'function') {
-//                 updateChatDisplay(data);
-//             }
-
-//             // Close the member selection modal
-//             closeSelectMembers();
-
-//             // Optional: Show success message
-//             // const successMessage = document.createElement('div');
-//             // successMessage.className = 'alert alert-success';
-//             // successMessage.textContent = 'Message sent successfully';
-//             // document.querySelector('.chat-container').prepend(successMessage);
-            
-//             // Remove success message after 3 seconds
-//             setTimeout(() => {
-//                 successMessage.remove();
-//             }, 3000);
-//         } else if (data.error) {
-//             alert(data.error);
-//         }
-//     })
-//     .catch(error => {
-//         console.error('Error:', error);
-//         alert('Error sending message. Please try again.');
-//     });
-// }
 
 function submitMemberSelection() {
     // Get the form and create FormData
@@ -879,167 +791,6 @@ function getCookie(name) {
     }
     return cookieValue;
 }
-
-// $(document).ready(function() {
-//     $('#send_message_form').on('submit', function(event) {
-//         event.preventDefault(); // Prevent the form from submitting normally
-
-//         const messageInput = $('#message');
-//         const messageContent = messageInput.val().trim(); // Get message content
-
-//         // Get the selected members
-//         const selectedOption = $('input[name="selected_members[]"]:checked');
-        
-//         if (!selectedOption.length) {
-//             alert('Please select a recipient option');
-//             return;
-//         }
-
-//         const formData = $(this).serializeArray(); // Serialize form data
-
-//         // Determine the member selection
-//         if (selectedOption.val() === 'all') {
-//             // If "All Users" is selected
-//             formData.push({ name: 'selected_members[]', value: 'all' });
-//         } else {
-//             // Append the selected member ID
-//             formData.push({ name: 'selected_members[]', value: selectedOption.val() });
-//         }
-
-//         // Use the generated URL here
-//         const sendMessageUrl = "{% url 'send_message' project.pk %}"; // Adjust this if needed
-
-//         $.ajax({
-//             url: sendMessageUrl,
-//             type: 'POST',
-//             data: formData,
-//             headers: {
-//                 'X-CSRFToken': '{{ csrf_token }}', // Include CSRF token
-//             },
-//             success: function(data) {
-//                 // Handle successful message send
-//                 const messagesDiv = $('#messages');
-//                 const newMessageDiv = $('<div></div>').html(`<strong>${data.user}:</strong> ${data.content} <small>${data.timestamp}</small>`);
-//                 messagesDiv.append(newMessageDiv);
-                
-//                 // Clear the input
-//                 messageInput.val(''); // Clear the message input
-//                 closeSelectMembers(); // Close the modal if necessary
-//             },
-//             error: function(xhr, status, error) {
-//                 // Handle errors
-//                 console.error("Error:", error);
-//                 alert("There was a problem sending your message. Please try again.");
-//             }
-//         });
-//     });
-
-    // Add keydown event to submit the form when Enter is pressed
-// $(document).ready(function() {
-//     // Bind form submission to Enter key using keyup
-//     $('#send_message_form').on('keyup', function(event) {
-//         if (event.key === 'Enter') {
-//             event.preventDefault(); // Prevent default line break behavior
-//             $('#send_message_form').trigger('submit'); // Manually trigger form submission
-//         }
-//     });
-
-//     // Handle form submission
-//     $('#send_message_form').on('submit', function(event) {
-//         event.preventDefault(); // Prevent default submission for validation
-
-//         // Capture data for debugging
-//         const messageContent = $('#message').val().trim();
-//         const replyMessageId = $('#replyMessageId').val();
-//         const fileInput = $('#files').val();
-
-//         // Log data to ensure values are being captured
-//         console.log("Raw Message Content:", messageContent);
-//         console.log("Reply Message ID:", replyMessageId);
-//         console.log("File Input:", fileInput);
-
-//         // Check if required data (like message) is present
-//         if (!messageContent) {
-//             alert("Message cannot be empty.");
-//             return; // Stop the submission if the message is empty
-//         }
-
-//         // Submit the form after validation
-//         this.submit(); // Proceed with the form submission
-//     });
-// });
-
-// $(document).ready(function () {
-//     // Trigger form submission on Enter key press
-//     $('#send_message_form').on('keydown', function (event) {
-//         if (event.key === 'Enter') {
-//             event.preventDefault(); // Prevents default new line behavior
-//             $('#send_message_form').trigger('submit'); // Triggers form submission
-//             $('#send_message_form').trigger('submit');
-//             document.getElementById("send_message_form").reset();
-
-//         }
-//     });
-
-//     // Handle form submission
-//     $('#send_message_form').on('submit', function (event) {
-//         event.preventDefault(); // Prevent default form submission for AJAX handling
-
-//         // Retrieve form data
-//         const messageContent = $('#message').val().trim();
-//         const replyMessageId = $('#replyMessageId').val();
-//         const fileInput = $('#files')[0].files[0]; // Capture file from input
-
-//         console.log(messageContent);
-
-//         // Basic validation: Ensure message is not empty
-//         if (!messageContent) {
-//             return;
-//             $('#send_message_form').trigger('submit');
-//         }
-
-//         // Create a FormData object to handle the file upload and other data
-//         const formData = new FormData();
-//         formData.append('message', messageContent);
-//         formData.append('reply_message_id', replyMessageId || '');
-//         formData.append('uid', $('input[name="uid"]').val()); // Include user ID
-//         if (fileInput) {
-//             formData.append('file', fileInput);
-//         }
-
-//         // Append CSRF token
-//         formData.append('csrfmiddlewaretoken', $('input[name="csrfmiddlewaretoken"]').val());
-
-//         // Optional: Append schedule date and time if provided
-//         const scheduledDate = $('#date').val();
-//         const scheduledTime = $('#time').val();
-//         if (scheduledDate && scheduledTime) {
-//             formData.append('scheduled_date', scheduledDate);
-//             formData.append('scheduled_time', scheduledTime);
-//         }
-
-//         // Send AJAX request
-//         $.ajax({
-//             url: $('#send_message_form').attr('action'),
-//             method: 'POST',
-//             data: formData,
-//             processData: false, // Important for FormData
-//             contentType: false, // Important for FormData
-//             success: function (response) {
-//                 // Handle successful submission
-//                 console.log("Message sent successfully:", response);
-//                 $('#message').val(''); // Clear input field
-//                 $('#replyMessageId').val(''); // Clear reply ID if any
-//                 $('#files').val(''); // Reset file input
-//             },
-//             error: function (xhr) {
-//                 // Handle error
-//                 alert("An error occurred while sending the message.");
-//                 console.error("Error details:", xhr.responseText);
-//             }
-//         });
-//     });
-// });
 
 </script>
 

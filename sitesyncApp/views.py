@@ -4504,7 +4504,6 @@ def delete_event(request, pk, event_id):
     ).update(is_deleted=1)
     return redirect('events', pk=pk)
 
-@login_required
 def add_task(request, pk):
     if request.method == 'POST':
         project = get_object_or_404(Projects, pk=pk)
