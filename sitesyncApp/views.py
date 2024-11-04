@@ -1278,7 +1278,6 @@ def chat_room_view(request, pk):
     }, status=200)
 
 @csrf_exempt  # Allow requests without CSRF token
-@login_required
 def send_message_api(request, pk):
     if request.method == 'POST':
         user = request.user
