@@ -68,6 +68,8 @@ from django.http import JsonResponse
 from .models import Chat
 import re
 from collections import Counter
+from django.utils.dateformat import DateFormat
+from django.utils.formats import date_format
 
 # Download NLTK stopwords if not already downloaded
 nltk.download("stopwords")
@@ -1237,13 +1239,15 @@ def chat_room_view(request, pk):
         receiver_profile = get_object_or_404(Profile, user_id=receiver_user_id) if receiver_user_id else None
         receiver_user_type = receiver_profile.user_type if receiver_profile else None
 
+        formatted_timestamp = date_format(message.timestamp, format='Y-m-d H:i:s')
+
         sender_user = User.objects.get(id=message.sender_user_id)
         sender_first_name = sender_user.first_name
 
         chat_messages_with_status.append({
             'id': message.chat_id,
             'message': message.message,
-            'timestamp': message.timestamp,
+            'timestamp': formatted_timestamp,
             'sender': message.sender_user_id,
             'sender_name': sender_first_name, 
             'receiver': receiver_user_id,
