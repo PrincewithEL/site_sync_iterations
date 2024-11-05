@@ -1237,11 +1237,15 @@ def chat_room_view(request, pk):
         receiver_profile = get_object_or_404(Profile, user_id=receiver_user_id) if receiver_user_id else None
         receiver_user_type = receiver_profile.user_type if receiver_profile else None
 
+        sender_user = User.objects.get(id=message.sender_user_id)
+        sender_first_name = sender_user.first_name
+
         chat_messages_with_status.append({
             'id': message.chat_id,
             'message': message.message,
             'timestamp': message.timestamp,
             'sender': message.sender_user_id,
+            'sender_name': sender_first_name, 
             'receiver': receiver_user_id,
             'receiver_type': receiver_user_type,
             'is_starred': message.chat_id in bookmarked_chat_ids,
