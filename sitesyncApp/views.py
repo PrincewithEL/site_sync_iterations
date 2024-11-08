@@ -1409,7 +1409,6 @@ def send_message_api(request, pk):
     }, status=405)
 
 @csrf_exempt  # Allow requests without CSRF token
-@login_required
 def EditMessageAPIView(request, pk):
     if request.method == 'POST':
         # Parse JSON body data
@@ -1445,7 +1444,6 @@ def EditMessageAPIView(request, pk):
     }, status=405)
 
 @csrf_exempt  # Allow requests without CSRF token
-@login_required
 def DeleteMessageAPIView(request, pk):
     if request.method == 'POST':
         # Parse JSON body data
