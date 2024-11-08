@@ -1425,7 +1425,7 @@ def EditMessageAPIView(request, pk):
         new_message = data.get('edited_message')
 
         # Fetch the chat message for the current user
-        chat = get_object_or_404(Chat, chat_id=message_id, sender_user=request.user)
+        chat = get_object_or_404(Chat, chat_id=message_id)
 
         chat.message = new_message
         chat.updated_at = timezone.now()
@@ -1459,7 +1459,7 @@ def DeleteMessageAPIView(request, pk):
         message_id = data.get('mid')
 
         # Fetch the chat message for the current user
-        chat_message = get_object_or_404(Chat, chat_id=message_id, sender_user=request.user)
+        chat_message = get_object_or_404(Chat, chat_id=message_id)
 
         # Set the is_deleted flag to 1 for the Chat message
         chat_message.is_deleted = 1
