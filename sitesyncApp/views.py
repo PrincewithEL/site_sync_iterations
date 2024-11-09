@@ -426,7 +426,7 @@ class ClientProjectsAPI(APIView):
         user = request.user
         profile = user.profile
         now = timezone.now().date()
-        user_id = profile.user_id
+        user_id = request.user.id
         try:
             # Fetch all active projects where user is leader or member
             leader_projects = Projects.objects.filter(leader_id=profile.user_id, is_deleted=0, project_status='Active')
@@ -804,7 +804,7 @@ class ProjectDetailAPI(APIView):
 
         # Fetch unread messages and tasks
         unread_messages = ChatStatus.objects.filter(
-            user_id=user.id,
+            user_id=request.user.id,
             group=project.groupchat,
             status=1,
             is_deleted=0
