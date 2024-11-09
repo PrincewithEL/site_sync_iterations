@@ -1723,6 +1723,7 @@ class TaskListView(APIView):
                 countdown = "No due date"
 
             task_list.append({
+                'task_id': task.task_id,
                 'task_name': task.task_name,
                 'due_date': task.task_due_date,
                 'countdown': countdown,
