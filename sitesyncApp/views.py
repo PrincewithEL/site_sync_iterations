@@ -1787,8 +1787,10 @@ def AddTaskAPIView(request, pk):
 
             # Handle dependent task if provided
             dependent_task_id = request_data.get('dependent_task')
-            if dependent_task_id:
-                task.dependant_task_id = int(dependent_task_id)
+            if dependent_task_id is not None:
+                task.dependant_task_id = int(dependent_task_id)  # Ensure it's an integer
+            else:
+                task.dependant_task_id = None  # Set to None if 'dependent_task' is null
 
             task.save()
             task.member.set(members)
