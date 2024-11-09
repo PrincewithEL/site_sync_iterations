@@ -1240,9 +1240,8 @@ def chat_room_view(request, pk):
         receiver_profile = get_object_or_404(Profile, user_id=receiver_user_id) if receiver_user_id else None
         receiver_user_type = receiver_profile.user_type if receiver_profile else None
 
-        # adjusted_timestamp = message.timestamp + timedelta(hours=3)
-        # formatted_timestamp = date_format(adjusted_timestamp, format='Y-m-d H:i:s')
-        formatted_timestamp = date_format(message.timestamp, format='Y-m-d H:i:s')
+        adjusted_timestamp = message.timestamp + timedelta(hours=3)
+        formatted_timestamp = date_format(adjusted_timestamp, format='Y-m-d H:i:s')
 
         sender_user = User.objects.get(id=message.sender_user_id)
         sender_first_name = sender_user.first_name
