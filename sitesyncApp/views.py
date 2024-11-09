@@ -1027,14 +1027,14 @@ def remove_project_member_api(request, pk):
     }, status=405)
 
 @csrf_exempt  # Allow requests without CSRF token
-@login_required  # Ensure the user is authenticated
 def exit_project_api(request, pk):
     if request.method == 'POST':
         try:
-            user = request.user
+            # user = request.user
             
             # Check if the project member exists
-            project_member = get_object_or_404(ProjectMembers, project_id=pk, user_id=user.id, is_deleted=0, status='Accepted')
+            # project_member = get_object_or_404(ProjectMembers, project_id=pk, user_id=user.id, is_deleted=0, status='Accepted')
+            project_member = get_object_or_404(ProjectMembers, project_id=pk, is_deleted=0, status='Accepted')
 
             # Update the project member's status and deletion flag
             project_member.is_deleted = 1
@@ -1103,10 +1103,10 @@ def api_view_profile(request):
     }, status=status.HTTP_200_OK)
 
 @csrf_exempt  # Allow requests without CSRF token
-@login_required  # Ensure the user is authenticated
 def api_update_profile(request):
     if request.method == 'POST':
-        user = request.user
+        # user = request.user        
+        user = request.POST.get('user')
         profile = user.profile
 
         email = request.POST.get('email')
@@ -1578,7 +1578,6 @@ def get_potential_project_members(request, project_id):
         }, status=status.HTTP_404_NOT_FOUND)
 
 @csrf_exempt  # Allow requests without CSRF token
-@login_required
 def AddResourceView(request, pk):
     if request.method == 'POST':
         project = get_object_or_404(Projects, pk=pk)
@@ -1619,7 +1618,8 @@ def AddResourceView(request, pk):
                 resource_details = request.POST.get('resource_details', '')
 
                 resource = Resources(
-                    user=request.user,
+                    # user=request.user,
+                    user=request.POST.get('user_id'),
                     project=project,
                     resource_name=resource_name_with_extension,
                     resource_details=resource_details,
@@ -1660,7 +1660,6 @@ def AddResourceView(request, pk):
     }, status=405)
 
 @csrf_exempt  # Allow requests without CSRF token
-@login_required
 def DeleteResourceView(request, pk, resource_id):
     if request.method == 'DELETE':
         # Fetch the resource for the project
@@ -1736,7 +1735,6 @@ class TaskListView(APIView):
         }, status=status.HTTP_200_OK)
 
 @csrf_exempt  # Allow requests without CSRF token
-@login_required  # Ensure the user is authenticated
 def AddTaskAPIView(request, pk):
     if request.method == 'POST':
         project = get_object_or_404(Projects, pk=pk)
@@ -1769,7 +1767,7 @@ def AddTaskAPIView(request, pk):
         if new_balance >= 0:
             # Create the task
             task = Tasks(
-                leader=request.user,
+                leader=project.leader_id,
                 project=project,
                 task_name=request_data.get('task_name'),
                 task_details=request_data.get('task_details'),
@@ -1809,7 +1807,6 @@ def AddTaskAPIView(request, pk):
     return JsonResponse({"message": "Method not allowed.", "status_code": 405}, status=405)
 
 @csrf_exempt  # Allow requests without CSRF token
-@login_required  # Ensure the user is authenticated
 def DeleteTaskAPIView(request, pk, task_id):
     if request.method == 'DELETE':
         task = get_object_or_404(Tasks, pk=task_id, project__pk=pk)
@@ -1841,7 +1838,6 @@ def DeleteTaskAPIView(request, pk, task_id):
     }, status=405)
 
 @csrf_exempt  # Allow requests without CSRF token
-@login_required  # Ensure the user is authenticated
 def CompleteTaskAPIView(request, pk, task_id):
     if request.method == 'PATCH':
         task = get_object_or_404(Tasks, pk=task_id, project__pk=pk)
@@ -1870,7 +1866,6 @@ def CompleteTaskAPIView(request, pk, task_id):
     }, status=405)
 
 @csrf_exempt  # Allow requests without CSRF token
-@login_required  # Ensure the user is authenticated
 def HideTaskAPI(request, pk, task_id):
     if request.method == 'DELETE':
         task = get_object_or_404(Tasks, pk=task_id, project__pk=pk)
@@ -1903,7 +1898,6 @@ def RestoreTaskAPI(request, pk, task_id):
     }, status=405)
 
 @csrf_exempt  # Allow requests without CSRF token
-@login_required  # Ensure the user is authenticated
 def HideProjectAPI(request, pk):
     if request.method == 'PUT':
         project = get_object_or_404(Projects, pk=pk)
@@ -1938,17 +1932,16 @@ def RestoreProjectAPI(request, pk):
 
 
 @csrf_exempt  # Allow requests without CSRF token
-@login_required  # Ensure the user is authenticated
 def DeleteProjectAPI(request, pk):
     if request.method == 'PUT':
         project = get_object_or_404(Projects, pk=pk)
 
         # Check if the logged-in user is the project leader
-        if project.leader != request.user:
-            return JsonResponse({
-                "message": "You do not have permission to delete this project.",
-                "status_code": 403
-            }, status=403)
+        # if project.leader != request.user:
+        #     return JsonResponse({
+        #         "message": "You do not have permission to delete this project.",
+        #         "status_code": 403
+        #     }, status=403)
 
         # Mark project as deleted
         project.is_deleted = 1
@@ -1965,7 +1958,6 @@ def DeleteProjectAPI(request, pk):
     }, status=405)
 
 @csrf_exempt  # Allow requests without CSRF token
-@login_required  # Ensure the user is authenticated
 def HideResourceAPI(request, pk, resource_id):
     if request.method == 'DELETE':
         resource = get_object_or_404(Resources, pk=resource_id, project__pk=pk)
@@ -2082,7 +2074,6 @@ def transaction_detail(request, pk, transaction_id):
     }, status=405)
 
 @csrf_exempt
-@login_required
 def transaction_create(request, pk):
     if request.method == 'POST':
         project = get_object_or_404(Projects, pk=pk)
@@ -2108,7 +2099,8 @@ def transaction_create(request, pk):
 
             # Create the transaction
             transaction = Transactions(
-                user=request.user,
+                # user=request.user,
+                user=project.leader_id,
                 project=project,
                 transaction_name=request_data['transaction_name'],
                 transaction_details=request_data['transaction_details'],
@@ -2143,7 +2135,6 @@ def transaction_create(request, pk):
     }, status=405)
 
 @csrf_exempt
-@login_required
 def transaction_update(request, pk, transaction_id):
     if request.method == 'PUT':
         transaction = get_object_or_404(Transactions, transaction_id=transaction_id)
@@ -2166,7 +2157,6 @@ def transaction_update(request, pk, transaction_id):
     }, status=405)
 
 @csrf_exempt
-@login_required
 def transaction_destroy(request, pk, transaction_id):
     if request.method == 'DELETE':
         transaction = get_object_or_404(Transactions, transaction_id=transaction_id)
@@ -2306,7 +2296,6 @@ def event_restore(request, pk, event_id):
     }, status=405)
 
 @csrf_exempt
-@login_required
 def event_hide(request, pk, event_id):
     if request.method == 'DELETE':
         event = get_object_or_404(Events, pk=event_id, project__pk=pk)
@@ -2318,7 +2307,7 @@ def event_hide(request, pk, event_id):
         Bookmarks.objects.filter(
             item_id=event_id,
             item_type='Event',
-            user_id=request.user.id
+            # user_id=request.user.id
         ).update(is_deleted=1)
 
         return JsonResponse({
@@ -2332,7 +2321,6 @@ def event_hide(request, pk, event_id):
     }, status=405)
 
 @csrf_exempt
-@login_required
 def event_add(request, pk):
     if request.method == 'POST':
         project = get_object_or_404(Projects, pk=pk)
@@ -2351,7 +2339,8 @@ def event_add(request, pk):
 
         # Create the event
         event = Events(
-            user=request.user,
+            # user=request.user,
+            user=request_data['user_id'],
             project=project,
             event_name=request_data['event_name'],
             event_details=request_data['event_details'],
