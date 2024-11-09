@@ -1763,13 +1763,14 @@ def AddTaskAPIView(request, pk):
 
         # Get transaction price
         task_transaction_price = float(request_data.get('transaction_price', 0.0))
+        leader_instance = get_object_or_404(User, id=project.leader_id)
 
         # Check if the task transaction price exceeds the project's balance
         new_balance = project.balance - task_transaction_price
         if new_balance >= 0:
             # Create the task
             task = Tasks(
-                leader=project.leader_id,
+                leader=leader_instance,
                 project=project,
                 task_name=request_data.get('task_name'),
                 task_details=request_data.get('task_details'),
@@ -2099,10 +2100,12 @@ def transaction_create(request, pk):
             project.balance = project.estimated_budget - project.actual_expenditure
             project.save()
 
+            leader_instance = get_object_or_404(User, id=project.leader_id)
+
             # Create the transaction
             transaction = Transactions(
                 # user=request.user,
-                user=project.leader_id,
+                user=leader_instance,
                 project=project,
                 transaction_name=request_data['transaction_name'],
                 transaction_details=request_data['transaction_details'],
