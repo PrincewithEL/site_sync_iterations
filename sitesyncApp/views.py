@@ -1786,11 +1786,12 @@ def AddTaskAPIView(request, pk):
             )
 
             # Handle dependent task if provided
+            # Handle dependent task if provided and not 'null'
             dependent_task_id = request_data.get('dependent_task')
-            if dependent_task_id is not None:
+            if dependent_task_id and dependent_task_id != 'null':
                 task.dependant_task_id = int(dependent_task_id)  # Ensure it's an integer
             else:
-                task.dependant_task_id = None  # Set to None if 'dependent_task' is null
+                task.dependant_task_id = None  # Set to None if 'dependent_task' is null or 'null' string
 
             task.save()
             task.member.set(members)
