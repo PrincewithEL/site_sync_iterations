@@ -1196,6 +1196,8 @@ def chat_room_view(request, pk):
     # Filter project members based on user_id or user_type if provided
     project_members = ProjectMembers.objects.filter(project=project, is_deleted=0)
 
+    ChatStatus.objects.filter(user_id=user.id, group=project.groupchat, status=1).update(status=0)
+
     # Retrieve member details
     project_member_details = []
     for member in project_members:
