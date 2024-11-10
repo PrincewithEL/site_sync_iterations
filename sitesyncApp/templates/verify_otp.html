@@ -90,6 +90,14 @@
       <!-- section header start -->
       <div class="header_section">
          <div class="container">
+                <div class="row">
+               <div class="col-md-10">
+                  
+               </div>
+               <div class="col-md-2">
+<div id="google_translate_element"></div>
+               </div>
+            </div>
             <div class="row">
                <div class="col-md-3">
                   <div class="logo"><a href="{% url 'home' %}"><img src="{% static 'images/site_sync_logo.png' %}"></a></div>
@@ -202,6 +210,13 @@
          <p class="copyright_text">Copyright 2023. <a href="">The Bengal Tigers 🐅</a> .</p>
       </div>
       <!-- copyright section end -->
+      <script type="text/javascript">
+function googleTranslateElementInit() {
+  new google.translate.TranslateElement({pageLanguage: 'en'}, 'google_translate_element');
+}
+</script>
+
+<script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
       <!-- Javascript files-->
       <script src="{% static 'js/jquery.min.js' %}"></script>
       <script src="{% static 'js/popper.min.js' %}"></script>

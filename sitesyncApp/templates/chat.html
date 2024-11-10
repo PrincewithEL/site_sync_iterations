@@ -137,13 +137,24 @@
 
 
 .read {
-    background-color: green; /* Color for read */
+/*    background-color: green; */
     border-radius: 50%;
+    color: #34B7F1;
 }
 
 .unread {
-    background-color: black; /* Color for unread */
+/*    background-color: black; */
     border-radius: 50%;
+    color: #868686;
+}
+
+.whatsapp-ticks i {
+    font-size: 7px; /* Adjust size to your preference */
+    margin-right: -3px; /* Negative margin to bring icons closer */
+}
+
+.whatsapp-ticks .fa-check:last-child {
+    margin-right: 0; /* Remove margin on the last checkmark */
 }
     </style>
 <script>
@@ -194,6 +205,14 @@ $(document).on('keydown', function(event) {
 
 </script>
   <body class="skin-black">
+        <div class="row">
+               <div class="col-md-10">
+                  
+               </div>
+               <div class="col-md-2">
+<div id="google_translate_element"></div>
+               </div>
+            </div>
     <div class="wrapper">
       
       <header class="main-header">
@@ -847,6 +866,13 @@ function cancelReply() {
     document.getElementById('replyMessageContent').innerText = '';
 }
 </script>
+<script type="text/javascript">
+function googleTranslateElementInit() {
+  new google.translate.TranslateElement({pageLanguage: 'en'}, 'google_translate_element');
+}
+</script>
+
+<script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Bootstrap 3.3.2 JS -->
     <script src="{% static 'dashboard/bootstrap/js/bootstrap.min.js' %}" type="text/javascript"></script>    
@@ -1140,8 +1166,10 @@ createReadReceipts(message) {
 
         // Show checkmark if all have read, X if any have not read
         const tick = unreadUsers 
-            ? `<span class="tick unread" title="${titleText}">&#10007;</span>`  // X if unread
-            : `<span class="tick read" title="${titleText}">&#10003;</span>`;   // ✓ if all read
+            // ? `<span class="tick unread" title="${titleText}">&#10007;</span>`  // X if unread
+            // : `<span class="tick read" title="${titleText}">&#10003;</span>`;   // ✓ if all read
+            ? `<span class="tick unread whatsapp-ticks" title="${titleText}" style=""><i class="fa fa-check"></i><i class="fa fa-check"></i></span>`  // X if unread
+            : `<span class="tick read whatsapp-ticks" title="${titleText}" style=""><i class="fa fa-check"></i><i class="fa fa-check"></i></span>`;   // ✓ if all read
 
         receipts += `<div class="user-read-status">${tick}</div>`;
     }
