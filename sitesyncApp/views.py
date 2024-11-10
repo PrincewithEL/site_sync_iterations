@@ -1244,7 +1244,7 @@ def chat_room_view(request, pk):
 
         if message.updated_at:
             adjusted_timestamp = message.updated_at + timedelta(hours=3)
-            formatted_timestamp = "Edited At: " + date_format(adjusted_timestamp, format='Y-m-d H:i:s')
+            formatted_timestamp = date_format(adjusted_timestamp, format='Y-m-d H:i:s')
         else:
             adjusted_timestamp = message.timestamp + timedelta(hours=3)
             formatted_timestamp = date_format(adjusted_timestamp, format='Y-m-d H:i:s')
