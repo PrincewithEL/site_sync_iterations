@@ -2348,10 +2348,18 @@ def event_add(request, pk):
                 'status_code': 400
             }, status=400)
 
+        try:
+            user = User.objects.get(id=request_data['user_id'])
+        except User.DoesNotExist:
+            return JsonResponse({
+                'message': 'User with the provided ID does not exist.',
+                'status_code': 404
+            }, status=404)
+
         # Create the event
         event = Events(
             # user=request.user,
-            user=request_data['user_id'],
+            user=user,
             project=project,
             event_name=request_data['event_name'],
             event_details=request_data['event_details'],
