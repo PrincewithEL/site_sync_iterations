@@ -351,7 +351,6 @@ def CompleteProfileView(request):
     }, status=405)
 
 @csrf_exempt
-@login_required  # Ensure the user is authenticated
 def VerifyOtpView(request):
     if request.method == 'POST':
         try:
@@ -2051,7 +2050,6 @@ def RestoreResourceAPI(request, pk, resource_id):
 #         return Response(status=status.HTTP_200_OK)
 
 @csrf_exempt
-@login_required
 def transaction_list(request, pk):
     if request.method == 'GET':
         project = get_object_or_404(Projects, pk=pk)
@@ -2070,7 +2068,6 @@ def transaction_list(request, pk):
 
 
 @csrf_exempt
-@login_required
 def transaction_detail(request, pk, transaction_id):
     if request.method == 'GET':
         transaction = get_object_or_404(Transactions, transaction_id=transaction_id)
@@ -2276,7 +2273,6 @@ def transaction_restore(request, pk, transaction_id):
 #         return redirect('events', pk=pk)
 
 @csrf_exempt
-@login_required
 def event_list(request, pk):
     if request.method == 'GET':
         project = get_object_or_404(Projects, pk=pk)
