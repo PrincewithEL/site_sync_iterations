@@ -150,6 +150,10 @@ urlpatterns = [
     path('api/projects/<int:pk>/events/<int:event_id>/restore/', event_restore, name='event-restore'),  # Restore an event
     path('api/projects/<int:pk>/events/<int:event_id>/delete/', event_hide, name='event-hide'),  # Soft delete an event
     path('api/projects/<int:pk>/events/add/', event_add, name='event-add'),  # Add a new event
+    path('api/projects/<int:project_id>/bookmark/', views.bookmark_message_api, name='bookmark_message_api'),
+    path('api/projects/<int:project_id>/unbookmark/', views.unbookmark_message_api, name='unbookmark_message_api'),
+    path('api/projects/<int:project_id>/messages/', views.get_chat_messages, name='get_chat_messages'),
+
  ]
 
 if settings.DEBUG:

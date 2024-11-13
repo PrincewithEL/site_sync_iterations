@@ -31,7 +31,7 @@ SECRET_KEY = 'django-insecure-zq)s8_#@kg%0d8n58pav=q2g&4dft_e41n=y-%^rb8t^i3u7ty
 # DEBUG = True
 DEBUG = os.environ.get('DEBUG', 'True')=="True" 
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', "site-sync-iterations.onrender.com", ".vercel.app"]
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', "site-sync-iterations.onrender.com", ".vercel.app", "*"]
 
 
 # Application definition

@@ -597,6 +597,246 @@ def create_project(request):
         'data': {}
     }, status=405)
 
+@csrf_exempt
+def bookmark_message_api(request, project_id):
+    if request.method == "POST":
+        try:
+            # Parse JSON request data
+            request_data = json.loads(request.body)
+            user_id = request_data.get('user_id')
+            chat_id = request_data.get('chat_id')
+            
+            # Validate user_id and chat_id
+            if not user_id or not chat_id:
+                return JsonResponse({
+                    'status_code': 400,
+                    'message': 'user_id and chat_id are required.',
+                    'data': {}
+                }, status=400)
+            
+            # Fetch user by user_id
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                return JsonResponse({
+                    'status_code': 404,
+                    'message': 'User with the provided ID does not exist.',
+                    'data': {}
+                }, status=404)
+            
+            # Create a new bookmark entry
+            bookmarkC = Bookmarks(
+                item_type='Chat',
+                item_id=chat_id,
+                user=user,  # Use the retrieved user
+                project_id=project_id,
+                timestamp=timezone.now(),
+                is_deleted=0
+            )
+            bookmarkC.save()
+
+            # Return success response
+            return JsonResponse({
+                'status_code': 201,
+                'message': 'Message bookmarked successfully!',
+                'data': {
+                    'chat_id': chat_id,
+                    'project_id': project_id,
+                    'user_id': user.id
+                }
+            }, status=201)
+        
+        except Exception as e:
+            return JsonResponse({
+                'status_code': 500,
+                'message': str(e),
+                'data': {}
+            }, status=500)
+    
+    return JsonResponse({
+        'status_code': 405,
+        'message': 'Method not allowed.',
+        'data': {}
+    }, status=405)
+
+@csrf_exempt
+def unbookmark_message_api(request, project_id):
+    if request.method == "POST":
+        try:
+            # Parse JSON request data
+            request_data = json.loads(request.body)
+            user_id = request_data.get('user_id')
+            chat_id = request_data.get('chat_id')
+
+            # Validate user_id and chat_id
+            if not user_id or not chat_id:
+                return JsonResponse({
+                    'status_code': 400,
+                    'message': 'user_id and chat_id are required.',
+                    'data': {}
+                }, status=400)
+            
+            # Fetch user by user_id
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                return JsonResponse({
+                    'status_code': 404,
+                    'message': 'User with the provided ID does not exist.',
+                    'data': {}
+                }, status=404)
+
+            # Update the bookmark entry to mark it as deleted
+            Bookmarks.objects.filter(
+                item_id=chat_id,
+                item_type='Chat',
+                user=user  # Use the retrieved user
+            ).update(is_deleted=1)
+
+            # Return success response
+            return JsonResponse({
+                'status_code': 200,
+                'message': 'Message unbookmarked successfully!',
+                'data': {
+                    'chat_id': chat_id,
+                    'project_id': project_id,
+                    'user_id': user.id
+                }
+            }, status=200)
+
+        except Exception as e:
+            return JsonResponse({
+                'status_code': 500,
+                'message': str(e),
+                'data': {}
+            }, status=500)
+    
+    return JsonResponse({
+        'status_code': 405,
+        'message': 'Method not allowed.',
+        'data': {}
+    }, status=405)
+
+@csrf_exempt
+def get_chat_messages(request, project_id):
+    if request.method == 'POST':
+        try:
+            # Parse JSON request data
+            request_data = json.loads(request.body)
+            user_id = request_data.get('user_id')
+            search_query = request_data.get('search_query', '')
+
+            print("Search Query:", search_query)  # Debugging line
+
+            # Fetch the user by ID provided in the request data
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                return JsonResponse({
+                    'message': 'User with the provided ID does not exist.',
+                    'status_code': 404
+                }, status=404)
+
+            # Filter for messages in the project’s group chat
+            messages = Chat.objects.filter(
+                group_id=project_id,
+                is_deleted=0
+            ).filter(
+                Q(sender_user=user) |
+                Exists(
+                    ChatStatus.objects.filter(
+                        chat=OuterRef('chat_id'),
+                        group_id=project_id,
+                        user_id=user.id,
+                        is_deleted=0
+                    )
+                )
+            )
+
+            # If search query is provided, filter messages by content
+            if search_query:
+                print("Filtering messages by query:", search_query)  # Debugging line
+                messages = messages.filter(message__icontains=search_query)
+
+            messages = messages.order_by('timestamp')
+
+            # Get bookmarked message IDs for the user in this project
+            bookmarked_ids = set(
+                Bookmarks.objects.filter(
+                    user=user, 
+                    project_id=project_id, 
+                    is_deleted=0, 
+                    item_type='Chat'
+                ).values_list('item_id', flat=True)
+            )
+
+            # Get read statuses for messages sent by the current user
+            chat_statuses = ChatStatus.objects.filter(
+                chat__sender_user_id=user.id,
+                chat__in=messages,
+                is_deleted=0
+            ).select_related('chat')
+
+            # Dictionary to hold read statuses for each message by user
+            read_status = {}
+
+            # Get usernames for each unique user_id
+            user_ids = set(status.user_id for status in chat_statuses)
+            usernames = {user.id: user.first_name for user in User.objects.filter(id__in=user_ids)}
+
+            # Populate read_status with each user's read status per chat_id
+            for status in chat_statuses:
+                if status.chat.chat_id not in read_status:
+                    read_status[status.chat.chat_id] = []
+                read_status[status.chat.chat_id].append({
+                    'user_id': status.user_id,
+                    'username': usernames.get(status.user_id, "Unknown User"),
+                    'status': status.status  # 0 for read, 1 for unread
+                })
+
+            # Serialize messages
+            messages_data = []
+            for message in messages:
+                print("Message Content:", message.message)  # Debugging line
+                messages_data.append({
+                    'chat_id': message.chat_id,
+                    'sender_user': {
+                        'id': message.sender_user.id,
+                        'first_name': message.sender_user.first_name,
+                        'profile_picture': message.sender_user.profile.profile_picture.url if message.sender_user.profile.profile_picture else None
+                    },
+                    'message': message.message,
+                    'timestamp': message.timestamp.isoformat(),
+                    'reply': message.reply,
+                    'file': message.file.url if message.file else None,
+                    'updated_at': message.updated_at.isoformat() if message.updated_at else None,
+                    'is_bookmarked': message.chat_id in bookmarked_ids,
+                    'read_status': read_status.get(message.chat_id, [])
+                })
+
+            response_data = {
+                'success': True,
+                'messages': messages_data
+            }
+            return JsonResponse(response_data, status=200)
+
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'message': 'Invalid JSON data.'
+            }, status=400)
+
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+    return JsonResponse({
+        'success': False,
+        'message': 'Method not allowed.'
+    }, status=405)
+
 @method_decorator(csrf_exempt, name='dispatch')
 class ForgotPasswordAPI(APIView):
     
