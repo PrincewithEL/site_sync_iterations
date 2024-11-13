@@ -724,9 +724,6 @@ def get_chat_messages(request, project_id):
             # Parse JSON request data
             request_data = json.loads(request.body)
             user_id = request_data.get('user_id')
-            search_query = request_data.get('search_query', '')
-
-            print("Search Query:", search_query)  # Debugging line
 
             # Fetch the user by ID provided in the request data
             try:
@@ -751,14 +748,7 @@ def get_chat_messages(request, project_id):
                         is_deleted=0
                     )
                 )
-            )
-
-            # If search query is provided, filter messages by content
-            if search_query:
-                print("Filtering messages by query:", search_query)  # Debugging line
-                messages = messages.filter(message__icontains=search_query)
-
-            messages = messages.order_by('timestamp')
+            ).order_by('timestamp')
 
             # Get bookmarked message IDs for the user in this project
             bookmarked_ids = set(
@@ -797,7 +787,6 @@ def get_chat_messages(request, project_id):
             # Serialize messages
             messages_data = []
             for message in messages:
-                print("Message Content:", message.message)  # Debugging line
                 messages_data.append({
                     'chat_id': message.chat_id,
                     'sender_user': {

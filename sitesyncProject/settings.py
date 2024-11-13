@@ -104,6 +104,11 @@ CORS_ALLOWED_ORIGINS = [
     "https://site-sync-iterations.onrender.com",
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://site-sync-iterations-fjcggab8g4g9cybc.canadacentral-01.azurewebsites.net',
+    'https://site-sync-iterations.onrender.com'
+]
+
 # LOGGING = {
 #     'version': 1,
 #     'disable_existing_loggers': False,
