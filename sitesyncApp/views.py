@@ -1590,6 +1590,14 @@ def AddResourceView(request, pk):
         project = get_object_or_404(Projects, pk=pk)
         file = request.FILES.get('resource_file')
 
+        try:
+            user = User.objects.get(id=request_data['user_id'])
+        except User.DoesNotExist:
+            return JsonResponse({
+                'message': 'User with the provided ID does not exist.',
+                'status_code': 404
+            }, status=404)
+
         if file:
             file_extension = os.path.splitext(file.name)[1].lower()  # Get file extension
             unique_filename = str(uuid.uuid4()) + file_extension
@@ -1626,7 +1634,7 @@ def AddResourceView(request, pk):
 
                 resource = Resources(
                     # user=request.user,
-                    user=request.POST.get('user_id'),
+                    user=user,
                     project=project,
                     resource_name=resource_name_with_extension,
                     resource_details=resource_details,
