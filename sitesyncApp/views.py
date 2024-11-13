@@ -1584,6 +1584,8 @@ def get_potential_project_members(request, project_id):
             "data": {}
         }, status=status.HTTP_404_NOT_FOUND)
 
+import json
+
 @csrf_exempt  # Allow requests without CSRF token
 def AddResourceView(request, pk):
     if request.method == 'POST':
@@ -1591,7 +1593,24 @@ def AddResourceView(request, pk):
         file = request.FILES.get('resource_file')
 
         try:
-            user = User.objects.get(id=request_data['user_id'])
+            # Parse JSON data from the body of the request
+            request_data = json.loads(request.body)
+            user_id = request_data.get('user_id')
+
+            if not user_id:
+                return JsonResponse({
+                    'message': 'User ID is required.',
+                    'status_code': 400
+                }, status=400)
+
+            user = User.objects.get(id=user_id)
+
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'message': 'Invalid JSON in request body.',
+                'status_code': 400
+            }, status=400)
+
         except User.DoesNotExist:
             return JsonResponse({
                 'message': 'User with the provided ID does not exist.',
@@ -1633,7 +1652,6 @@ def AddResourceView(request, pk):
                 resource_details = request.POST.get('resource_details', '')
 
                 resource = Resources(
-                    # user=request.user,
                     user=user,
                     project=project,
                     resource_name=resource_name_with_extension,
