@@ -1586,16 +1586,25 @@ def get_potential_project_members(request, project_id):
 
 import json
 
-@csrf_exempt  # Allow requests without CSRF token
+@csrf_exempt
 def AddResourceView(request, pk):
     if request.method == 'POST':
         project = get_object_or_404(Projects, pk=pk)
-        file = request.FILES.get('resource_file')
-
+        
         try:
-            # Parse JSON data from the body of the request
-            request_data = json.loads(request.body)
-            user_id = request_data.get('user_id')
+            # Check if we have multipart form data
+            if request.content_type and 'multipart/form-data' in request.content_type:
+                file = request.FILES.get('resource_file')
+                user_id = request.POST.get('user_id')
+                resource_name = request.POST.get('resource_name', 'Resource')
+                resource_details = request.POST.get('resource_details', '')
+            else:
+                # Handle JSON data
+                request_data = json.loads(request.body)
+                user_id = request_data.get('user_id')
+                file = None
+                resource_name = request_data.get('resource_name', 'Resource')
+                resource_details = request_data.get('resource_details', '')
 
             if not user_id:
                 return JsonResponse({
@@ -1604,6 +1613,66 @@ def AddResourceView(request, pk):
                 }, status=400)
 
             user = User.objects.get(id=user_id)
+
+            if not file:
+                return JsonResponse({
+                    "message": "No file provided.",
+                    "status_code": 400,
+                    "data": {}
+                }, status=400)
+
+            file_extension = os.path.splitext(file.name)[1].lower()
+            unique_filename = str(uuid.uuid4()) + file_extension
+            profile_picture_path = default_storage.save(unique_filename, file)
+
+            dest_path = os.path.join(settings.MEDIA_ROOT, 'project_resources', unique_filename)
+
+            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+            os.rename(os.path.join(settings.MEDIA_ROOT, profile_picture_path), dest_path)
+
+            chat_file = 'project_resources/' + unique_filename
+            file_size = file.size
+            file_size_str = (
+                f"{file_size} B" if file_size < 1024 else
+                f"{file_size / 1024:.2f} KB" if file_size < 1024 * 1024 else
+                f"{file_size / (1024 * 1024):.2f} MB"
+            )
+
+            # Determine resource type based on file extension
+            if file_extension in ['.pdf', '.doc', '.docx', '.xls', '.txt', '.ppt']:
+                resource_type = 'Document'
+            elif file_extension in ['.jpg', '.jpeg', '.png']:
+                resource_type = 'Image'
+            elif file_extension in ['.mp4', '.avi']:
+                resource_type = 'Video'
+            elif file_extension in ['.mp3']:
+                resource_type = 'Audio'
+            else:
+                resource_type = 'Other'
+
+            resource_name_with_extension = resource_name + file_extension
+
+            resource = Resources(
+                user=user,
+                project=project,
+                resource_name=resource_name_with_extension,
+                resource_details=resource_details,
+                resource_type=resource_type,
+                resource_directory=chat_file,
+                resource_size=file_size_str,
+                is_deleted=0,
+                resource_status='Active',
+                created_at=timezone.now()
+            )
+            resource.save()
+
+            return JsonResponse({
+                "message": "Resource added successfully.",
+                "status_code": 201,
+                "data": {
+                    "resource_id": resource.resource_id
+                }
+            }, status=201)
 
         except json.JSONDecodeError:
             return JsonResponse({
@@ -1617,74 +1686,12 @@ def AddResourceView(request, pk):
                 'status_code': 404
             }, status=404)
 
-        if file:
-            file_extension = os.path.splitext(file.name)[1].lower()  # Get file extension
-            unique_filename = str(uuid.uuid4()) + file_extension
-            profile_picture_path = default_storage.save(unique_filename, file)
-
-            dest_path = os.path.join(settings.MEDIA_ROOT, 'project_resources', unique_filename)
-
-            try:
-                os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-                os.rename(os.path.join(settings.MEDIA_ROOT, profile_picture_path), dest_path)
-
-                chat_file = 'project_resources/' + unique_filename
-                file_size = file.size
-                file_size_str = (
-                    f"{file_size} B" if file_size < 1024 else
-                    f"{file_size / 1024:.2f} KB" if file_size < 1024 * 1024 else
-                    f"{file_size / (1024 * 1024):.2f} MB"
-                )
-
-                # Determine resource type based on file extension
-                if file_extension in ['.pdf', '.doc', '.docx', '.xls', '.txt', '.ppt']:
-                    resource_type = 'Document'
-                elif file_extension in ['.jpg', '.jpeg', '.png']:
-                    resource_type = 'Image'
-                elif file_extension in ['.mp4', '.avi']:
-                    resource_type = 'Video'
-                elif file_extension in ['.mp3']:
-                    resource_type = 'Audio'
-                else:
-                    resource_type = 'Other'  # Default type for unknown extensions
-
-                resource_name_with_extension = request.POST.get('resource_name', 'Resource') + file_extension
-                resource_details = request.POST.get('resource_details', '')
-
-                resource = Resources(
-                    user=user,
-                    project=project,
-                    resource_name=resource_name_with_extension,
-                    resource_details=resource_details,
-                    resource_type=resource_type,
-                    resource_directory=chat_file,
-                    resource_size=file_size_str,
-                    is_deleted=0,
-                    resource_status='Active',
-                    created_at=timezone.now()
-                )
-                resource.save()
-
-                return JsonResponse({
-                    "message": "Resource added successfully.",
-                    "status_code": 201,
-                    "data": {
-                        "resource_id": resource.resource_id
-                    }
-                }, status=201)
-
-            except Exception as e:
-                return JsonResponse({
-                    "message": f"Error saving project file: {str(e)}",
-                    "status_code": 400,
-                    "data": {}
-                }, status=400)
-
-        return JsonResponse({
-            "message": "No file provided.",
-            "status_code": 400,
-            "data": {}
-        }, status=400)
+        except Exception as e:
+            return JsonResponse({
+                "message": f"Error processing request: {str(e)}",
+                "status_code": 400,
+                "data": {}
+            }, status=400)
 
     return JsonResponse({
         "message": "Method not allowed.",
