@@ -734,7 +734,8 @@ def get_chat_messages(request, project_id):
                     'status_code': 404
                 }, status=404)
 
-            # Filter for messages in the project’s group chat
+            # Optionally filter chat messages by search term
+            search_query = request.GET.get('search', '').strip()
             messages = Chat.objects.filter(
                 group_id=project_id,
                 is_deleted=0
@@ -748,7 +749,14 @@ def get_chat_messages(request, project_id):
                         is_deleted=0
                     )
                 )
-            ).order_by('timestamp')
+            )
+
+            if search_query:
+                # Filter messages by the search query if provided
+                messages = messages.filter(message__icontains=search_query)
+
+            # Order the messages by timestamp
+            messages = messages.order_by('timestamp')
 
             # Get bookmarked message IDs for the user in this project
             bookmarked_ids = set(
