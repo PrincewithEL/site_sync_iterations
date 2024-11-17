@@ -724,6 +724,10 @@ def get_chat_messages(request, project_id):
             # Parse JSON request data
             request_data = json.loads(request.body)
             user_id = request_data.get('user_id')
+            search_query = request_data.get('search_query', '').strip()  # Get the search query from POST data
+            
+            # Debug log
+            print(f"Search query received: '{search_query}'")
 
             # Fetch the user by ID provided in the request data
             try:
@@ -734,8 +738,7 @@ def get_chat_messages(request, project_id):
                     'status_code': 404
                 }, status=404)
 
-            # Optionally filter chat messages by search term
-            search_query = request.GET.get('search', '').strip()
+            # Filter for messages in the project's group chat
             messages = Chat.objects.filter(
                 group_id=project_id,
                 is_deleted=0
@@ -743,7 +746,7 @@ def get_chat_messages(request, project_id):
                 Q(sender_user=user) |
                 Exists(
                     ChatStatus.objects.filter(
-                        chat=OuterRef('chat_id'),
+                        chat=OuterRef('pk'),  # Corrected from 'chat_id' to 'pk'
                         group_id=project_id,
                         user_id=user.id,
                         is_deleted=0
@@ -751,9 +754,10 @@ def get_chat_messages(request, project_id):
                 )
             )
 
+            # Apply the search filter if search query is not empty
             if search_query:
-                # Filter messages by the search query if provided
                 messages = messages.filter(message__icontains=search_query)
+                print(f"Filtered messages count: {messages.count()}")  # Debug log
 
             # Order the messages by timestamp
             messages = messages.order_by('timestamp')
@@ -811,10 +815,16 @@ def get_chat_messages(request, project_id):
                     'read_status': read_status.get(message.chat_id, [])
                 })
 
+            # Add debug information to response in development
             response_data = {
                 'success': True,
-                'messages': messages_data
+                'messages': messages_data,
+                'debug_info': {
+                    'search_query': search_query,
+                    'total_messages': len(messages_data)
+                }
             }
+            
             return JsonResponse(response_data, status=200)
 
         except json.JSONDecodeError:
@@ -824,6 +834,8 @@ def get_chat_messages(request, project_id):
             }, status=400)
 
         except Exception as e:
+            # Log the full exception for debugging
+            print(f"Error in get_chat_messages: {str(e)}")
             return JsonResponse({
                 'success': False,
                 'error': str(e)
