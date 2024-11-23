@@ -5,6 +5,7 @@
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
     {% load static %}
     {% load custom_filters %}
+    {% load humanize %}
       {% include 'chatbot.html' %}
     <!-- Bootstrap 3.3.2 -->
     <link href="{% static 'dashboard/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css" />  
@@ -129,7 +130,7 @@
                     <div class="col-lg-3 col-xs-6">
                         <div class="small-box bg-green">
                             <div class="inner">
-                                <h3>{{ month_to_date_expenses|floatformat:2 }}</h3>
+                                <h3>{{ month_to_date_expenses|floatformat:2|intcomma }}</h3>
                                 <p>Current Month Expenses</p>
                             </div>
                             <div class="icon">
@@ -141,7 +142,7 @@
                     <div class="col-lg-3 col-xs-6">
                         <div class="small-box bg-yellow">
                             <div class="inner">
-                                <h3>{{ last_month_expenses|floatformat:2 }}</h3>
+                                <h3>{{ last_month_expenses|floatformat:2|intcomma }}</h3>
                                 <p>Last Month Expenses</p>
                             </div>
                             <div class="icon">

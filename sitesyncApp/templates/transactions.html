@@ -7,6 +7,7 @@
        {% load static %}
        {% load custom_filters %}
          {% include 'chatbot.html' %}
+         {% load humanize %}
     <!-- Bootstrap 3.3.2 -->
     <link href="{% static 'dashboard/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css" />
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
@@ -301,7 +302,7 @@
                     <div class="col-lg-4 col-xs-6">
                         <div class="small-box bg-aqua">
                             <div class="inner">
-                                <h3 style="font-size: 32px;">{{ project.estimated_budget|floatformat:2 }} kshs.</h3>
+                                <h3 style="font-size: 32px;">{{ project.estimated_budget|floatformat:2|intcomma }} kshs.</h3>
                                 <p>Project Budget</p>
                             </div>
                             <div class="icon">
@@ -312,7 +313,7 @@
                     <div class="col-lg-4 col-xs-6">
                         <div class="small-box bg-green">
                             <div class="inner">
-                                <h3 style="font-size: 32px;">{{ project.balance|floatformat:2 }} kshs.</h3>
+                                <h3 style="font-size: 32px;">{{ project.balance|floatformat:2|intcomma }} kshs.</h3>
                                 <p>Project Balance</p>
                             </div>
                             <div class="icon">
@@ -323,7 +324,7 @@
                     <div class="col-lg-4 col-xs-6">
                         <div class="small-box bg-yellow">
                             <div class="inner">
-                                <h3 style="font-size: 32px;">{{ project.actual_expenditure|floatformat:2 }} kshs.</h3>
+                                <h3 style="font-size: 32px;">{{ project.actual_expenditure|floatformat:2|intcomma }} kshs.</h3>
                                 <p>Project Expenditure</p>
                             </div>
                             <div class="icon">
@@ -373,8 +374,8 @@
                           <td class="mailbox-name">{{ transaction.transaction_category }}</td>
                           <td class="mailbox-name">{{ transaction.transaction_type }}</td>                          
                           <td class="mailbox-name">{{ transaction.transaction_quantity }} {{ transaction.transaction_time }}</td>                          
-                          <td class="mailbox-attachment">{{ transaction.transaction_price }} kshs.</td>
-                          <td class="mailbox-attachment">{{ transaction.total_transaction_price }} kshs.</td>
+                          <td class="mailbox-attachment">{{ transaction.transaction_price|floatformat:2|intcomma }} kshs.</td>
+                          <td class="mailbox-attachment">{{ transaction.total_transaction_price|floatformat:2|intcomma }} kshs.</td>
                       {% if project.leader_id == auth_user.id %}
                           <td class="mailbox-name"><form method="POST" action="{% url 'delete_transaction' pk=transaction.project_id transaction_id=transaction.transaction_id %}">
                         {% csrf_token %}
@@ -448,7 +449,7 @@
         <td class="mailbox-name">{{ trash_transaction.transaction_details }}</td>
         <td class="mailbox-name">{{ trash_transaction.transaction_category }}</td>        
         <td class="mailbox-name">{{ trash_transaction.transaction_type }}</td>
-        <td class="mailbox-name">{{ trash_transaction.total_transaction_price }} ksh.</td>
+        <td class="mailbox-name">{{ trash_transaction.total_transaction_price|floatformat:2|intcomma }} ksh.</td>
         <td class="mailbox-name">{{ trash_transaction.days_until_permanent_deletion }}</td>                
                             <td class="mailbox-attachment">
                             <form method="POST" name="update_project_member_form" action="{% url 'restore_transaction' pk=trash_transaction.project_id  transaction_id=trash_transaction.transaction_id %}" enctype="multipart/form-data">
