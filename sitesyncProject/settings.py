@@ -113,6 +113,9 @@ CSRF_TRUSTED_ORIGINS = [
     'https://site-sync-projects-fjcggab8g4g9cybc.canadacentral-01.azurewebsites.net'
 ]
 
+SECURE_SSL_REDIRECT = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # LOGGING = {
 #     'version': 1,
 #     'disable_existing_loggers': False,
