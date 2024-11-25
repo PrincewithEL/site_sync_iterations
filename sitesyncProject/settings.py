@@ -15,7 +15,6 @@ import pymysql
 import os
 import dj_database_url
 from dotenv import load_dotenv
-import ssl
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -102,20 +101,10 @@ SOCIAL_AUTH_PIPELINE = (
 
 WSGI_APPLICATION = 'sitesyncProject.wsgi.application'
 
-# Enhanced Security Settings
-SECURE_SSL_REDIRECT = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SECURE_HSTS_SECONDS = 31536000  # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
-SECURE_REFERRER_POLICY = 'same-origin'
-
-# Modified CORS and CSRF settings
 CORS_ALLOWED_ORIGINS = [
     "https://site-sync-iterations.onrender.com",
-    "https://site-sync-iterations-fjcggab8g4g9cybc.canadacentral-01.azurewebsites.net",
+    'https://*.canadacentral-01.azurewebsites.net',
+    'https://site-sync-iterations-fjcggab8g4g9cybc.canadacentral-01.azurewebsites.net'
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -125,6 +114,9 @@ CSRF_TRUSTED_ORIGINS = [
     'https://site-sync-analytics-fjcggab8g4g9cybc.canadacentral-01.azurewebsites.net',
     'https://site-sync-projects-fjcggab8g4g9cybc.canadacentral-01.azurewebsites.net'
 ]
+
+SECURE_SSL_REDIRECT = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # LOGGING = {
 #     'version': 1,
@@ -199,26 +191,10 @@ CSRF_TRUSTED_ORIGINS = [
 # SECRET_KEY = os.getenv('SECRET_KEY') # For secret key
 # ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') # For allowed hosts
 # if not DEBUG: # When hosted
-# DATABASES = {
-#     "default": dj_database_url.parse(os.environ.get("DATABASE_URL"))
-# }
-
-
-# DATABASES = {
-#     "default": dj_database_url.config(
-#         default=os.environ.get("DATABASE_URL"),
-#         conn_max_age=600,
-#         ssl_require=True,
-#     )
-# }
-
 DATABASES = {
-    "default": dj_database_url.config(
-        default=os.environ.get("DATABASE_URL"),
-        conn_max_age=600,
-        ssl_require=False,
-    )
+    "default": dj_database_url.parse(os.environ.get("DATABASE_URL"))
 }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
