@@ -18,7 +18,7 @@ questions = [
     "Where can I find the bookmarked projects?",
     "Where can I find the deleted projects?",
     "How do I access the chat room?",
-    "How do I view resources?",
+    "How do I view or access the files page?",
     "How do I view transactions?",
     "How do I view tasks and events?",
     "How do I view dashboards?",
@@ -198,7 +198,7 @@ answers = [
     "The bookmarked projects are located on the middle left-hand side of the screen, on the fifth row.",
     "The deleted projects are located on the middle left-hand side of the screen, on the sixth row.",
     "Click on the 'Select' option and scroll down. You'll see the chat room as the first option.",
-    "Click on the 'Select' option and scroll down. You'll see 'View Resources' as the second option.",
+    "Navigate to the left-handside of the page and you will see 'View Files' as the second option.",
     "Click on the 'Select' option and scroll down. You'll see 'View Transactions' as the third option.",
     "Click on the 'Select' option and scroll down. You'll see 'Tasks and Events' as the last option.",
     "Click on the 'Select' option and scroll down. You'll see 'Dashboards' as the fourth option.",
@@ -252,7 +252,7 @@ answers = [
     "On the 'Transactions' page, click on the 'Add Transaction' button and fill out the transaction details in the form provided.",
     "Click on 'All Time All Projects,' select the specific filter you'd like to apply, and click 'Apply Filter.'",
     "Use the search bar at the top right of the transactions page to look for specific transactions.",
-    "Click on the 'Home' or 'Back' button to return to the home page or project page."
+    "Click on the 'Home' button to return to the home page."
 ]
 
 
