@@ -191,10 +191,23 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # SECRET_KEY = os.getenv('SECRET_KEY') # For secret key
 # ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') # For allowed hosts
 # if not DEBUG: # When hosted
-DATABASES = {
-    "default": dj_database_url.parse(os.environ.get("DATABASE_URL"))
-}
+# DATABASES = {
+#     "default": dj_database_url.parse(os.environ.get("DATABASE_URL"))
+# }
 
+DATABASES = {
+    "default": {
+        **dj_database_url.config(
+            default=os.environ.get("DATABASE_URL"),
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=True,
+        ),
+        'OPTIONS': {
+            'sslmode': 'require',
+        }
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
