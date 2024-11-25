@@ -15,6 +15,7 @@ import pymysql
 import os
 import dj_database_url
 from dotenv import load_dotenv
+import ssl
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -101,20 +102,29 @@ SOCIAL_AUTH_PIPELINE = (
 
 WSGI_APPLICATION = 'sitesyncProject.wsgi.application'
 
-# CORS_ALLOWED_ORIGINS = [
-#     "https://site-sync-iterations.onrender.com",
-# ]
+# Enhanced Security Settings
+SECURE_SSL_REDIRECT = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_HSTS_SECONDS = 31536000  # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_REFERRER_POLICY = 'same-origin'
 
-# CSRF_TRUSTED_ORIGINS = [
-#     'https://*.canadacentral-01.azurewebsites.net',
-#     'https://site-sync-iterations-fjcggab8g4g9cybc.canadacentral-01.azurewebsites.net',
-#     'https://site-sync-detections-fjcggab8g4g9cybc.canadacentral-01.azurewebsites.net',
-#     'https://site-sync-analytics-fjcggab8g4g9cybc.canadacentral-01.azurewebsites.net',
-#     'https://site-sync-projects-fjcggab8g4g9cybc.canadacentral-01.azurewebsites.net'
-# ]
+# Modified CORS and CSRF settings
+CORS_ALLOWED_ORIGINS = [
+    "https://site-sync-iterations.onrender.com",
+    "https://site-sync-iterations-fjcggab8g4g9cybc.canadacentral-01.azurewebsites.net",
+]
 
-# SECURE_SSL_REDIRECT = True
-# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.canadacentral-01.azurewebsites.net',
+    'https://site-sync-iterations-fjcggab8g4g9cybc.canadacentral-01.azurewebsites.net',
+    'https://site-sync-detections-fjcggab8g4g9cybc.canadacentral-01.azurewebsites.net',
+    'https://site-sync-analytics-fjcggab8g4g9cybc.canadacentral-01.azurewebsites.net',
+    'https://site-sync-projects-fjcggab8g4g9cybc.canadacentral-01.azurewebsites.net'
+]
 
 # LOGGING = {
 #     'version': 1,
@@ -193,67 +203,13 @@ WSGI_APPLICATION = 'sitesyncProject.wsgi.application'
 #     "default": dj_database_url.parse(os.environ.get("DATABASE_URL"))
 # }
 
-import ssl
 
-# Modified Database Settings
 DATABASES = {
     "default": dj_database_url.config(
         default=os.environ.get("DATABASE_URL"),
         conn_max_age=600,
         ssl_require=True,
-        engine='django.db.backends.postgresql',
-        options={
-            'sslmode': 'require',
-            'ssl': {
-                'ssl_cert': None,
-                'ssl_key': None,
-                'ssl_ca': None,
-            },
-            'connect_timeout': 30,
-        }
     )
-}
-
-# Enhanced Security Settings
-SECURE_SSL_REDIRECT = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SECURE_HSTS_SECONDS = 31536000  # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
-SECURE_REFERRER_POLICY = 'same-origin'
-
-# Modified CORS and CSRF settings
-CORS_ALLOWED_ORIGINS = [
-    "https://site-sync-iterations.onrender.com",
-    "https://site-sync-iterations-fjcggab8g4g9cybc.canadacentral-01.azurewebsites.net",
-]
-
-CSRF_TRUSTED_ORIGINS = [
-    'https://*.canadacentral-01.azurewebsites.net',
-    'https://site-sync-iterations-fjcggab8g4g9cybc.canadacentral-01.azurewebsites.net',
-    'https://site-sync-detections-fjcggab8g4g9cybc.canadacentral-01.azurewebsites.net',
-    'https://site-sync-analytics-fjcggab8g4g9cybc.canadacentral-01.azurewebsites.net',
-    'https://site-sync-projects-fjcggab8g4g9cybc.canadacentral-01.azurewebsites.net'
-]
-
-# Add SSL-specific logging
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'loggers': {
-        'django.db.backends': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-    },
 }
 
 # Password validation
