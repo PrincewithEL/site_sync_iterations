@@ -191,10 +191,23 @@ CSRF_TRUSTED_ORIGINS = [
 # SECRET_KEY = os.getenv('SECRET_KEY') # For secret key
 # ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') # For allowed hosts
 # if not DEBUG: # When hosted
-DATABASES = {
-    "default": dj_database_url.parse(os.environ.get("DATABASE_URL"))
-}
+# DATABASES = {
+#     "default": dj_database_url.parse(os.environ.get("DATABASE_URL"))
+# }
 
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'site_sync_7mj5',
+        'USER': 'site_sync_7mj5_user',
+        'PASSWORD': 'OOEsvze8zFDh3qbQL8JcNZbtJUbGYJSM',
+        'HOST': 'dpg-ct0gvt3tq21c73eehos0-a.oregon-postgres.render.com',
+        'PORT': '5432',  # Default PostgreSQL port
+        'OPTIONS': {
+            'sslmode': 'require',  # Required for Render's PostgreSQL
+        }
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
