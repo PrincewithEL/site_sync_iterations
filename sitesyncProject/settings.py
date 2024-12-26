@@ -191,23 +191,23 @@ CSRF_TRUSTED_ORIGINS = [
 # SECRET_KEY = os.getenv('SECRET_KEY') # For secret key
 # ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') # For allowed hosts
 # if not DEBUG: # When hosted
-DATABASES = {
-    "default": dj_database_url.parse(os.environ.get("DATABASE_URL"))
-}
-
 # DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'site_sync_7mj5',
-#         'USER': 'site_sync_7mj5_user',
-#         'PASSWORD': 'OOEsvze8zFDh3qbQL8JcNZbtJUbGYJSM',
-#         'HOST': 'dpg-ct0gvt3tq21c73eehos0-a.oregon-postgres.render.com',
-#         'PORT': '5432',  # Default PostgreSQL port
-#         'OPTIONS': {
-#             'sslmode': 'require',  # Required for Render's PostgreSQL
-#         }
-#     }
+#     "default": dj_database_url.parse(os.environ.get("DATABASE_URL"))
 # }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'site_sync_9geo',
+        'USER': 'site_sync_9geo_user',
+        'PASSWORD': 'GNzrVk6zTyN9noC24NMwHsjtPnF4RL5M',
+        'HOST': 'dpg-ctmjj652ng1s73bcqpvg-a.oregon-postgres.render.com',
+        'PORT': '5432',  # Default PostgreSQL port
+        'OPTIONS': {
+            'sslmode': 'require',  # Required for Render's PostgreSQL
+        }
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
