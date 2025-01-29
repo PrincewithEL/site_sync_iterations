@@ -198,10 +198,10 @@ CSRF_TRUSTED_ORIGINS = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'site_sync_9geo',
-        'USER': 'site_sync_9geo_user',
-        'PASSWORD': 'GNzrVk6zTyN9noC24NMwHsjtPnF4RL5M',
-        'HOST': 'dpg-ctmjj652ng1s73bcqpvg-a.oregon-postgres.render.com',
+        'NAME': 'site_sync_pnnk',
+        'USER': 'site_sync_pnnk_user',
+        'PASSWORD': 'SOUlvjHX2LLW64648TQjVHKcD2iEZkLv',
+        'HOST': 'dpg-cucu4r9opnds73am2stg-a.oregon-postgres.render.com',
         'PORT': '5432',  # Default PostgreSQL port
         'OPTIONS': {
             'sslmode': 'require',  # Required for Render's PostgreSQL
